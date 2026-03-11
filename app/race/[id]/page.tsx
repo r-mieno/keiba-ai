@@ -143,10 +143,9 @@ const PACE_INFO: Record<PaceType, { label: string; color: string; explanation: s
 }
 
 function computePaceOutlook(
-  formation: FormationResponse,
+  raceHorseIds: string[],
   horses: Horse[],
 ): { pace: PaceType; frontCount: number; stalkerCount: number; closerCount: number; deepCloserCount: number } {
-  const raceHorseIds = [...formation.axis_horses, ...formation.himo_horses]
   const raceHorses = raceHorseIds.map((hid) => horses.find((h) => h.id === hid)).filter(Boolean) as Horse[]
   const frontCount = raceHorses.filter((h) => h.style === 'front').length
   const stalkerCount = raceHorses.filter((h) => h.style === 'stalker').length
@@ -195,12 +194,11 @@ const PACE_ADV_COMMENTS: Partial<Record<PaceType, Partial<Record<RunningStyle, s
 // Returns up to 3 horses that gain a positive pace adjustment from the current pace,
 // sorted by adjustment descending. Returns [] when pace is balanced (no adjustment).
 function getPaceAdvantageHorses(
-  formation: FormationResponse,
+  raceHorseIds: string[],
   horses: Horse[],
   pace: PaceType,
 ): { name: string; style: RunningStyle; comment: string }[] {
   if (pace === 'balanced') return []
-  const raceHorseIds = [...formation.axis_horses, ...formation.himo_horses]
   return raceHorseIds
     .map((hid) => horses.find((h) => h.id === hid))
     .filter((h): h is Horse & { style: RunningStyle } => h !== undefined && h.style !== null)
@@ -600,8 +598,14 @@ export default async function RaceDetailPage({
   const getHorseName = (horseId: string) =>
     horses.find((h) => h.id === horseId)?.name ?? horseId
 
+  // Full race field: use all entered horses for pace calculation.
+  // Fall back to formation horses only when entries haven't loaded.
+  const raceHorseIds = entries.length > 0
+    ? entries.map((e) => e.horse_id)
+    : [...(formation?.axis_horses ?? []), ...(formation?.himo_horses ?? [])]
+
   // Compute pace once so it can be shared across ranking, value opportunity, etc.
-  const pace = formation ? computePaceOutlook(formation, horses).pace : 'balanced'
+  const pace = formation ? computePaceOutlook(raceHorseIds, horses).pace : 'balanced'
 
   // Axis horses stay in their original AI-determined order.
   // Himo horses are re-sorted by pace adjustment: most favored by current pace comes first.
@@ -714,13 +718,13 @@ export default async function RaceDetailPage({
             }
           })
 
-          const advantageHorses = getPaceAdvantageHorses(formation, horses, pace)
+          const advantageHorses = getPaceAdvantageHorses(raceHorseIds, horses, pace)
           const valueHorse = getValueOpportunity(formation, horses, pct, pace)
           const aiSummaryLines = buildAiSummary(pct, pace, advantageHorses, valueHorse)
           const level = getLevel(pct)
           const strategy = getStrategy(pct)
 
-          const paceInfo = computePaceOutlook(formation, horses)
+          const paceInfo = computePaceOutlook(raceHorseIds, horses)
           const paceMeta = PACE_INFO[paceInfo.pace]
           const paceCounts: { label: string; count: number; style: RunningStyle }[] = [
             { label: '逃げ', count: paceInfo.frontCount,      style: 'front' },
@@ -801,6 +805,11 @@ export default async function RaceDetailPage({
               <div style={card}>
                 <p style={sectionLabel}>レース安定性スコア</p>
                 <ScoreGauge score={formation.race_structure_score} />
+              </div>
+
+              {/* ── PACE DEBUG ─────────────────────────────────────────── */}
+              <div style={{ background: '#fffbe6', border: '1px solid #f0c040', borderRadius: 6, padding: '8px 12px', marginBottom: 8, fontSize: 11, color: '#5a4a00', fontFamily: 'monospace' }}>
+                <strong>DEBUG (pace)</strong> 対象頭数: {raceHorseIds.length}頭 | 逃げ: {paceInfo.frontCount} 先行: {paceInfo.stalkerCount} 差し: {paceInfo.closerCount} 追込: {paceInfo.deepCloserCount}
               </div>
 
               {/* 展開予想 */}
