@@ -24,7 +24,7 @@ AI駆動開発の検証として、競馬レースの分析と買い目生成を
 
 ## 公開URL
 
-https://（VercelのURL）
+https://keiba-ai-zeta.vercel.app/
 
 ## このプロジェクトについて
 
