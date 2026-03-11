@@ -277,12 +277,7 @@ function getBetPlanInfo(
   const resolveName = (id: string) => horses.find((h) => h.id === id)?.name ?? id
   const axisNames = formation.axis_horses.map(resolveName)
   const himoNames = formation.himo_horses.map(resolveName)
-  const betType =
-    formation.axis_count === 1
-      ? '三連複 1頭軸流し'
-      : formation.axis_count === 2
-      ? '三連複 2頭軸流し'
-      : '三連複 フォーメーション'
+  const betType = '三連複フォーメーション'
   void pct
   return { betType, axisNames, himoNames }
 }
@@ -354,7 +349,13 @@ function buildAiSummary(
     }
     lines.push(styleComment[advantageHorses[0].style] ?? 'ペース適性馬が台頭しやすい。')
   } else {
-    lines.push('展開の有利・不利は少なく、実力通りの結果になりやすい。')
+    if (pct >= 61) {
+      lines.push('展開の有利・不利は少なく、実力通りの結果になりやすい。')
+    } else if (pct >= 41) {
+      lines.push('展開の有利・不利は少なめだが、波乱の可能性も残る。')
+    } else {
+      lines.push('波乱含みのレースで、ヒモを広めに取りたい。')
+    }
   }
 
   // Line 3: value horse
