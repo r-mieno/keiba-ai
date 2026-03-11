@@ -36,33 +36,76 @@ function buildComment(axisCount: number, himoCount: number, pct: number): string
 
 type AxisDetail = {
   name: string
+  horseNumber: number | null
   styleLabel: string | null
   styleColor: string | null
   aiEval: number
   reason: string
 }
 
+type HimoHorse = {
+  name: string
+  number: number | null
+}
+
 type Props = {
   betType: string
-  allHimoNames: string[]
+  allHimoHorses: HimoHorse[]
   axisCount: number
   pct: number
   axisDetails: AxisDetail[]
 }
 
+function NumBadge({ num, isAxis }: { num: number | null; isAxis: boolean }) {
+  return (
+    <span
+      style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        width: 24,
+        height: 24,
+        borderRadius: '50%',
+        fontSize: 11,
+        fontWeight: 700,
+        background: isAxis ? '#1a5c35' : '#b0aaa4',
+        color: '#fff',
+        flexShrink: 0,
+      }}
+    >
+      {num ?? '?'}
+    </span>
+  )
+}
+
 export default function BetPlanPanel({
   betType,
-  allHimoNames,
+  allHimoHorses,
   axisCount,
   pct,
   axisDetails,
 }: Props) {
-  const [himoCount, setHimoCount] = useState(Math.min(AI_RECOMMENDED, allHimoNames.length))
+  const [himoCount, setHimoCount] = useState(Math.min(AI_RECOMMENDED, allHimoHorses.length))
 
-  const selectedHimo = allHimoNames.slice(0, himoCount)
+  const selectedHimo = allHimoHorses.slice(0, himoCount)
   const combinations = computeCombinations(axisCount, himoCount)
   const himoValues = computeHimoValues(pct, himoCount)
   const comment = buildComment(axisCount, himoCount, pct)
+
+  const axisNums = axisDetails.map((d) => d.horseNumber)
+  const himoNums = selectedHimo.map((h) => h.number)
+  const formationRows =
+    axisCount >= 3
+      ? [
+          { label: '1着目', nums: axisNums, numAxisItems: axisNums.length },
+          { label: '2着目', nums: [...axisNums, ...himoNums], numAxisItems: axisNums.length },
+          { label: '3着目', nums: [...axisNums, ...himoNums], numAxisItems: axisNums.length },
+        ]
+      : [
+          { label: '1着目', nums: axisNums, numAxisItems: axisNums.length },
+          { label: '2着目', nums: himoNums, numAxisItems: 0 },
+          { label: '3着目', nums: himoNums, numAxisItems: 0 },
+        ]
 
   return (
     <div
@@ -74,14 +117,7 @@ export default function BetPlanPanel({
         marginBottom: 16,
       }}
     >
-      <p
-        style={{
-          color: '#6b6560',
-          fontSize: 12,
-          fontWeight: 700,
-          marginBottom: 14,
-        }}
-      >
+      <p style={{ color: '#6b6560', fontSize: 12, fontWeight: 700, marginBottom: 14 }}>
         🧾 AI買い目プラン
       </p>
 
@@ -104,12 +140,12 @@ export default function BetPlanPanel({
         </span>
       </div>
 
-      {/* Himo count selector — horizontal buttons */}
+      {/* Himo count selector */}
       <div style={{ marginBottom: 14 }}>
         <p style={{ color: '#9b9490', fontSize: 11, marginBottom: 8 }}>ヒモ頭数を選択</p>
         <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
           {HIMO_OPTIONS.map((n) => {
-            const disabled = n > allHimoNames.length
+            const disabled = n > allHimoHorses.length
             const active = himoCount === n
             const isRecommended = n === AI_RECOMMENDED
             return (
@@ -126,9 +162,7 @@ export default function BetPlanPanel({
                   fontSize: 13,
                   fontWeight: active ? 700 : 400,
                   cursor: disabled ? 'not-allowed' : 'pointer',
-                  border: active
-                    ? '1px solid rgba(26,92,53,0.5)'
-                    : '1px solid #e0dbd3',
+                  border: active ? '1px solid rgba(26,92,53,0.5)' : '1px solid #e0dbd3',
                   background: active ? 'rgba(26,92,53,0.08)' : '#f5f2ed',
                   color: disabled ? '#c8c2bb' : active ? '#1a5c35' : '#7a7269',
                   transition: 'all 0.15s',
@@ -143,9 +177,7 @@ export default function BetPlanPanel({
                       fontWeight: 700,
                       padding: '1px 5px',
                       borderRadius: 9999,
-                      background: active
-                        ? 'rgba(26,92,53,0.2)'
-                        : 'rgba(26,92,53,0.08)',
+                      background: active ? 'rgba(26,92,53,0.2)' : 'rgba(26,92,53,0.08)',
                       color: disabled ? '#c8c2bb' : '#1a5c35',
                       letterSpacing: '0.03em',
                     }}
@@ -168,7 +200,7 @@ export default function BetPlanPanel({
           background: '#f5f2ed',
           borderRadius: 8,
           padding: '10px 14px',
-          marginBottom: 18,
+          marginBottom: 14,
         }}
       >
         <span style={{ color: '#9b9490', fontSize: 13 }}>合計買い目点数</span>
@@ -178,15 +210,34 @@ export default function BetPlanPanel({
         </span>
       </div>
 
+      {/* Formation summary */}
+      <div style={{ marginBottom: 18 }}>
+        <p style={{ color: '#9b9490', fontSize: 11, marginBottom: 8 }}>フォーメーション確認</p>
+        <div
+          style={{
+            background: '#f5f2ed',
+            borderRadius: 8,
+            padding: '12px 14px',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 8,
+          }}
+        >
+          {formationRows.map(({ label, nums, numAxisItems }) => (
+            <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span style={{ color: '#9b9490', fontSize: 10, width: 36, flexShrink: 0 }}>{label}</span>
+              <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
+                {nums.map((num, i) => (
+                  <NumBadge key={i} num={num} isAxis={i < numAxisItems} />
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
       {/* Axis + Himo grid */}
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: '1fr 1fr',
-          gap: 12,
-          marginBottom: 18,
-        }}
-      >
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 18 }}>
         {/* Axis horses */}
         <div
           style={{
@@ -208,8 +259,29 @@ export default function BetPlanPanel({
                   borderBottom: i < axisDetails.length - 1 ? '1px solid rgba(26,92,53,0.12)' : 'none',
                 }}
               >
-                <span style={{ color: '#1e1b18', fontSize: 14, fontWeight: 700 }}>{detail.name}</span>
-                <div style={{ display: 'flex', gap: 10, marginTop: 6, marginBottom: 6, flexWrap: 'wrap' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
+                  {detail.horseNumber !== null && (
+                    <span
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        width: 22,
+                        height: 22,
+                        borderRadius: '50%',
+                        fontSize: 10,
+                        fontWeight: 700,
+                        background: '#1a5c35',
+                        color: '#fff',
+                        flexShrink: 0,
+                      }}
+                    >
+                      {detail.horseNumber}
+                    </span>
+                  )}
+                  <span style={{ color: '#1e1b18', fontSize: 14, fontWeight: 700 }}>{detail.name}</span>
+                </div>
+                <div style={{ display: 'flex', gap: 10, marginBottom: 6, flexWrap: 'wrap' }}>
                   <div style={{ display: 'flex', gap: 4, alignItems: 'baseline' }}>
                     <span style={{ fontSize: 10, color: '#9b9490' }}>AI評価</span>
                     <span style={{ fontSize: 13, fontWeight: 700, color: '#1a5c35' }}>{detail.aiEval}%</span>
@@ -243,29 +315,37 @@ export default function BetPlanPanel({
         </div>
 
         {/* Himo horses */}
-        <div
-          style={{
-            background: '#faf8f5',
-            borderRadius: 8,
-            padding: '12px 14px',
-          }}
-        >
+        <div style={{ background: '#faf8f5', borderRadius: 8, padding: '12px 14px' }}>
           <p style={{ color: '#9b9490', fontSize: 10, fontWeight: 700, letterSpacing: '0.06em', marginBottom: 10 }}>
             ヒモ馬 ({selectedHimo.length}頭)
           </p>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-            {selectedHimo.map((name, i) => (
+            {selectedHimo.map((horse, i) => (
               <div
-                key={name}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  gap: 6,
-                }}
+                key={horse.name}
+                style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 6 }}
               >
-                <div style={{ display: 'flex', alignItems: 'center', gap: 6, minWidth: 0 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 5, minWidth: 0 }}>
                   <span style={{ color: '#c8c2bb', fontSize: 10, width: 14, flexShrink: 0 }}>{i + 1}</span>
+                  {horse.number !== null && (
+                    <span
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        width: 18,
+                        height: 18,
+                        borderRadius: '50%',
+                        fontSize: 9,
+                        fontWeight: 700,
+                        background: '#b0aaa4',
+                        color: '#fff',
+                        flexShrink: 0,
+                      }}
+                    >
+                      {horse.number}
+                    </span>
+                  )}
                   <span
                     style={{
                       color: '#5c5650',
@@ -275,7 +355,7 @@ export default function BetPlanPanel({
                       whiteSpace: 'nowrap',
                     }}
                   >
-                    {name}
+                    {horse.name}
                   </span>
                 </div>
                 <span style={{ fontSize: 11, fontWeight: 600, color: '#1a6e3f', flexShrink: 0 }}>

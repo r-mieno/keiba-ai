@@ -705,12 +705,17 @@ export default async function RaceDetailPage({
           )
 
           // ── Pre-computed shared values ──────────────────────────────────────
-          const { betType, himoNames } = getBetPlanInfo(formation, horses, pct)
+          const { betType } = getBetPlanInfo(formation, horses, pct)
+          const himoHorses = formation.himo_horses.map((hid) => ({
+            name: horses.find((h) => h.id === hid)?.name ?? hid,
+            number: entries.find((e) => e.horse_id === hid)?.horse_number ?? null,
+          }))
           const axisDetails = formation.axis_horses.map((id, i) => {
             const horse = horses.find((h) => h.id === id)
             const style = horse?.style ?? null
             return {
               name: horse?.name ?? id,
+              horseNumber: entries.find((e) => e.horse_id === id)?.horse_number ?? null,
               styleLabel: style ? STYLE_LABELS[style] : null,
               styleColor: style ? STYLE_COLORS[style] : null,
               aiEval: Math.max(15, Math.round(25 + pct * 0.15 - i * 3)),
@@ -745,7 +750,7 @@ export default async function RaceDetailPage({
 
               <BetPlanPanel
                 betType={betType}
-                allHimoNames={himoNames}
+                allHimoHorses={himoHorses}
                 axisCount={formation.axis_count}
                 pct={pct}
                 axisDetails={axisDetails}
@@ -1108,10 +1113,10 @@ export default async function RaceDetailPage({
                 let hint: { label: string; color: string; bg: string } | null = null
                 if (aiRank > 0 && aiRank <= 3 && finish_pos <= 3) {
                   hint = { label: 'AI上位', color: '#1a6e3f', bg: '#e6f4ec' }
-                } else if (aiRank > 0 && aiRank <= 3 && finish_pos > 3) {
-                  hint = { label: '惜しい', color: '#a05020', bg: '#fdf0e6' }
-                } else if ((aiRank === 0 || aiRank > 3) && finish_pos <= 3) {
+                } else if (finish_pos <= 3 && (aiRank === 0 || aiRank > 3)) {
                   hint = { label: '想定外', color: '#a83030', bg: '#fdf2f2' }
+                } else if (aiRank > 0 && Math.abs(aiRank - finish_pos) <= 1) {
+                  hint = { label: '惜しい', color: '#a05020', bg: '#fdf0e6' }
                 }
 
                 const isTop3 = finish_pos <= 3
