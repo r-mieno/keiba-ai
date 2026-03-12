@@ -380,17 +380,19 @@ const LEGEND = [
 
 const card: React.CSSProperties = {
   background: '#ffffff',
-  borderRadius: 10,
+  borderRadius: 8,
   padding: '20px 20px',
-  border: '1px solid #e0dbd3',
-  marginBottom: 16,
+  border: '1px solid #ebe6df',
+  marginBottom: 12,
 }
 
 const sectionLabel: React.CSSProperties = {
-  color: '#3d3a37',
-  fontSize: 12,
+  fontSize: 10,
   fontWeight: 700,
-  marginBottom: 12,
+  letterSpacing: '0.1em',
+  textTransform: 'uppercase' as const,
+  color: '#9b9490',
+  marginBottom: 14,
   paddingBottom: 10,
   borderBottom: '1px solid #ede9e3',
 }
@@ -402,20 +404,34 @@ function ScoreGauge({ score }: { score: number }) {
   const level = getLevel(pct)
   return (
     <div>
-      <div style={{ display: 'flex', alignItems: 'flex-end', gap: 6, marginBottom: 10 }}>
-        <span style={{ fontSize: 44, fontWeight: 800, lineHeight: 1, color: level.color }}>{pct}</span>
-        <span style={{ color: '#9b9490', marginBottom: 6, fontSize: 15 }}> / 100</span>
+      <div style={{ display: 'flex', alignItems: 'baseline', gap: 4, marginBottom: 14 }}>
+        <span style={{ fontSize: 56, fontWeight: 800, lineHeight: 1, color: level.color, letterSpacing: '-0.03em', fontVariantNumeric: 'tabular-nums' }}>
+          {pct}
+        </span>
+        <span style={{ color: '#b0aaa4', fontSize: 16, fontWeight: 500 }}>/100</span>
+        <span style={{
+          marginLeft: 10,
+          fontSize: 11,
+          fontWeight: 700,
+          padding: '3px 10px',
+          borderRadius: 4,
+          background: `${level.color}14`,
+          color: level.color,
+          border: `1px solid ${level.color}33`,
+          letterSpacing: '0.04em',
+        }}>
+          {level.label.replace(/^[^\s]+ /, '')}
+        </span>
       </div>
-      <div style={{ background: '#ede9e3', borderRadius: 9999, height: 6, overflow: 'hidden', marginBottom: 8 }}>
-        <div style={{ width: `${pct}%`, height: '100%', background: level.color, borderRadius: 9999 }} />
+      <div style={{ background: '#ede9e3', borderRadius: 2, height: 4, overflow: 'hidden', marginBottom: 20 }}>
+        <div style={{ width: `${pct}%`, height: '100%', background: level.color, borderRadius: 2 }} />
       </div>
-      <p style={{ color: level.color, fontSize: 12, fontWeight: 600, marginBottom: 14 }}>{level.label}</p>
-      <div style={{ borderTop: '1px solid #ede9e3', paddingTop: 10, display: 'flex', flexDirection: 'column', gap: 4 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 4 }}>
         {LEGEND.map(({ range, color, label }) => (
-          <div key={range} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <span style={{ width: 7, height: 7, borderRadius: '50%', background: color, flexShrink: 0 }} />
-            <span style={{ color: '#9b9490', fontSize: 11, width: 52 }}>{range}</span>
-            <span style={{ color: '#b0aaa4', fontSize: 11 }}>{label}</span>
+          <div key={range} style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
+            <span style={{ width: 6, height: 6, borderRadius: 1, background: color, flexShrink: 0 }} />
+            <span style={{ color: '#9b9490', fontSize: 10, width: 44 }}>{range}</span>
+            <span style={{ color: '#b0aaa4', fontSize: 10 }}>{label}</span>
           </div>
         ))}
       </div>
@@ -445,83 +461,94 @@ function HorseRow({
         display: 'flex',
         alignItems: 'center',
         gap: 10,
-        padding: '10px 14px',
-        borderRadius: 8,
-        background: isAxis ? 'rgba(26,92,53,0.06)' : '#faf8f5',
-        borderLeft: `3px solid ${isAxis ? '#1a5c35' : '#e0dbd3'}`,
-        marginBottom: 5,
+        padding: isAxis ? '11px 14px' : '9px 14px',
+        borderRadius: 6,
+        background: isAxis ? 'rgba(26,92,53,0.07)' : 'transparent',
+        borderLeft: `3px solid ${isAxis ? '#1a5c35' : '#e8e3db'}`,
+        marginBottom: 4,
       }}
     >
+      {/* Rank number */}
       <span
         style={{
-          width: 26,
-          height: 26,
-          borderRadius: '50%',
+          width: isAxis ? 28 : 22,
+          height: isAxis ? 28 : 22,
+          borderRadius: isAxis ? 6 : '50%',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          fontSize: 11,
-          fontWeight: 700,
+          fontSize: isAxis ? 13 : 10,
+          fontWeight: 800,
           flexShrink: 0,
           background: isAxis ? '#1a5c35' : '#ede9e3',
-          color: isAxis ? '#fff' : '#9b9490',
+          color: isAxis ? '#fff' : '#b0aaa4',
+          fontVariantNumeric: 'tabular-nums',
         }}
       >
         {rank}
       </span>
+
+      {/* Horse name */}
       <span
         style={{
           flex: 1,
-          fontWeight: isAxis ? 700 : 400,
-          fontSize: 14,
-          color: isAxis ? '#1e1b18' : '#5c5650',
+          fontWeight: isAxis ? 700 : 500,
+          fontSize: isAxis ? 15 : 13,
+          color: isAxis ? '#1e1b18' : '#6b6560',
+          letterSpacing: isAxis ? '0.01em' : 0,
         }}
       >
         {name}
       </span>
-      {styleTag && (
+
+      {/* Tags */}
+      <div style={{ display: 'flex', gap: 5, alignItems: 'center' }}>
+        {styleTag && (
+          <span
+            style={{
+              fontSize: 10,
+              fontWeight: 700,
+              padding: '2px 7px',
+              borderRadius: 4,
+              background: `${styleTag.color}14`,
+              color: styleTag.color,
+              border: `1px solid ${styleTag.color}38`,
+              letterSpacing: '0.02em',
+            }}
+          >
+            {styleTag.label}
+          </span>
+        )}
+        {paceTag && (
+          <span
+            style={{
+              fontSize: 10,
+              fontWeight: 700,
+              padding: '2px 7px',
+              borderRadius: 4,
+              background: paceTag === 'up' ? '#e6f4ec' : '#fdf2f2',
+              color: paceTag === 'up' ? '#1a6e3f' : '#a83030',
+              border: `1px solid ${paceTag === 'up' ? '#b8dfc8' : '#e8c8c8'}`,
+            }}
+          >
+            {paceTag === 'up' ? '↑' : '↓'}ペース
+          </span>
+        )}
         <span
           style={{
             fontSize: 10,
             fontWeight: 700,
-            padding: '1px 7px',
-            borderRadius: 9999,
-            background: `${styleTag.color}18`,
-            color: styleTag.color,
-            border: `1px solid ${styleTag.color}44`,
+            padding: '2px 8px',
+            borderRadius: 4,
+            background: isAxis ? '#1a5c35' : 'transparent',
+            color: isAxis ? '#fff' : '#c8c2bb',
+            border: `1px solid ${isAxis ? '#1a5c35' : '#e0dbd3'}`,
+            letterSpacing: '0.04em',
           }}
         >
-          {styleTag.label}
+          {isAxis ? '軸' : 'ヒモ'}
         </span>
-      )}
-      {paceTag && (
-        <span
-          style={{
-            fontSize: 10,
-            fontWeight: 700,
-            padding: '1px 6px',
-            borderRadius: 9999,
-            background: paceTag === 'up' ? '#e6f4ec' : '#fdf2f2',
-            color: paceTag === 'up' ? '#1a6e3f' : '#a83030',
-            border: `1px solid ${paceTag === 'up' ? '#b8dfc8' : '#e8c8c8'}`,
-          }}
-        >
-          {paceTag === 'up' ? '↑ペース' : '↓ペース'}
-        </span>
-      )}
-      <span
-        style={{
-          fontSize: 10,
-          fontWeight: 700,
-          padding: '2px 8px',
-          borderRadius: 9999,
-          background: isAxis ? '#1a5c35' : 'transparent',
-          color: isAxis ? '#fff' : '#9b9490',
-          border: `1px solid ${isAxis ? '#1a5c35' : '#e0dbd3'}`,
-        }}
-      >
-        {isAxis ? '軸' : 'ヒモ'}
-      </span>
+      </div>
     </div>
   )
 }
@@ -627,58 +654,61 @@ export default async function RaceDetailPage({
         minHeight: '100vh',
         background: '#f5f2ed',
         color: '#1e1b18',
-        padding: '32px 20px',
         fontFamily: 'var(--font-geist-sans), Arial, sans-serif',
       }}
     >
-      <div style={{ maxWidth: 720, margin: '0 auto' }}>
+      {/* ── Hero header ───────────────────────────────────────────────── */}
+      <div style={{ background: '#0f1117' }}>
+        <div style={{ maxWidth: 720, margin: '0 auto', padding: '20px 20px 0' }}>
+          <a href="/" className="back-link" style={{ color: '#4a4540', fontSize: 12 }}>
+            ← レース一覧
+          </a>
+        </div>
+        <div style={{ maxWidth: 720, margin: '0 auto', padding: '16px 20px 32px' }}>
+          {race ? (
+            <>
+              <p style={{
+                fontSize: 10,
+                fontWeight: 700,
+                letterSpacing: '0.12em',
+                color: '#1a5c35',
+                textTransform: 'uppercase',
+                marginBottom: 10,
+              }}>
+                Race Analysis
+              </p>
+              <h1 style={{
+                fontSize: 26,
+                fontWeight: 800,
+                margin: 0,
+                color: '#f5f2ed',
+                letterSpacing: '-0.01em',
+                lineHeight: 1.2,
+              }}>
+                {race.race_name}
+              </h1>
+              <p style={{ color: '#4a4540', marginTop: 8, fontSize: 12, letterSpacing: '0.04em' }}>
+                {race.date.replace(/-/g, '/')}
+              </p>
+            </>
+          ) : (
+            <div style={{ height: 60 }} />
+          )}
+        </div>
+      </div>
 
-        {/* Back link */}
-        <a
-          href="/"
-          style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: 5,
-            color: '#9b9490',
-            textDecoration: 'none',
-            fontSize: 13,
-            marginBottom: 20,
-          }}
-        >
-          ← レース一覧へ戻る
-        </a>
-
-        {/* Race header */}
-        {race && (
-          <div
-            style={{
-              borderBottom: '2px solid #1a5c35',
-              paddingBottom: 16,
-              marginBottom: 24,
-            }}
-          >
-            <h1 style={{ fontSize: 24, fontWeight: 800, margin: 0, color: '#1e1b18', letterSpacing: '0.01em' }}>
-              🏇 {race.race_name}
-            </h1>
-            <p style={{ color: '#9b9490', marginTop: 6, fontSize: 13 }}>
-              📅 {race.date.replace(/-/g, '/')}
-            </p>
-          </div>
-        )}
+      <div style={{ maxWidth: 720, margin: '0 auto', padding: '24px 20px' }}>
 
         {errorMessage && (
-          <div
-            style={{
-              background: '#fdf2f2',
-              border: '1px solid #e8c8c8',
-              borderRadius: 8,
-              padding: '10px 14px',
-              color: '#a83030',
-              fontSize: 13,
-              marginBottom: 20,
-            }}
-          >
+          <div style={{
+            background: '#fdf2f2',
+            border: '1px solid #e8c8c8',
+            borderRadius: 6,
+            padding: '10px 14px',
+            color: '#a83030',
+            fontSize: 13,
+            marginBottom: 20,
+          }}>
             エラー: {errorMessage}
           </div>
         )}
@@ -687,23 +717,31 @@ export default async function RaceDetailPage({
           const pct = Math.min(100, Math.max(0, Math.round(formation.race_structure_score * 100)))
 
           // Chapter header style
-          const chapterHeader = (label: string) => (
-            <div
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 8,
-                marginTop: 8,
-                marginBottom: 14,
-                paddingBottom: 10,
-                borderBottom: '2px solid #e0dbd3',
-              }}
-            >
-              <span style={{ fontSize: 15, fontWeight: 800, color: '#3d3a37', letterSpacing: '0.01em' }}>
-                {label}
-              </span>
-            </div>
-          )
+          let chapterIndex = 0
+          const chapterHeader = (label: string) => {
+            chapterIndex++
+            return (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 28, marginBottom: 16 }}>
+                <span style={{
+                  fontSize: 10,
+                  fontWeight: 800,
+                  color: '#1a5c35',
+                  background: 'rgba(26,92,53,0.1)',
+                  border: '1px solid rgba(26,92,53,0.2)',
+                  borderRadius: 4,
+                  padding: '2px 8px',
+                  letterSpacing: '0.08em',
+                  flexShrink: 0,
+                }}>
+                  {String(chapterIndex).padStart(2, '0')}
+                </span>
+                <span style={{ fontSize: 14, fontWeight: 800, color: '#1e1b18', letterSpacing: '0.02em' }}>
+                  {label.replace(/^[^\s]*\s/, '')}
+                </span>
+                <div style={{ flex: 1, height: 1, background: '#e8e3db' }} />
+              </div>
+            )
+          }
 
           // ── Pre-computed shared values ──────────────────────────────────────
           const { betType } = getBetPlanInfo(formation, horses, pct)
@@ -747,7 +785,7 @@ export default async function RaceDetailPage({
           return (
             <>
               {/* ── Chapter 1: AIの見解 ─────────────────────────────────── */}
-              {chapterHeader('🧠 AIの見解')}
+              {chapterHeader('AIの見解')}
 
               <BetPlanPanel
                 betType={betType}
@@ -759,7 +797,7 @@ export default async function RaceDetailPage({
 
               <div style={{ ...card, background: '#1e1b18' }}>
                 <p style={{ ...sectionLabel, color: '#e8e4df', borderBottomColor: '#3a3733' }}>
-                  🧠 AIまとめ
+                  AIまとめ
                 </p>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                   {aiSummaryLines.map((line, i) => (
@@ -771,7 +809,7 @@ export default async function RaceDetailPage({
               </div>
 
               <div style={{ ...card, borderLeft: `3px solid ${level.color}` }}>
-                <p style={sectionLabel}>🤖 AI戦略</p>
+                <p style={sectionLabel}>AI戦略</p>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                   <div>
                     <span
@@ -805,7 +843,7 @@ export default async function RaceDetailPage({
               </div>
 
               {/* ── Chapter 2: レース展開 ───────────────────────────────── */}
-              {chapterHeader('🏇 レース展開')}
+              {chapterHeader('レース展開')}
 
               {/* レース安定性スコア */}
               <div style={card}>
@@ -816,7 +854,7 @@ export default async function RaceDetailPage({
 
               {/* 展開予想 */}
               <div style={{ ...card, borderLeft: `3px solid ${paceMeta.color}` }}>
-                <p style={sectionLabel}>🏇 展開予想</p>
+                <p style={sectionLabel}>展開予想</p>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
                   <span
                     style={{
@@ -871,7 +909,7 @@ export default async function RaceDetailPage({
 
               {/* 展開有利脚質 */}
               <div style={card}>
-                <p style={sectionLabel}>⚡ 展開有利脚質</p>
+                <p style={sectionLabel}>展開有利脚質</p>
                 {favoredStyles.length > 0 ? (
                   <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                     {favoredStyles.map((styleLabel) => {
@@ -907,7 +945,7 @@ export default async function RaceDetailPage({
               {/* 展開有利馬 */}
               {advantageHorses.length > 0 && (
                 <div style={card}>
-                  <p style={sectionLabel}>⚡ 展開有利馬</p>
+                  <p style={sectionLabel}>展開有利馬</p>
                   <p style={{ color: '#b0aaa4', fontSize: 11, marginBottom: 14 }}>
                     ※ ペース適性による恩恵馬です。総合的な強さとは異なります。
                   </p>
@@ -949,12 +987,12 @@ export default async function RaceDetailPage({
               )}
 
               {/* ── Chapter 3: 期待値分析 ──────────────────────────────── */}
-              {chapterHeader('💎 期待値分析')}
+              {chapterHeader('期待値分析')}
 
               {/* AI注目の穴馬 */}
               {valueHorse && (
                 <div style={card}>
-                  <p style={sectionLabel}>💎 AI注目の穴馬</p>
+                  <p style={sectionLabel}>AI注目の穴馬</p>
                   <p style={{ color: '#1e1b18', fontSize: 17, fontWeight: 700, marginBottom: 16 }}>
                     {valueHorse.horseName}
                   </p>
@@ -988,7 +1026,7 @@ export default async function RaceDetailPage({
 
               {/* 買いチャンス */}
               <div style={{ ...card, borderLeft: `3px solid ${betLevel.color}` }}>
-                <p style={sectionLabel}>🎯 買いチャンス</p>
+                <p style={sectionLabel}>買いチャンス</p>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 24, flexWrap: 'wrap' }}>
                   <div style={{ minWidth: 150 }}>
                     <div style={{ display: 'flex', alignItems: 'flex-end', gap: 5, marginBottom: 7 }}>
@@ -1082,7 +1120,7 @@ export default async function RaceDetailPage({
                   borderBottom: '1px solid #ede9e3',
                 }}
               >
-                🏁 レース結果
+                レース結果
               </p>
 
               {/* Header row */}

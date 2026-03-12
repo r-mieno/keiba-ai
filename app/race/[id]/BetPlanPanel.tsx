@@ -111,14 +111,23 @@ export default function BetPlanPanel({
     <div
       style={{
         background: '#ffffff',
-        borderRadius: 10,
+        borderRadius: 8,
         padding: '20px 20px',
-        border: '1px solid #e0dbd3',
-        marginBottom: 16,
+        border: '1px solid #ebe6df',
+        marginBottom: 12,
       }}
     >
-      <p style={{ color: '#6b6560', fontSize: 12, fontWeight: 700, marginBottom: 14 }}>
-        🧾 AI買い目プラン
+      <p style={{
+        fontSize: 10,
+        fontWeight: 700,
+        letterSpacing: '0.1em',
+        textTransform: 'uppercase' as const,
+        color: '#9b9490',
+        marginBottom: 14,
+        paddingBottom: 10,
+        borderBottom: '1px solid #ede9e3',
+      }}>
+        AI買い目プラン
       </p>
 
       {/* Bet type */}
