@@ -813,10 +813,6 @@ export default async function RaceDetailPage({
                 <ScoreGauge score={formation.race_structure_score} />
               </div>
 
-              {/* ── PACE DEBUG ─────────────────────────────────────────── */}
-              <div style={{ background: '#fffbe6', border: '1px solid #f0c040', borderRadius: 6, padding: '8px 12px', marginBottom: 8, fontSize: 11, color: '#5a4a00', fontFamily: 'monospace' }}>
-                <strong>DEBUG (pace)</strong> 対象頭数: {raceHorseIds.length}頭 | 逃げ: {paceInfo.frontCount} 先行: {paceInfo.stalkerCount} 差し: {paceInfo.closerCount} 追込: {paceInfo.deepCloserCount}
-              </div>
 
               {/* 展開予想 */}
               <div style={{ ...card, borderLeft: `3px solid ${paceMeta.color}` }}>
