@@ -1,4 +1,5 @@
 import BetPlanPanel from './BetPlanPanel'
+import { Brain, TrendingUp, Gem, ChevronLeft } from 'lucide-react'
 
 type FormationResponse = {
   race_id: string
@@ -36,41 +37,41 @@ type Entry = {
 // ─── Score level data ────────────────────────────────────────────────────────
 
 const SCORE_LEVELS = [
-  { min: 81, max: 100, color: '#1f5fa8', label: '✅ 非常に安定' },
-  { min: 61, max: 80,  color: '#1a6e3f', label: '🟢 安定' },
-  { min: 41, max: 60,  color: '#7a6012', label: '🟡 バランス型' },
-  { min: 21, max: 40,  color: '#a05020', label: '🟠 荒れやすい' },
-  { min: 0,  max: 20,  color: '#a83030', label: '🌪 非常に荒れやすい' },
+  { min: 81, max: 100, color: '#6EE7B7', label: '非常に安定' },
+  { min: 61, max: 80,  color: '#34D399', label: '安定' },
+  { min: 41, max: 60,  color: '#FCD34D', label: 'バランス型' },
+  { min: 21, max: 40,  color: '#FB923C', label: '荒れやすい' },
+  { min: 0,  max: 20,  color: '#F87171', label: '非常に荒れやすい' },
 ]
 
 const STRATEGIES = [
   {
     min: 81, max: 100,
-    raceType: '✅ 非常に安定',
+    raceType: '非常に安定',
     approach: '軸馬を絞って堅く買う',
     comment: '実力馬がそのまま結果に直結しやすい。上位人気を中心に組み立てるのが有効。',
   },
   {
     min: 61, max: 80,
-    raceType: '🟢 安定',
+    raceType: '安定',
     approach: '軸馬重視のフォーメーション',
     comment: '波乱は少なめ。人気馬を軸に、ヒモは手広く押さえる程度でよい。',
   },
   {
     min: 41, max: 60,
-    raceType: '🟡 バランス型',
+    raceType: 'バランス型',
     approach: '軸・ヒモともにバランスよく選ぶ',
     comment: '実力と紛れが混在する。人気馬と中穴を組み合わせた買い方が有効。',
   },
   {
     min: 21, max: 40,
-    raceType: '🟠 荒れやすい',
+    raceType: '荒れやすい',
     approach: 'ヒモを広めに取る',
     comment: '人気馬の信頼度がやや低い。中穴・大穴の馬も視野に入れて買い目を広げよう。',
   },
   {
     min: 0,  max: 20,
-    raceType: '🌪 非常に荒れやすい',
+    raceType: '非常に荒れやすい',
     approach: '大穴狙いも視野に入れる',
     comment: '実力通りに決まりにくいレース。思い切って人気薄を軸にした買い方も一考。',
   },
@@ -79,32 +80,32 @@ const STRATEGIES = [
 const BET_LEVELS = [
   {
     min: 81, max: 100,
-    color: '#1f5fa8',
-    label: '🚀 強く買い',
+    color: '#6EE7B7',
+    label: '強く買い',
     comment: 'AIのエッジが高く、レース構造も明確。積極的に狙える局面。',
   },
   {
     min: 61, max: 80,
-    color: '#1a6e3f',
-    label: '🔥 買い候補',
+    color: '#34D399',
+    label: '買い候補',
     comment: 'AIが優位性を見出しており、レースも十分読みやすい。バランスの取れた賭け機会。',
   },
   {
     min: 41, max: 60,
-    color: '#7a6012',
-    label: '👍 検討',
+    color: '#FCD34D',
+    label: '検討',
     comment: '一定の価値はあるが、慎重な判断を要する。買い目を絞った参加が賢明。',
   },
   {
     min: 21, max: 40,
-    color: '#a05020',
-    label: '👀 様子見',
+    color: '#FB923C',
+    label: '様子見',
     comment: 'AIのエッジは存在するが、レースの読みづらさがリスクを高めている。少額での参加を推奨。',
   },
   {
     min: 0,  max: 20,
-    color: '#a83030',
-    label: '👀 見送り',
+    color: '#F87171',
+    label: '見送り',
     comment: '現時点では賭けのメリットが薄い。見送りも十分な選択肢。',
   },
 ]
@@ -124,19 +125,19 @@ type PaceType = 'fast' | 'balanced' | 'slow'
 const PACE_INFO: Record<PaceType, { label: string; color: string; explanation: string; aiComment: string }> = {
   fast: {
     label: 'ハイペース',
-    color: '#a83030',
+    color: '#F87171',
     explanation: '先行馬が複数いるため、序盤からペースが上がりやすい展開。',
     aiComment: '差し・追い込み馬にとってチャンスが生まれやすい。先行馬の消耗が鍵になる。',
   },
   slow: {
     label: 'スローペース',
-    color: '#1f5fa8',
+    color: '#60A5FA',
     explanation: '先行馬が少なく、前半はゆったりとした流れになる可能性が高い。',
     aiComment: '先行・番手馬が楽に前を取れる展開。差し馬は早めのポジション取りが重要になる。',
   },
   balanced: {
     label: '平均ペース',
-    color: '#1a6e3f',
+    color: '#34D399',
     explanation: '先行馬と追い込み馬のバランスが取れており、平均的な流れが予想される。',
     aiComment: '番手・差し馬ともに好機が生まれやすい。展開の読みに幅を持たせた買い方が有効。',
   },
@@ -173,10 +174,10 @@ const STYLE_LABELS: Record<RunningStyle, string> = {
 
 // Fixed color per running style — used consistently across all panels
 const STYLE_COLORS: Record<RunningStyle, string> = {
-  front: '#c0392b',        // 逃げ — red
-  stalker: '#d35400',      // 先行 — orange
-  closer: '#1a5fa8',       // 差し — blue
-  deep_closer: '#7d3c98',  // 追込 — purple
+  front: '#F87171',        // 逃げ — red
+  stalker: '#FB923C',      // 先行 — orange
+  closer: '#60A5FA',       // 差し — blue
+  deep_closer: '#A78BFA',  // 追込 — purple
 }
 
 // Short explanation of why each style benefits from a given pace
@@ -369,32 +370,32 @@ function buildAiSummary(
 // ─── Score legend ─────────────────────────────────────────────────────────────
 
 const LEGEND = [
-  { range: '81–100', color: '#1f5fa8', label: '✅ 非常に安定' },
-  { range: '61–80',  color: '#1a6e3f', label: '🟢 安定' },
-  { range: '41–60',  color: '#7a6012', label: '🟡 バランス型' },
-  { range: '21–40',  color: '#a05020', label: '🟠 荒れやすい' },
-  { range: '0–20',   color: '#a83030', label: '🌪 非常に荒れやすい' },
+  { range: '81–100', color: '#6EE7B7', label: '非常に安定' },
+  { range: '61–80',  color: '#34D399', label: '安定' },
+  { range: '41–60',  color: '#FCD34D', label: 'バランス型' },
+  { range: '21–40',  color: '#FB923C', label: '荒れやすい' },
+  { range: '0–20',   color: '#F87171', label: '非常に荒れやすい' },
 ]
 
 // ─── Shared card style ────────────────────────────────────────────────────────
 
 const card: React.CSSProperties = {
-  background: '#ffffff',
+  background: '#141416',
   borderRadius: 8,
   padding: '20px 20px',
-  border: '1px solid #ebe6df',
-  marginBottom: 12,
+  border: '1px solid rgba(255,255,255,0.07)',
+  marginBottom: 10,
 }
 
 const sectionLabel: React.CSSProperties = {
   fontSize: 10,
-  fontWeight: 700,
+  fontWeight: 600,
   letterSpacing: '0.1em',
   textTransform: 'uppercase' as const,
-  color: '#9b9490',
+  color: '#7A7A84',
   marginBottom: 14,
   paddingBottom: 10,
-  borderBottom: '1px solid #ede9e3',
+  borderBottom: '1px solid rgba(255,255,255,0.06)',
 }
 
 // ─── ScoreGauge component ─────────────────────────────────────────────────────
@@ -423,7 +424,7 @@ function ScoreGauge({ score }: { score: number }) {
           {level.label.replace(/^[^\s]+ /, '')}
         </span>
       </div>
-      <div style={{ background: '#ede9e3', borderRadius: 2, height: 4, overflow: 'hidden', marginBottom: 20 }}>
+      <div style={{ background: 'rgba(255,255,255,0.07)', borderRadius: 2, height: 4, overflow: 'hidden', marginBottom: 20 }}>
         <div style={{ width: `${pct}%`, height: '100%', background: level.color, borderRadius: 2 }} />
       </div>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 4 }}>
@@ -463,8 +464,8 @@ function HorseRow({
         gap: 10,
         padding: isAxis ? '11px 14px' : '9px 14px',
         borderRadius: 6,
-        background: isAxis ? 'rgba(26,92,53,0.07)' : 'transparent',
-        borderLeft: `3px solid ${isAxis ? '#1a5c35' : '#e8e3db'}`,
+        background: isAxis ? 'rgba(99,102,241,0.08)' : 'transparent',
+        borderLeft: `3px solid ${isAxis ? '#6366F1' : 'rgba(255,255,255,0.07)'}`,
         marginBottom: 4,
       }}
     >
@@ -480,8 +481,8 @@ function HorseRow({
           fontSize: isAxis ? 13 : 10,
           fontWeight: 800,
           flexShrink: 0,
-          background: isAxis ? '#1a5c35' : '#ede9e3',
-          color: isAxis ? '#fff' : '#b0aaa4',
+          background: isAxis ? '#6366F1' : 'rgba(255,255,255,0.07)',
+          color: isAxis ? '#fff' : '#7A7A84',
           fontVariantNumeric: 'tabular-nums',
         }}
       >
@@ -494,7 +495,7 @@ function HorseRow({
           flex: 1,
           fontWeight: isAxis ? 700 : 500,
           fontSize: isAxis ? 15 : 13,
-          color: isAxis ? '#1e1b18' : '#6b6560',
+          color: isAxis ? '#E8E8EA' : '#B0B0B8',
           letterSpacing: isAxis ? '0.01em' : 0,
         }}
       >
@@ -540,9 +541,9 @@ function HorseRow({
             fontWeight: 700,
             padding: '2px 8px',
             borderRadius: 4,
-            background: isAxis ? '#1a5c35' : 'transparent',
-            color: isAxis ? '#fff' : '#c8c2bb',
-            border: `1px solid ${isAxis ? '#1a5c35' : '#e0dbd3'}`,
+            background: isAxis ? '#6366F1' : 'transparent',
+            color: isAxis ? '#fff' : '#7A7A84',
+            border: `1px solid ${isAxis ? '#6366F1' : 'rgba(255,255,255,0.1)'}`,
             letterSpacing: '0.04em',
           }}
         >
@@ -652,64 +653,81 @@ export default async function RaceDetailPage({
     <main
       style={{
         minHeight: '100vh',
-        background: '#f5f2ed',
-        color: '#1e1b18',
-        fontFamily: 'var(--font-geist-sans), Arial, sans-serif',
+        background: '#0C0C0E',
+        color: '#E8E8EA',
+        fontFamily: 'var(--font-geist-sans), -apple-system, Inter, Arial, sans-serif',
       }}
     >
       {/* ── Hero header ───────────────────────────────────────────────── */}
-      <div style={{ background: '#0f1117' }}>
-        <div style={{ maxWidth: 720, margin: '0 auto', padding: '20px 20px 0' }}>
-          <a href="/" className="back-link" style={{ color: '#4a4540', fontSize: 12 }}>
-            ← レース一覧
-          </a>
-        </div>
-        <div style={{ maxWidth: 720, margin: '0 auto', padding: '16px 20px 32px' }}>
-          {race ? (
-            <>
-              <p style={{
-                fontSize: 10,
-                fontWeight: 700,
-                letterSpacing: '0.12em',
-                color: '#1a5c35',
-                textTransform: 'uppercase',
-                marginBottom: 10,
-              }}>
-                Race Analysis
-              </p>
-              <h1 style={{
-                fontSize: 26,
-                fontWeight: 800,
-                margin: 0,
-                color: '#f5f2ed',
-                letterSpacing: '-0.01em',
-                lineHeight: 1.2,
-              }}>
-                {race.race_name}
-              </h1>
-              <p style={{ color: '#4a4540', marginTop: 8, fontSize: 12, letterSpacing: '0.04em' }}>
-                {race.date.replace(/-/g, '/')}
-              </p>
-            </>
-          ) : (
-            <div style={{ height: 60 }} />
-          )}
-        </div>
+      {/* ── Top bar ────────────────────────────────────────────────── */}
+      <div style={{
+        borderBottom: '1px solid rgba(255,255,255,0.07)',
+        padding: '0 20px',
+        height: 52,
+        display: 'flex',
+        alignItems: 'center',
+        gap: 16,
+      }}>
+        <a href="/" className="back-link">
+          <ChevronLeft size={14} strokeWidth={2} />
+          レース一覧
+        </a>
+        {race && (
+          <>
+            <span style={{ color: 'rgba(255,255,255,0.15)', fontSize: 14 }}>/</span>
+            <span style={{ fontSize: 13, color: '#B0B0B8', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              {race.race_name}
+            </span>
+          </>
+        )}
       </div>
+
+      {/* ── Race hero ────────────────────────────────────────────────── */}
+      {race && (
+        <div style={{
+          borderBottom: '1px solid rgba(255,255,255,0.07)',
+          padding: '32px 20px 28px',
+          maxWidth: 720,
+          margin: '0 auto',
+        }}>
+          <p style={{
+            fontSize: 10,
+            fontWeight: 600,
+            letterSpacing: '0.1em',
+            color: '#6366F1',
+            textTransform: 'uppercase',
+            marginBottom: 10,
+          }}>
+            Race Analysis
+          </p>
+          <h1 style={{
+            fontSize: 24,
+            fontWeight: 700,
+            margin: 0,
+            color: '#E8E8EA',
+            letterSpacing: '-0.02em',
+          }}>
+            {race.race_name}
+          </h1>
+          <p style={{ color: '#7A7A84', marginTop: 6, fontSize: 12, fontVariantNumeric: 'tabular-nums' }}>
+            {race.date.replace(/-/g, '/')}
+          </p>
+        </div>
+      )}
 
       <div style={{ maxWidth: 720, margin: '0 auto', padding: '24px 20px' }}>
 
         {errorMessage && (
           <div style={{
-            background: '#fdf2f2',
-            border: '1px solid #e8c8c8',
+            background: 'rgba(248,113,113,0.08)',
+            border: '1px solid rgba(248,113,113,0.2)',
             borderRadius: 6,
             padding: '10px 14px',
-            color: '#a83030',
+            color: '#F87171',
             fontSize: 13,
             marginBottom: 20,
           }}>
-            エラー: {errorMessage}
+            {errorMessage}
           </div>
         )}
 
@@ -717,31 +735,24 @@ export default async function RaceDetailPage({
           const pct = Math.min(100, Math.max(0, Math.round(formation.race_structure_score * 100)))
 
           // Chapter header style
-          let chapterIndex = 0
-          const chapterHeader = (label: string) => {
-            chapterIndex++
-            return (
-              <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 28, marginBottom: 16 }}>
-                <span style={{
-                  fontSize: 10,
-                  fontWeight: 800,
-                  color: '#1a5c35',
-                  background: 'rgba(26,92,53,0.1)',
-                  border: '1px solid rgba(26,92,53,0.2)',
-                  borderRadius: 4,
-                  padding: '2px 8px',
-                  letterSpacing: '0.08em',
-                  flexShrink: 0,
-                }}>
-                  {String(chapterIndex).padStart(2, '0')}
-                </span>
-                <span style={{ fontSize: 14, fontWeight: 800, color: '#1e1b18', letterSpacing: '0.02em' }}>
-                  {label.replace(/^[^\s]*\s/, '')}
-                </span>
-                <div style={{ flex: 1, height: 1, background: '#e8e3db' }} />
-              </div>
-            )
+          const CHAPTER_ICONS: Record<string, React.ReactNode> = {
+            'AIの見解':   <Brain size={15} color="#818CF8" strokeWidth={2} />,
+            'レース展開': <TrendingUp size={15} color="#818CF8" strokeWidth={2} />,
+            '期待値分析': <Gem size={15} color="#818CF8" strokeWidth={2} />,
           }
+          const chapterHeader = (label: string) => (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 32, marginBottom: 16 }}>
+              {CHAPTER_ICONS[label] && (
+                <span style={{ display: 'flex', alignItems: 'center', flexShrink: 0 }}>
+                  {CHAPTER_ICONS[label]}
+                </span>
+              )}
+              <span style={{ fontSize: 16, fontWeight: 700, color: '#F0F0F2', letterSpacing: '-0.02em' }}>
+                {label}
+              </span>
+              <div style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.07)' }} />
+            </div>
+          )
 
           // ── Pre-computed shared values ──────────────────────────────────────
           const { betType } = getBetPlanInfo(formation, horses, pct)
@@ -795,20 +806,20 @@ export default async function RaceDetailPage({
                 axisDetails={axisDetails}
               />
 
-              <div style={{ ...card, background: '#1e1b18' }}>
-                <p style={{ ...sectionLabel, color: '#e8e4df', borderBottomColor: '#3a3733' }}>
+              <div style={{ ...card, background: '#0A0A0C', border: '1px solid rgba(99,102,241,0.15)' }}>
+                <p style={{ ...sectionLabel, color: '#7A7A84', borderBottomColor: 'rgba(255,255,255,0.06)' }}>
                   AIまとめ
                 </p>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                   {aiSummaryLines.map((line, i) => (
-                    <p key={i} style={{ color: '#c8c2bb', fontSize: 14, lineHeight: 1.7, margin: 0 }}>
+                    <p key={i} style={{ color: '#B0B0B8', fontSize: 13, lineHeight: 1.8, margin: 0 }}>
                       {line}
                     </p>
                   ))}
                 </div>
               </div>
 
-              <div style={{ ...card, borderLeft: `3px solid ${level.color}` }}>
+              <div style={card}>
                 <p style={sectionLabel}>AI戦略</p>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                   <div>
@@ -828,16 +839,16 @@ export default async function RaceDetailPage({
                     </span>
                   </div>
                   <div style={{ display: 'flex', gap: 10 }}>
-                    <span style={{ color: '#9b9490', fontSize: 12, width: 68, flexShrink: 0, paddingTop: 1 }}>
+                    <span style={{ color: '#7A7A84', fontSize: 12, width: 68, flexShrink: 0, paddingTop: 1 }}>
                       推奨戦略
                     </span>
-                    <span style={{ color: '#1e1b18', fontSize: 14, fontWeight: 600 }}>{strategy.approach}</span>
+                    <span style={{ color: '#E8E8EA', fontSize: 14, fontWeight: 600 }}>{strategy.approach}</span>
                   </div>
                   <div style={{ display: 'flex', gap: 10 }}>
-                    <span style={{ color: '#9b9490', fontSize: 12, width: 68, flexShrink: 0, paddingTop: 1 }}>
+                    <span style={{ color: '#7A7A84', fontSize: 12, width: 68, flexShrink: 0, paddingTop: 1 }}>
                       AIコメント
                     </span>
-                    <span style={{ color: '#5c5650', fontSize: 13, lineHeight: 1.6 }}>{strategy.comment}</span>
+                    <span style={{ color: '#B0B0B8', fontSize: 13, lineHeight: 1.6 }}>{strategy.comment}</span>
                   </div>
                 </div>
               </div>
@@ -853,7 +864,7 @@ export default async function RaceDetailPage({
 
 
               {/* 展開予想 */}
-              <div style={{ ...card, borderLeft: `3px solid ${paceMeta.color}` }}>
+              <div style={card}>
                 <p style={sectionLabel}>展開予想</p>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
                   <span
@@ -886,23 +897,23 @@ export default async function RaceDetailPage({
                         }}
                       >
                         <span style={{ color: STYLE_COLORS[rs], fontSize: 10, fontWeight: 700 }}>{label}</span>
-                        <span style={{ color: '#1e1b18', fontSize: 15, fontWeight: 700 }}>{count}</span>
+                        <span style={{ color: '#E8E8EA', fontSize: 15, fontWeight: 700 }}>{count}</span>
                       </div>
                     ))}
                   </div>
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                   <div style={{ display: 'flex', gap: 10 }}>
-                    <span style={{ color: '#9b9490', fontSize: 12, width: 68, flexShrink: 0, paddingTop: 1 }}>
+                    <span style={{ color: '#7A7A84', fontSize: 12, width: 68, flexShrink: 0, paddingTop: 1 }}>
                       展開予想
                     </span>
-                    <span style={{ color: '#5c5650', fontSize: 13, lineHeight: 1.6 }}>{paceMeta.explanation}</span>
+                    <span style={{ color: '#B0B0B8', fontSize: 13, lineHeight: 1.6 }}>{paceMeta.explanation}</span>
                   </div>
                   <div style={{ display: 'flex', gap: 10 }}>
-                    <span style={{ color: '#9b9490', fontSize: 12, width: 68, flexShrink: 0, paddingTop: 1 }}>
+                    <span style={{ color: '#7A7A84', fontSize: 12, width: 68, flexShrink: 0, paddingTop: 1 }}>
                       AIコメント
                     </span>
-                    <span style={{ color: '#5c5650', fontSize: 13, lineHeight: 1.6 }}>{paceMeta.aiComment}</span>
+                    <span style={{ color: '#B0B0B8', fontSize: 13, lineHeight: 1.6 }}>{paceMeta.aiComment}</span>
                   </div>
                 </div>
               </div>
@@ -946,7 +957,7 @@ export default async function RaceDetailPage({
               {advantageHorses.length > 0 && (
                 <div style={card}>
                   <p style={sectionLabel}>展開有利馬</p>
-                  <p style={{ color: '#b0aaa4', fontSize: 11, marginBottom: 14 }}>
+                  <p style={{ color: '#7A7A84', fontSize: 11, marginBottom: 14 }}>
                     ※ ペース適性による恩恵馬です。総合的な強さとは異なります。
                   </p>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -977,9 +988,9 @@ export default async function RaceDetailPage({
                           >
                             {STYLE_LABELS[style]}
                           </span>
-                          <span style={{ fontSize: 14, fontWeight: 700, color: '#1e1b18' }}>{name}</span>
+                          <span style={{ fontSize: 14, fontWeight: 600, color: '#E8E8EA' }}>{name}</span>
                         </div>
-                        <p style={{ color: '#7a7269', fontSize: 12, lineHeight: 1.6, margin: 0 }}>{comment}</p>
+                        <p style={{ color: '#B0B0B8', fontSize: 12, lineHeight: 1.6, margin: 0 }}>{comment}</p>
                       </div>
                     ))}
                   </div>
@@ -993,39 +1004,39 @@ export default async function RaceDetailPage({
               {valueHorse && (
                 <div style={card}>
                   <p style={sectionLabel}>AI注目の穴馬</p>
-                  <p style={{ color: '#1e1b18', fontSize: 17, fontWeight: 700, marginBottom: 16 }}>
+                  <p style={{ color: '#E8E8EA', fontSize: 16, fontWeight: 700, marginBottom: 16 }}>
                     {valueHorse.horseName}
                   </p>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 12 }}>
-                    <div style={{ background: '#f5f2ed', borderRadius: 8, padding: '10px 14px' }}>
-                      <p style={{ color: '#9b9490', fontSize: 10, marginBottom: 4 }}>AI評価</p>
-                      <p style={{ color: '#1e1b18', fontSize: 22, fontWeight: 700 }}>{valueHorse.aiWinProb}%</p>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 12 }}>
+                    <div style={{ background: 'rgba(255,255,255,0.04)', borderRadius: 6, padding: '10px 14px', border: '1px solid rgba(255,255,255,0.07)' }}>
+                      <p style={{ color: '#7A7A84', fontSize: 10, marginBottom: 4 }}>AI評価</p>
+                      <p style={{ color: '#E8E8EA', fontSize: 22, fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}>{valueHorse.aiWinProb}%</p>
                     </div>
-                    <div style={{ background: '#f5f2ed', borderRadius: 8, padding: '10px 14px' }}>
-                      <p style={{ color: '#9b9490', fontSize: 10, marginBottom: 4 }}>想定人気評価</p>
-                      <p style={{ color: '#9b9490', fontSize: 22, fontWeight: 700 }}>{valueHorse.marketProb}%</p>
+                    <div style={{ background: 'rgba(255,255,255,0.04)', borderRadius: 6, padding: '10px 14px', border: '1px solid rgba(255,255,255,0.07)' }}>
+                      <p style={{ color: '#7A7A84', fontSize: 10, marginBottom: 4 }}>想定人気評価</p>
+                      <p style={{ color: '#7A7A84', fontSize: 22, fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}>{valueHorse.marketProb}%</p>
                     </div>
                   </div>
                   <div
                     style={{
-                      background: `${level.color}0d`,
-                      border: `1px solid ${level.color}30`,
-                      borderRadius: 8,
+                      background: `${level.color}10`,
+                      border: `1px solid ${level.color}25`,
+                      borderRadius: 6,
                       padding: '10px 14px',
                       marginBottom: 14,
                     }}
                   >
-                    <p style={{ color: '#7a7269', fontSize: 12, marginBottom: 2 }}>AIはこの馬を</p>
-                    <p style={{ color: level.color, fontSize: 15, fontWeight: 800 }}>
+                    <p style={{ color: '#7A7A84', fontSize: 11, marginBottom: 2 }}>AIはこの馬を</p>
+                    <p style={{ color: level.color, fontSize: 14, fontWeight: 700 }}>
                       人気より +{valueHorse.edge}% 高く評価しています
                     </p>
                   </div>
-                  <p style={{ color: '#7a7269', fontSize: 12, lineHeight: 1.7 }}>{valueHorse.reason}</p>
+                  <p style={{ color: '#B0B0B8', fontSize: 12, lineHeight: 1.7 }}>{valueHorse.reason}</p>
                 </div>
               )}
 
               {/* 買いチャンス */}
-              <div style={{ ...card, borderLeft: `3px solid ${betLevel.color}` }}>
+              <div style={card}>
                 <p style={sectionLabel}>買いチャンス</p>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 24, flexWrap: 'wrap' }}>
                   <div style={{ minWidth: 150 }}>
@@ -1033,13 +1044,13 @@ export default async function RaceDetailPage({
                       <span style={{ fontSize: 44, fontWeight: 800, lineHeight: 1, color: betLevel.color }}>
                         {betScore}
                       </span>
-                      <span style={{ color: '#9b9490', marginBottom: 6, fontSize: 15 }}> / 100</span>
+                      <span style={{ color: '#7A7A84', marginBottom: 6, fontSize: 15 }}>/100</span>
                     </div>
                     <div
                       style={{
-                        background: '#ede9e3',
-                        borderRadius: 9999,
-                        height: 6,
+                        background: 'rgba(255,255,255,0.07)',
+                        borderRadius: 2,
+                        height: 4,
                         overflow: 'hidden',
                         marginBottom: 8,
                       }}
@@ -1065,13 +1076,12 @@ export default async function RaceDetailPage({
                   </div>
                   <p
                     style={{
-                      color: '#5c5650',
+                      color: '#B0B0B8',
                       fontSize: 13,
                       lineHeight: 1.7,
                       flex: 1,
                       minWidth: 180,
-                      borderLeft: `2px solid ${betLevel.color}33`,
-                      paddingLeft: 16,
+                      paddingLeft: 0,
                     }}
                   >
                     {betLevel.comment}
@@ -1110,18 +1120,7 @@ export default async function RaceDetailPage({
           const sorted = [...raceResults].sort((a, b) => a.finish_pos - b.finish_pos)
           return (
             <div style={{ ...card, marginTop: 8 }}>
-              <p
-                style={{
-                  color: '#3d3a37',
-                  fontSize: 12,
-                  fontWeight: 700,
-                  marginBottom: 12,
-                  paddingBottom: 10,
-                  borderBottom: '1px solid #ede9e3',
-                }}
-              >
-                レース結果
-              </p>
+              <p style={{ ...sectionLabel }}>レース結果</p>
 
               {/* Header row */}
               <div
@@ -1130,12 +1129,12 @@ export default async function RaceDetailPage({
                   gridTemplateColumns: '40px 44px 1fr 56px 64px',
                   gap: 4,
                   paddingBottom: 8,
-                  borderBottom: '1px solid #ede9e3',
+                  borderBottom: '1px solid rgba(255,255,255,0.06)',
                   marginBottom: 4,
                 }}
               >
                 {['着順', '馬番', '馬名', 'AI順位', ''].map((h) => (
-                  <span key={h} style={{ color: '#9b9490', fontSize: 10, fontWeight: 700 }}>{h}</span>
+                  <span key={h} style={{ color: '#7A7A84', fontSize: 10, fontWeight: 600, letterSpacing: '0.05em' }}>{h}</span>
                 ))}
               </div>
 
@@ -1147,11 +1146,11 @@ export default async function RaceDetailPage({
 
                 let hint: { label: string; color: string; bg: string } | null = null
                 if (aiRank > 0 && aiRank <= 3 && finish_pos <= 3) {
-                  hint = { label: 'AI上位', color: '#1a6e3f', bg: '#e6f4ec' }
+                  hint = { label: 'AI上位', color: '#34D399', bg: 'rgba(52,211,153,0.1)' }
                 } else if (finish_pos <= 3 && (aiRank === 0 || aiRank > 3)) {
-                  hint = { label: '想定外', color: '#a83030', bg: '#fdf2f2' }
+                  hint = { label: '想定外', color: '#F87171', bg: 'rgba(248,113,113,0.1)' }
                 } else if (aiRank > 0 && Math.abs(aiRank - finish_pos) <= 1) {
-                  hint = { label: '惜しい', color: '#a05020', bg: '#fdf0e6' }
+                  hint = { label: '惜しい', color: '#FB923C', bg: 'rgba(251,146,60,0.1)' }
                 }
 
                 const isTop3 = finish_pos <= 3
@@ -1165,27 +1164,28 @@ export default async function RaceDetailPage({
                       gap: 4,
                       alignItems: 'center',
                       padding: '8px 0',
-                      borderBottom: '1px solid #f5f2ed',
-                      background: isTop3 ? 'rgba(26,92,53,0.03)' : 'transparent',
+                      borderBottom: '1px solid rgba(255,255,255,0.04)',
+                      background: isTop3 ? 'rgba(99,102,241,0.04)' : 'transparent',
                     }}
                   >
                     <span
                       style={{
                         fontSize: 14,
-                        fontWeight: isTop3 ? 800 : 400,
-                        color: isTop3 ? '#1a5c35' : '#5c5650',
+                        fontWeight: isTop3 ? 700 : 400,
+                        color: isTop3 ? '#818CF8' : '#7A7A84',
+                        fontVariantNumeric: 'tabular-nums',
                       }}
                     >
                       {finish_pos}着
                     </span>
-                    <span style={{ fontSize: 13, color: '#9b9490' }}>
+                    <span style={{ fontSize: 13, color: '#7A7A84', fontVariantNumeric: 'tabular-nums' }}>
                       {horseNumber !== null ? `${horseNumber}番` : '—'}
                     </span>
                     <span
                       style={{
                         fontSize: 14,
-                        fontWeight: isTop3 ? 700 : 400,
-                        color: '#1e1b18',
+                        fontWeight: isTop3 ? 600 : 400,
+                        color: isTop3 ? '#E8E8EA' : '#B0B0B8',
                         overflow: 'hidden',
                         textOverflow: 'ellipsis',
                         whiteSpace: 'nowrap',
@@ -1193,7 +1193,7 @@ export default async function RaceDetailPage({
                     >
                       {name}
                     </span>
-                    <span style={{ fontSize: 12, color: '#9b9490' }}>{aiRankDisplay}</span>
+                    <span style={{ fontSize: 12, color: '#7A7A84', fontVariantNumeric: 'tabular-nums' }}>{aiRankDisplay}</span>
                     <span>
                       {hint && (
                         <span
