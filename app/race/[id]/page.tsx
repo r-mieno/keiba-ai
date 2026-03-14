@@ -367,16 +367,6 @@ function buildAiSummary(
   return lines
 }
 
-// ─── Score legend ─────────────────────────────────────────────────────────────
-
-const LEGEND = [
-  { range: '81–100', color: '#6EE7B7', label: '非常に安定' },
-  { range: '61–80',  color: '#34D399', label: '安定' },
-  { range: '41–60',  color: '#FCD34D', label: 'バランス型' },
-  { range: '21–40',  color: '#FB923C', label: '荒れやすい' },
-  { range: '0–20',   color: '#F87171', label: '非常に荒れやすい' },
-]
-
 // ─── Shared card style ────────────────────────────────────────────────────────
 
 const card: React.CSSProperties = {
@@ -396,48 +386,6 @@ const sectionLabel: React.CSSProperties = {
   marginBottom: 14,
   paddingBottom: 10,
   borderBottom: '1px solid rgba(255,255,255,0.06)',
-}
-
-// ─── ScoreGauge component ─────────────────────────────────────────────────────
-
-function ScoreGauge({ score }: { score: number }) {
-  const pct = Math.min(100, Math.max(0, Math.round(score * 100)))
-  const level = getLevel(pct)
-  return (
-    <div>
-      <div style={{ display: 'flex', alignItems: 'baseline', gap: 4, marginBottom: 14 }}>
-        <span style={{ fontSize: 56, fontWeight: 800, lineHeight: 1, color: level.color, letterSpacing: '-0.03em', fontVariantNumeric: 'tabular-nums' }}>
-          {pct}
-        </span>
-        <span style={{ color: '#b0aaa4', fontSize: 16, fontWeight: 500 }}>/100</span>
-        <span style={{
-          marginLeft: 10,
-          fontSize: 11,
-          fontWeight: 700,
-          padding: '3px 10px',
-          borderRadius: 4,
-          background: `${level.color}14`,
-          color: level.color,
-          border: `1px solid ${level.color}33`,
-          letterSpacing: '0.04em',
-        }}>
-          {level.label.replace(/^[^\s]+ /, '')}
-        </span>
-      </div>
-      <div style={{ background: 'rgba(255,255,255,0.07)', borderRadius: 2, height: 4, overflow: 'hidden', marginBottom: 20 }}>
-        <div style={{ width: `${pct}%`, height: '100%', background: level.color, borderRadius: 2 }} />
-      </div>
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 4 }}>
-        {LEGEND.map(({ range, color, label }) => (
-          <div key={range} style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
-            <span style={{ width: 6, height: 6, borderRadius: 1, background: color, flexShrink: 0 }} />
-            <span style={{ color: '#9b9490', fontSize: 10, width: 44 }}>{range}</span>
-            <span style={{ color: '#b0aaa4', fontSize: 10 }}>{label}</span>
-          </div>
-        ))}
-      </div>
-    </div>
-  )
 }
 
 // ─── HorseRow component ───────────────────────────────────────────────────────
@@ -869,16 +817,6 @@ export default async function RaceDetailPage({
 
               {/* ── Chapter 2: レース展開 ───────────────────────────────── */}
               {chapterHeader('レース展開')}
-
-              {/* レース安定性スコア */}
-              <div style={card}>
-                <p style={sectionLabel}>過去傾向スコア</p>
-                <p style={{ fontSize: 11, color: '#7A7A84', marginBottom: 16 }}>
-                  同レース名の過去5年における人気馬好走率をもとに算出。数値が高いほど実力通りに決まりやすい傾向があります。
-                </p>
-                <ScoreGauge score={formation.race_structure_score} />
-              </div>
-
 
               {/* 展開予想 */}
               <div style={card}>
