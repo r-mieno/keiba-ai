@@ -37,6 +37,7 @@ type RaceResult = {
 type Entry = {
   horse_id: string
   horse_number: number | null
+  popularity_rank: number | null
 }
 
 // ─── Score level data ────────────────────────────────────────────────────────
@@ -432,12 +433,16 @@ function HorseRow({
   role,
   paceTag,
   styleTag,
+  popularityRank,
+  gapBadge,
 }: {
   rank: number
   name: string
   role: 'axis' | 'himo'
   paceTag?: 'up' | 'down' | null
   styleTag?: { label: string; color: string } | null
+  popularityRank?: number | null
+  gapBadge?: 'ai_pick' | 'market_lead' | null
 }) {
   const isAxis = role === 'axis'
   return (
@@ -473,21 +478,28 @@ function HorseRow({
         {rank}
       </span>
 
-      {/* Horse name */}
-      <span
-        style={{
-          flex: 1,
-          fontWeight: isAxis ? 700 : 500,
-          fontSize: isAxis ? 15 : 13,
-          color: isAxis ? '#E8E8EA' : '#B0B0B8',
-          letterSpacing: isAxis ? '0.01em' : 0,
-        }}
-      >
-        {name}
-      </span>
+      {/* Horse name + popularity rank */}
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <span
+          style={{
+            display: 'block',
+            fontWeight: isAxis ? 700 : 500,
+            fontSize: isAxis ? 15 : 13,
+            color: isAxis ? '#E8E8EA' : '#B0B0B8',
+            letterSpacing: isAxis ? '0.01em' : 0,
+          }}
+        >
+          {name}
+        </span>
+        {popularityRank != null && (
+          <span style={{ fontSize: 10, color: '#7A7A84', marginTop: 2, display: 'block', fontVariantNumeric: 'tabular-nums' }}>
+            {popularityRank}番人気
+          </span>
+        )}
+      </div>
 
       {/* Tags */}
-      <div style={{ display: 'flex', gap: 5, alignItems: 'center' }}>
+      <div style={{ display: 'flex', gap: 5, alignItems: 'center', flexShrink: 0 }}>
         {styleTag && (
           <span
             style={{
@@ -517,6 +529,16 @@ function HorseRow({
             }}
           >
             {paceTag === 'up' ? '↑' : '↓'}ペース
+          </span>
+        )}
+        {gapBadge === 'ai_pick' && (
+          <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 7px', borderRadius: 4, background: 'rgba(52,211,153,0.1)', color: '#34D399', border: '1px solid rgba(52,211,153,0.25)' }}>
+            AI注目
+          </span>
+        )}
+        {gapBadge === 'market_lead' && (
+          <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 7px', borderRadius: 4, background: 'rgba(255,255,255,0.04)', color: '#7A7A84', border: '1px solid rgba(255,255,255,0.1)' }}>
+            人気先行
           </span>
         )}
         <span
@@ -613,7 +635,7 @@ export default async function RaceDetailPage({
       fetch(`${baseUrl}/rest/v1/race_results?race_id=eq.${id}&select=horse_id,finish_pos`, {
         headers: { apikey: key, Authorization: `Bearer ${key}` }, cache: 'no-store',
       }),
-      fetch(`${baseUrl}/rest/v1/entries?race_id=eq.${id}&select=horse_id,horse_number`, {
+      fetch(`${baseUrl}/rest/v1/entries?race_id=eq.${id}&select=horse_id,horse_number,popularity_rank`, {
         headers: { apikey: key, Authorization: `Bearer ${key}` }, cache: 'no-store',
       }),
     ])
@@ -1116,14 +1138,22 @@ export default async function RaceDetailPage({
                   const styleTag = horse?.style
                     ? { label: STYLE_LABELS[horse.style], color: STYLE_COLORS[horse.style] }
                     : null
+                  // AI評価 vs 市場人気
+                  const entry = entries.find((e) => e.horse_id === horseId)
+                  const popularityRank = entry?.popularity_rank ?? null
+                  const aiRank = index + 1
+                  const gap = popularityRank != null ? popularityRank - aiRank : null
+                  const gapBadge = gap == null ? null : gap >= 3 ? 'ai_pick' as const : gap <= -3 ? 'market_lead' as const : null
                   return (
                     <HorseRow
                       key={horseId}
-                      rank={index + 1}
+                      rank={aiRank}
                       name={getHorseName(horseId)}
                       role={role}
                       paceTag={paceTag}
                       styleTag={styleTag}
+                      popularityRank={popularityRank}
+                      gapBadge={gapBadge}
                     />
                   )
                 })}
