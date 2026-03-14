@@ -946,30 +946,21 @@ export default async function RaceDetailPage({
                 <p style={{ ...sectionLabel, color: '#7A7A84', borderBottomColor: 'rgba(255,255,255,0.06)' }}>
                   AIの予想まとめ
                 </p>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 14 }}>
                   {aiSummaryLines.map((line, i) => (
                     <p key={i} style={{ color: '#B0B0B8', fontSize: 13, lineHeight: 1.8, margin: 0 }}>
                       {line}
                     </p>
                   ))}
                 </div>
-              </div>
-
-              <div style={card}>
-                <p style={sectionLabel}>AI戦略</p>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                  <div style={{ display: 'flex', gap: 10 }}>
-                    <span style={{ color: '#7A7A84', fontSize: 12, width: 68, flexShrink: 0, paddingTop: 1 }}>
-                      推奨戦略
-                    </span>
-                    <span style={{ color: '#E8E8EA', fontSize: 14, fontWeight: 600 }}>{strategy.approach}</span>
-                  </div>
-                  <div style={{ display: 'flex', gap: 10 }}>
-                    <span style={{ color: '#7A7A84', fontSize: 12, width: 68, flexShrink: 0, paddingTop: 1 }}>
-                      AIコメント
-                    </span>
-                    <span style={{ color: '#B0B0B8', fontSize: 13, lineHeight: 1.6 }}>{strategy.comment}</span>
-                  </div>
+                <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                  <span style={{ fontSize: 11, color: '#7A7A84', flexShrink: 0 }}>推奨戦略</span>
+                  <span style={{
+                    fontSize: 12, fontWeight: 700, padding: '3px 10px', borderRadius: 4,
+                    background: 'rgba(99,102,241,0.1)', color: '#818CF8', border: '1px solid rgba(99,102,241,0.2)',
+                  }}>
+                    {strategy.approach}
+                  </span>
                 </div>
               </div>
 
