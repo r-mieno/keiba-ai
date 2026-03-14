@@ -794,8 +794,8 @@ export default async function RaceDetailPage({
 
           return (
             <>
-              {/* ── Chapter 1: AIの見解 ─────────────────────────────────── */}
-              {chapterHeader('AIの見解')}
+              {/* ── Chapter 1: AI予想 ────────────────────────────────────── */}
+              {chapterHeader('AI予想')}
 
               <BetPlanPanel
                 betType={betType}
@@ -807,7 +807,7 @@ export default async function RaceDetailPage({
 
               <div style={{ ...card, background: '#0A0A0C', border: '1px solid rgba(99,102,241,0.15)' }}>
                 <p style={{ ...sectionLabel, color: '#7A7A84', borderBottomColor: 'rgba(255,255,255,0.06)' }}>
-                  AIまとめ
+                  AIの予想まとめ
                 </p>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                   {aiSummaryLines.map((line, i) => (
@@ -1028,10 +1028,10 @@ export default async function RaceDetailPage({
               {/* TODO: 買いチャンス — race_structure_score が実データになったら復活させる
                   betScore = computeBetScore(pct, edge), betLevel = getBetLevel(betScore) */}
 
-              {/* 馬ランキング */}
+              {/* AI着順予測ランキング */}
               <div style={card}>
-                <p style={sectionLabel}>馬ランキング</p>
-                {allRankedHorses.map(({ id: horseId, role }, index) => {
+                <p style={sectionLabel}>AI着順予測ランキング</p>
+                {allRankedHorses.slice(0, 10).map(({ id: horseId, role }, index) => {
                   const horse = horses.find((h) => h.id === horseId)
                   const adj = getPaceAdjustment(horse?.style ?? null, pace)
                   const paceTag = adj > 0 ? 'up' : adj < 0 ? 'down' : null

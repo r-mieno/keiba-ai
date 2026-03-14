@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 
-const HIMO_OPTIONS = [3, 4, 5, 6, 7]
+const HIMO_OPTIONS = [3, 4, 5]
 const AI_RECOMMENDED = 5
 
 function computeCombinations(axisCount: number, himoCount: number): number {
@@ -22,14 +22,14 @@ function aiEvalToStars(score: number): string {
 function buildComment(axisCount: number, himoCount: number, pct: number): string {
   if (axisCount === 1) {
     if (pct >= 61) {
-      return `安定したレース構造のため、軸馬1頭の信頼度は高い。ヒモを${himoCount}頭に絞ることで点数を抑えながら、AIが評価した上位馬を確実にカバーする。コストパフォーマンスの高い買い方。`
+      return `安定したレース構造のため、軸馬1頭の信頼度は高い。相手を${himoCount}頭に絞ることで点数を抑えながら、AIが評価した上位馬を確実にカバーする。コストパフォーマンスの高い買い方。`
     } else if (pct >= 41) {
-      return `やや読みにくいレースのため、ヒモ${himoCount}頭で取りこぼしリスクを分散させる。軸の信頼度を維持しながら、AIが見出した穴馬まで網羅することで期待値を高める戦略。`
+      return `やや読みにくいレースのため、相手${himoCount}頭で取りこぼしリスクを分散させる。軸の信頼度を維持しながら、AIが見出した穴馬まで網羅することで期待値を高める戦略。`
     } else {
-      return `荒れが濃厚なレースのため、ヒモを${himoCount}頭に広げてミスリスクを最小化する。人気馬が飛ぶ展開でもAIの穴馬評価が機能するよう、カバー範囲を優先した構成。`
+      return `荒れが濃厚なレースのため、相手を${himoCount}頭に広げてミスリスクを最小化する。人気馬が飛ぶ展開でもAIの穴馬評価が機能するよう、カバー範囲を優先した構成。`
     }
   } else if (axisCount === 2) {
-    return `2頭の軸を並立させることで単軸リスクを排除。どちらかが来れば的中圏内に入る安全志向の構成。ヒモ${himoCount}頭との組み合わせで十分なカバー力を確保している。`
+    return `2頭の軸を並立させることで単軸リスクを排除。どちらかが来れば的中圏内に入る安全志向の構成。相手${himoCount}頭との組み合わせで十分なカバー力を確保している。`
   } else {
     return `AIが高く評価した${axisCount}頭を軸に、ヒモ${himoCount}頭を組み合わせた網羅的なフォーメーション。高配当圏を狙いつつ、複数の的中パターンを確保する積極的な構成。`
   }
@@ -152,7 +152,7 @@ export default function BetPlanPanel({
 
       {/* Himo count selector */}
       <div style={{ marginBottom: 14 }}>
-        <p style={{ color: '#7A7A84', fontSize: 11, marginBottom: 8 }}>ヒモ頭数を選択</p>
+        <p style={{ color: '#7A7A84', fontSize: 11, marginBottom: 8 }}>軸馬に対する相手の頭数を選択</p>
         <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
           {HIMO_OPTIONS.map((n) => {
             const disabled = n > allHimoHorses.length
