@@ -110,14 +110,6 @@ const BET_LEVELS = [
   },
 ]
 
-const VALUE_REASONS = [
-  { min: 81, max: 100, reason: 'AIが高く評価しているが、人気が集中しすぎている可能性あり。オッズに妙味が出やすい。' },
-  { min: 61, max: 80,  reason: 'AIの評価がマーケット予想を上回っている可能性がある。安定レースの穴狙いに有効。' },
-  { min: 41, max: 60,  reason: '実力と人気のギャップが生じやすいレース。AIが見出した隠れた実力馬。' },
-  { min: 21, max: 40,  reason: '荒れやすいレースでAIが推奨する穴馬。人気以上の好走が期待できる。' },
-  { min: 0,  max: 20,  reason: '大荒れ想定のレース。AIが拾い上げた大穴候補。高配当のチャンス。' },
-]
-
 // ─── Pace outlook data ────────────────────────────────────────────────────────
 
 type PaceType = 'fast' | 'balanced' | 'slow'
@@ -246,10 +238,10 @@ const BET_LEVELS_MAP = BET_LEVELS
 
 // ─── Axis horse reason builder ────────────────────────────────────────────────
 
-function buildAxisReason(style: RunningStyle | null, pace: PaceType, pct: number, rank: number): string {
+function buildAxisReason(style: RunningStyle | null, pace: PaceType, stabilityScore: number, rank: number): string {
   const adj = getPaceAdjustment(style, pace)
   const rankText = rank === 0 ? '総合評価トップ' : '総合評価上位'
-  const stabilityText = pct >= 61 ? '安定したレースで' : pct >= 41 ? 'バランス型のレースで' : '波乱含みのレースだが'
+  const stabilityText = stabilityScore >= 61 ? '安定したレースで' : stabilityScore >= 41 ? 'バランス型のレースで' : '波乱含みのレースだが'
   if (style !== null && adj > 0) {
     const paceComment = PACE_ADV_COMMENTS[pace]?.[style] ?? 'この展開で恩恵を受けやすい'
     return `${paceComment}。${rankText}のため信頼できる軸馬。`
@@ -257,6 +249,18 @@ function buildAxisReason(style: RunningStyle | null, pace: PaceType, pct: number
     return `展開面では若干不利だが、${rankText}のため軸に選定。`
   } else {
     return `${stabilityText}展開を問わない安定感があり、${rankText}の軸馬。`
+  }
+}
+
+function buildValueHorseReason(style: RunningStyle | null, pace: PaceType): string {
+  const adj = getPaceAdjustment(style, pace)
+  if (style !== null && adj > 0) {
+    const paceComment = PACE_ADV_COMMENTS[pace]?.[style] ?? 'この展開で恩恵を受けやすい'
+    return `${paceComment}。ヒモとして穴を狙える一頭。`
+  } else if (style !== null && adj < 0) {
+    return `展開面では不利だが、ヒモとして一考の余地がある穴候補。`
+  } else {
+    return `展開を問わず末脚が安定しており、穴での好走が期待できる。`
   }
 }
 
@@ -328,9 +332,8 @@ function computeRaceStabilityScore(
 function getValueOpportunity(
   formation: FormationResponse,
   horses: Horse[],
-  pct: number,
   pace: PaceType,
-): { horseName: string; aiWinProb: number; marketProb: number; edge: number; reason: string } | null {
+): { horseName: string; reason: string } | null {
   // Pick the himo horse most favored by the current pace (highest pace adjustment first)
   const sortedHimo = [...formation.himo_horses].sort((a, b) => {
     const styleA = horses.find((h) => h.id === a)?.style ?? null
@@ -341,24 +344,18 @@ function getValueOpportunity(
   if (!candidateId) return null
   const candidateHorse = horses.find((h) => h.id === candidateId)
   const horseName = candidateHorse?.name ?? candidateId
-  const baseAiWinProb = Math.round(20 + (100 - pct) * 0.1)
-  // Convert fractional pace adjustment to percentage points and apply to AI win probability
-  const paceAdj = Math.round(getPaceAdjustment(candidateHorse?.style ?? null, pace) * 100)
-  const aiWinProb = Math.max(1, baseAiWinProb + paceAdj)
-  const edge = Math.round(10 + (100 - pct) * 0.2)
-  const marketProb = Math.max(1, aiWinProb - edge)
-  const entry = VALUE_REASONS.find((r) => pct >= r.min && pct <= r.max) ?? VALUE_REASONS[4]
-  return { horseName, aiWinProb, marketProb, edge, reason: entry.reason }
+  const reason = buildValueHorseReason(candidateHorse?.style ?? null, pace)
+  return { horseName, reason }
 }
 
 // ─── AI summary builder ───────────────────────────────────────────────────────
 
 // Combines stability, pace, and value signals into 2–3 natural-language sentences.
 function buildAiSummary(
-  pct: number,
+  stabilityScore: number,
   pace: PaceType,
   advantageHorses: { style: RunningStyle }[],
-  valueHorse: { horseName: string; edge: number } | null,
+  valueHorse: { horseName: string } | null,
 ): string[] {
   const stabilityTexts: [number, string][] = [
     [81, '非常に安定した'],
@@ -367,14 +364,14 @@ function buildAiSummary(
     [21, '荒れやすい'],
     [0,  '非常に荒れやすい'],
   ]
-  const stabilityText = stabilityTexts.find(([min]) => pct >= min)?.[1] ?? '荒れやすい'
+  const stabilityText = stabilityTexts.find(([min]) => stabilityScore >= min)?.[1] ?? '荒れやすい'
 
   const lines: string[] = []
 
   // Line 1: race type + pace
   lines.push(`${stabilityText}レースで${PACE_INFO[pace].label}想定。`)
 
-  // Line 2: pace advantage style (or no-advantage fallback)
+  // Line 2: pace advantage style (or stability-based fallback)
   if (advantageHorses.length > 0) {
     const styleComment: Partial<Record<RunningStyle, string>> = {
       front:       '逃げ・先行馬が有利な展開になりそう。',
@@ -384,9 +381,9 @@ function buildAiSummary(
     }
     lines.push(styleComment[advantageHorses[0].style] ?? 'ペース適性馬が台頭しやすい。')
   } else {
-    if (pct >= 61) {
+    if (stabilityScore >= 61) {
       lines.push('展開の有利・不利は少なく、実力通りの結果になりやすい。')
-    } else if (pct >= 41) {
+    } else if (stabilityScore >= 41) {
       lines.push('展開の有利・不利は少なめだが、波乱の可能性も残る。')
     } else {
       lines.push('波乱含みのレースで、ヒモを広めに取りたい。')
@@ -395,7 +392,7 @@ function buildAiSummary(
 
   // Line 3: value horse
   if (valueHorse) {
-    lines.push(`${valueHorse.horseName} が人気より +${valueHorse.edge}% 高評価の穴候補。`)
+    lines.push(`AI注目の穴馬は ${valueHorse.horseName}。`)
   }
 
   return lines
@@ -751,29 +748,6 @@ export default async function RaceDetailPage({
           )
 
           // ── Pre-computed shared values ──────────────────────────────────────
-          const { betType } = getBetPlanInfo(formation, horses, pct)
-          const himoHorses = formation.himo_horses.map((hid) => ({
-            name: horses.find((h) => h.id === hid)?.name ?? hid,
-            number: entries.find((e) => e.horse_id === hid)?.horse_number ?? null,
-          }))
-          const axisDetails = formation.axis_horses.map((id, i) => {
-            const horse = horses.find((h) => h.id === id)
-            const style = horse?.style ?? null
-            return {
-              name: horse?.name ?? id,
-              horseNumber: entries.find((e) => e.horse_id === id)?.horse_number ?? null,
-              styleLabel: style ? STYLE_LABELS[style] : null,
-              styleColor: style ? STYLE_COLORS[style] : null,
-              aiEval: Math.max(15, Math.round(25 + pct * 0.15 - i * 3)),
-              reason: buildAxisReason(style, pace, pct, i),
-            }
-          })
-
-          const advantageHorses = getPaceAdvantageHorses(raceHorseIds, horses, pace)
-          const valueHorse = getValueOpportunity(formation, horses, pct, pace)
-          const aiSummaryLines = buildAiSummary(pct, pace, advantageHorses, valueHorse)
-          const strategy = getStrategy(pct)
-
           const paceInfo = computePaceOutlook(raceHorseIds, horses)
           const paceMeta = PACE_INFO[paceInfo.pace]
           const paceCounts: { label: string; count: number; style: RunningStyle }[] = [
@@ -791,6 +765,29 @@ export default async function RaceDetailPage({
           )
           const stabilityLevel = getLevel(raceStabilityScore)
           const stabilityStrategy = getStrategy(raceStabilityScore)
+
+          const { betType } = getBetPlanInfo(formation, horses, pct)
+          const himoHorses = formation.himo_horses.map((hid) => ({
+            name: horses.find((h) => h.id === hid)?.name ?? hid,
+            number: entries.find((e) => e.horse_id === hid)?.horse_number ?? null,
+          }))
+          const axisDetails = formation.axis_horses.map((id, i) => {
+            const horse = horses.find((h) => h.id === id)
+            const style = horse?.style ?? null
+            return {
+              name: horse?.name ?? id,
+              horseNumber: entries.find((e) => e.horse_id === id)?.horse_number ?? null,
+              styleLabel: style ? STYLE_LABELS[style] : null,
+              styleColor: style ? STYLE_COLORS[style] : null,
+              aiEval: Math.max(15, Math.round(25 + pct * 0.15 - i * 3)),
+              reason: buildAxisReason(style, pace, raceStabilityScore, i),
+            }
+          })
+
+          const advantageHorses = getPaceAdvantageHorses(raceHorseIds, horses, pace)
+          const valueHorse = getValueOpportunity(formation, horses, pace)
+          const aiSummaryLines = buildAiSummary(raceStabilityScore, pace, advantageHorses, valueHorse)
+          const strategy = getStrategy(pct)
 
           const favoredStyles = [...new Set(advantageHorses.map((h) => STYLE_LABELS[h.style]))]
 
