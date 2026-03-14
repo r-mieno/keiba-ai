@@ -872,7 +872,10 @@ export default async function RaceDetailPage({
 
               {/* レース安定性スコア */}
               <div style={card}>
-                <p style={sectionLabel}>レース安定性スコア</p>
+                <p style={sectionLabel}>過去傾向スコア</p>
+                <p style={{ fontSize: 11, color: '#7A7A84', marginBottom: 16 }}>
+                  同レース名の過去5年における人気馬好走率をもとに算出。数値が高いほど実力通りに決まりやすい傾向があります。
+                </p>
                 <ScoreGauge score={formation.race_structure_score} />
               </div>
 
