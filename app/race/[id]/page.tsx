@@ -258,15 +258,27 @@ function buildAxisReason(style: RunningStyle | null, pace: PaceType, stabilitySc
   }
 }
 
-function buildValueHorseReason(style: RunningStyle | null, pace: PaceType): string {
+function buildValueHorseReason(
+  style: RunningStyle | null,
+  pace: PaceType,
+  aiRank: number,
+  popularityRank: number | null,
+): string {
   const adj = getPaceAdjustment(style, pace)
-  if (style !== null && adj > 0) {
-    const paceComment = PACE_ADV_COMMENTS[pace]?.[style] ?? 'この展開で恩恵を受けやすい'
-    return `${paceComment}。ヒモとして穴を狙える一頭。`
-  } else if (style !== null && adj < 0) {
-    return `展開面では不利だが、ヒモとして一考の余地がある穴候補。`
+  const gap = popularityRank != null ? popularityRank - aiRank : null
+
+  const paceText = style !== null && adj > 0
+    ? (PACE_ADV_COMMENTS[pace]?.[style] ?? 'この展開で恩恵を受けやすい') + '。'
+    : style !== null && adj < 0
+    ? '展開面では不利だが、'
+    : ''
+
+  if (gap != null && gap >= 3) {
+    return `市場よりAIが高く評価している妙味馬。${paceText}ペースが流れれば上位争いに絡みやすい。`
+  } else if (gap != null && gap <= -3) {
+    return `市場人気が先行しているが、${paceText}AIは実力を慎重に評価している。`
   } else {
-    return `展開を問わず末脚が安定しており、穴での好走が期待できる。`
+    return `${paceText}実力と人気が釣り合っており、相手として一考の余地がある穴候補。`
   }
 }
 
@@ -339,7 +351,9 @@ function getValueOpportunity(
   formation: FormationResponse,
   horses: Horse[],
   pace: PaceType,
-): { horseName: string; reason: string } | null {
+  allRankedHorses: { id: string }[],
+  entries: Entry[],
+): { horseName: string; reason: string; aiRank: number; popularityRank: number | null } | null {
   // Pick the himo horse most favored by the current pace (highest pace adjustment first)
   const sortedHimo = [...formation.himo_horses].sort((a, b) => {
     const styleA = horses.find((h) => h.id === a)?.style ?? null
@@ -350,8 +364,11 @@ function getValueOpportunity(
   if (!candidateId) return null
   const candidateHorse = horses.find((h) => h.id === candidateId)
   const horseName = candidateHorse?.name ?? candidateId
-  const reason = buildValueHorseReason(candidateHorse?.style ?? null, pace)
-  return { horseName, reason }
+  const aiRankIndex = allRankedHorses.findIndex((h) => h.id === candidateId)
+  const aiRank = aiRankIndex >= 0 ? aiRankIndex + 1 : allRankedHorses.length + 1
+  const popularityRank = entries.find((e) => e.horse_id === candidateId)?.popularity_rank ?? null
+  const reason = buildValueHorseReason(candidateHorse?.style ?? null, pace, aiRank, popularityRank)
+  return { horseName, reason, aiRank, popularityRank }
 }
 
 // ─── AI summary builder ───────────────────────────────────────────────────────
@@ -463,7 +480,7 @@ function HorseRow({
         style={{
           width: isAxis ? 28 : 22,
           height: isAxis ? 28 : 22,
-          borderRadius: isAxis ? 6 : '50%',
+          borderRadius: 4,
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
@@ -886,7 +903,7 @@ export default async function RaceDetailPage({
           })
 
           const advantageHorses = getPaceAdvantageHorses(raceHorseIds, horses, pace)
-          const valueHorse = getValueOpportunity(formation, horses, pace)
+          const valueHorse = getValueOpportunity(formation, horses, pace, allRankedHorses, entries)
           const aiSummaryLines = buildAiSummary(raceStabilityScore, pace, advantageHorses, valueHorse)
           const strategy = getStrategy(pct)
 
@@ -901,7 +918,8 @@ export default async function RaceDetailPage({
                 betType={betType}
                 allHimoHorses={himoHorses}
                 axisCount={formation.axis_count}
-                pct={pct}
+                stabilityScore={raceStabilityScore}
+                pace={pace}
                 axisDetails={axisDetails}
               />
 
@@ -1118,9 +1136,19 @@ export default async function RaceDetailPage({
               {valueHorse && (
                 <div style={card}>
                   <p style={sectionLabel}>AI注目の穴馬</p>
-                  <p style={{ color: '#E8E8EA', fontSize: 16, fontWeight: 700, marginBottom: 12 }}>
+                  <p style={{ color: '#E8E8EA', fontSize: 16, fontWeight: 700, marginBottom: 8 }}>
                     {valueHorse.horseName}
                   </p>
+                  <div style={{ display: 'flex', gap: 6, marginBottom: 12 }}>
+                    <span style={{ fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 4, background: 'rgba(99,102,241,0.12)', color: '#818CF8', border: '1px solid rgba(99,102,241,0.3)' }}>
+                      AI順位 {valueHorse.aiRank}位
+                    </span>
+                    {valueHorse.popularityRank != null && (
+                      <span style={{ fontSize: 11, fontWeight: 600, padding: '2px 8px', borderRadius: 4, background: 'rgba(255,255,255,0.06)', color: '#B0B0B8', border: '1px solid rgba(255,255,255,0.12)' }}>
+                        {valueHorse.popularityRank}番人気
+                      </span>
+                    )}
+                  </div>
                   <p style={{ color: '#B0B0B8', fontSize: 12, lineHeight: 1.7 }}>{valueHorse.reason}</p>
                 </div>
               )}

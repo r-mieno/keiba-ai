@@ -19,19 +19,19 @@ function aiEvalToStars(score: number): string {
   return '★☆☆☆☆'
 }
 
-function buildComment(axisCount: number, himoCount: number, pct: number): string {
+function buildComment(axisCount: number, himoCount: number, stabilityScore: number): string {
   if (axisCount === 1) {
-    if (pct >= 61) {
-      return `安定したレース構造のため、軸馬1頭の信頼度は高い。相手を${himoCount}頭に絞ることで点数を抑えながら、AIが評価した上位馬を確実にカバーする。コストパフォーマンスの高い買い方。`
-    } else if (pct >= 41) {
-      return `やや読みにくいレースのため、相手${himoCount}頭で取りこぼしリスクを分散させる。軸の信頼度を維持しながら、AIが見出した穴馬まで網羅することで期待値を高める戦略。`
+    if (stabilityScore >= 61) {
+      return `安定したレースのため、軸馬1頭の信頼度は高い。相手を${himoCount}頭に絞ることで点数を抑えながら、AIが評価した上位馬を確実にカバーする。`
+    } else if (stabilityScore >= 41) {
+      return `やや読みにくいレースのため、相手${himoCount}頭でリスクを分散させる。波乱の可能性を考慮しつつ、軸の信頼度を維持した構成。`
     } else {
-      return `荒れが濃厚なレースのため、相手を${himoCount}頭に広げてミスリスクを最小化する。人気馬が飛ぶ展開でもAIの穴馬評価が機能するよう、カバー範囲を優先した構成。`
+      return `荒れやすいレースのため、相手を${himoCount}頭に広げてミスリスクを最小化する。穴馬の台頭に備えたカバー範囲を優先した構成。`
     }
   } else if (axisCount === 2) {
     return `2頭の軸を並立させることで単軸リスクを排除。どちらかが来れば的中圏内に入る安全志向の構成。相手${himoCount}頭との組み合わせで十分なカバー力を確保している。`
   } else {
-    return `AIが高く評価した${axisCount}頭を軸に、ヒモ${himoCount}頭を組み合わせた網羅的なフォーメーション。高配当圏を狙いつつ、複数の的中パターンを確保する積極的な構成。`
+    return `AIが高く評価した${axisCount}頭を軸に、相手${himoCount}頭を組み合わせた網羅的なフォーメーション。高配当圏を狙いつつ、複数の的中パターンを確保する積極的な構成。`
   }
 }
 
@@ -54,7 +54,8 @@ type Props = {
   betType: string
   allHimoHorses: HimoHorse[]
   axisCount: number
-  pct: number
+  stabilityScore: number
+  pace: string
   axisDetails: AxisDetail[]
 }
 
@@ -84,7 +85,7 @@ export default function BetPlanPanel({
   betType,
   allHimoHorses,
   axisCount,
-  pct,
+  stabilityScore,
   axisDetails,
 }: Props) {
   const [himoCount, setHimoCount] = useState(Math.min(AI_RECOMMENDED, allHimoHorses.length))
@@ -92,7 +93,7 @@ export default function BetPlanPanel({
 
   const selectedHimo = allHimoHorses.slice(0, himoCount)
   const combinations = computeCombinations(axisCount, himoCount)
-  const comment = buildComment(axisCount, himoCount, pct)
+  const comment = buildComment(axisCount, himoCount, stabilityScore)
 
   const axisNums = axisDetails.map((d) => d.horseNumber)
   const himoNums = selectedHimo.map((h) => h.number)
@@ -292,15 +293,15 @@ export default function BetPlanPanel({
                       display: 'inline-flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      minWidth: 26,
-                      height: 26,
-                      borderRadius: 6,
-                      fontSize: 12,
+                      minWidth: 24,
+                      height: 24,
+                      borderRadius: 9999,
+                      fontSize: 11,
                       fontWeight: 800,
                       background: '#6366F1',
                       color: '#fff',
                       flexShrink: 0,
-                      padding: '0 4px',
+                      padding: '0 6px',
                     }}
                   >
                     {detail.horseNumber}
@@ -367,15 +368,15 @@ export default function BetPlanPanel({
                     display: 'inline-flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    minWidth: 26,
-                    height: 26,
-                    borderRadius: 6,
-                    fontSize: 12,
+                    minWidth: 24,
+                    height: 24,
+                    borderRadius: 9999,
+                    fontSize: 11,
                     fontWeight: 800,
-                    background: 'rgba(255,255,255,0.1)',
+                    background: 'rgba(255,255,255,0.12)',
                     color: '#E8E8EA',
                     flexShrink: 0,
-                    padding: '0 4px',
+                    padding: '0 6px',
                   }}
                 >
                   {horse.number}
