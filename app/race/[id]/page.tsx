@@ -455,13 +455,14 @@ function HorseRow({
 }: {
   rank: number
   name: string
-  role: 'axis' | 'himo'
+  role: 'axis' | 'himo' | 'other'
   paceTag?: 'up' | 'down' | null
   styleTag?: { label: string; color: string } | null
   popularityRank?: number | null
   gapBadge?: 'ai_pick' | 'market_lead' | null
 }) {
   const isAxis = role === 'axis'
+  const isOther = role === 'other'
   return (
     <div
       style={{
@@ -473,6 +474,7 @@ function HorseRow({
         background: isAxis ? 'rgba(99,102,241,0.08)' : 'transparent',
         borderLeft: `3px solid ${isAxis ? '#6366F1' : 'rgba(255,255,255,0.07)'}`,
         marginBottom: 4,
+        opacity: isOther ? 0.55 : 1,
       }}
     >
       {/* Rank number */}
@@ -558,20 +560,22 @@ function HorseRow({
             人気先行
           </span>
         )}
-        <span
-          style={{
-            fontSize: 10,
-            fontWeight: 700,
-            padding: '2px 8px',
-            borderRadius: 4,
-            background: isAxis ? '#6366F1' : 'transparent',
-            color: isAxis ? '#fff' : '#7A7A84',
-            border: `1px solid ${isAxis ? '#6366F1' : 'rgba(255,255,255,0.1)'}`,
-            letterSpacing: '0.04em',
-          }}
-        >
-          {isAxis ? '軸' : 'ヒモ'}
-        </span>
+        {!isOther && (
+          <span
+            style={{
+              fontSize: 10,
+              fontWeight: 700,
+              padding: '2px 8px',
+              borderRadius: 4,
+              background: isAxis ? '#6366F1' : 'transparent',
+              color: isAxis ? '#fff' : '#7A7A84',
+              border: `1px solid ${isAxis ? '#6366F1' : 'rgba(255,255,255,0.1)'}`,
+              letterSpacing: '0.04em',
+            }}
+          >
+            {isAxis ? '軸' : '相手'}
+          </span>
+        )}
       </div>
     </div>
   )
@@ -696,9 +700,23 @@ export default async function RaceDetailPage({
     return getPaceAdjustment(styleB, pace) - getPaceAdjustment(styleA, pace)
   })
 
+  const formationHorseIds = new Set([
+    ...(formation?.axis_horses ?? []),
+    ...(formation?.himo_horses ?? []),
+  ])
+  const otherRaceHorses = entries
+    .map((e) => e.horse_id)
+    .filter((id) => !formationHorseIds.has(id))
+    .sort((a, b) => {
+      const adjA = getPaceAdjustment(horses.find((h) => h.id === a)?.style ?? null, pace)
+      const adjB = getPaceAdjustment(horses.find((h) => h.id === b)?.style ?? null, pace)
+      return adjB - adjA
+    })
+
   const allRankedHorses = [
     ...(formation?.axis_horses ?? []).map((id) => ({ id, role: 'axis' as const })),
     ...paceAdjustedHimo.map((id) => ({ id, role: 'himo' as const })),
+    ...otherRaceHorses.map((id) => ({ id, role: 'other' as const })),
   ]
 
   // Race info chip helpers
