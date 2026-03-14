@@ -809,6 +809,11 @@ export default async function RaceDetailPage({
                 {race.grade}
               </span>
             )}
+            {race.venue && (
+              <span style={{ padding: '3px 10px', borderRadius: 9999, fontSize: 11, fontWeight: 600, background: 'rgba(255,255,255,0.06)', color: '#B0B0B8', border: '1px solid rgba(255,255,255,0.1)' }}>
+                {race.venue}
+              </span>
+            )}
             {race.surface && (
               <span style={{
                 padding: '3px 10px', borderRadius: 9999, fontSize: 11, fontWeight: 600,
@@ -824,14 +829,9 @@ export default async function RaceDetailPage({
                 {race.distance_m}m
               </span>
             )}
-            {race.venue && (
-              <span style={{ padding: '3px 10px', borderRadius: 9999, fontSize: 11, fontWeight: 600, background: 'rgba(255,255,255,0.06)', color: '#B0B0B8', border: '1px solid rgba(255,255,255,0.1)' }}>
-                {race.venue}
-              </span>
-            )}
             {race.start_time && (
               <span style={{ padding: '3px 10px', borderRadius: 9999, fontSize: 11, fontWeight: 600, background: 'rgba(255,255,255,0.06)', color: '#B0B0B8', border: '1px solid rgba(255,255,255,0.1)' }}>
-                {race.start_time} 発走
+                {race.start_time.slice(0, 5)}発走
               </span>
             )}
             {raceDayOfWeek && (
