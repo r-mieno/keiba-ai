@@ -291,6 +291,40 @@ function getStrategy(pct: number) {
   return STRATEGIES_MAP.find((s) => pct >= s.min && pct <= s.max) ?? STRATEGIES_MAP[4]
 }
 
+// ─── Race stability score ─────────────────────────────────────────────────────
+
+// Computes a 0–100 race stability score from the running-style composition of
+// the race field. Higher = more predictable outcome; lower = more chaotic.
+// Three sub-scores are weighted into the final result:
+//   - frontClarityScore  (0.45): single front-runner → most readable
+//   - pressureScore      (0.35): fewer pace-setters → less pace pressure
+//   - balanceScore       (0.20): larger front/rear gap → clearer pace dynamic
+function computeRaceStabilityScore(
+  frontCount: number,
+  stalkerCount: number,
+  closerCount: number,
+  deepCloserCount: number,
+  totalCount: number,
+): number {
+  const frontClarityScore =
+    frontCount === 1 ? 1.0 :
+    frontCount === 0 ? 0.60 :
+    frontCount === 2 ? 0.70 :
+    0.35
+
+  const pacePressure = frontCount * 1.0 + stalkerCount * 0.45
+  const pressureScore = 1 - Math.min(pacePressure / 6.0, 1.0)
+
+  const frontGroup = frontCount + stalkerCount
+  const rearGroup = closerCount + deepCloserCount
+  const balanceGap = totalCount === 0 ? 0 : Math.abs(frontGroup - rearGroup) / totalCount
+  const balanceScore = 0.4 + 0.6 * balanceGap
+
+  return Math.round(
+    100 * (0.45 * frontClarityScore + 0.35 * pressureScore + 0.20 * balanceScore)
+  )
+}
+
 function getValueOpportunity(
   formation: FormationResponse,
   horses: Horse[],
@@ -749,6 +783,16 @@ export default async function RaceDetailPage({
             { label: '差し', count: paceInfo.closerCount,     style: 'closer' },
             { label: '追込', count: paceInfo.deepCloserCount, style: 'deep_closer' },
           ]
+          const raceStabilityScore = computeRaceStabilityScore(
+            paceInfo.frontCount,
+            paceInfo.stalkerCount,
+            paceInfo.closerCount,
+            paceInfo.deepCloserCount,
+            raceHorseIds.length,
+          )
+          const stabilityLevel = getLevel(raceStabilityScore)
+          const stabilityStrategy = getStrategy(raceStabilityScore)
+
           const favoredStyles = [...new Set(advantageHorses.map((h) => STYLE_LABELS[h.style]))]
 
           const edge = Math.round(10 + (100 - pct) * 0.2)
@@ -870,6 +914,44 @@ export default async function RaceDetailPage({
                     </span>
                     <span style={{ color: '#B0B0B8', fontSize: 13, lineHeight: 1.6 }}>{paceMeta.aiComment}</span>
                   </div>
+                </div>
+              </div>
+
+              {/* レース安定性スコア */}
+              <div style={card}>
+                <p style={sectionLabel}>レース安定性スコア</p>
+                <p style={{ fontSize: 11, color: '#7A7A84', marginBottom: 16 }}>
+                  今回の出走馬の脚質構成から算出。展開の読みやすさ・軸の決めやすさ・混戦度を示します。
+                </p>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 24, flexWrap: 'wrap' }}>
+                  <div style={{ minWidth: 150 }}>
+                    <div style={{ display: 'flex', alignItems: 'flex-end', gap: 5, marginBottom: 7 }}>
+                      <span style={{ fontSize: 44, fontWeight: 800, lineHeight: 1, color: stabilityLevel.color }}>
+                        {raceStabilityScore}
+                      </span>
+                      <span style={{ color: '#7A7A84', marginBottom: 6, fontSize: 15 }}>/100</span>
+                    </div>
+                    <div style={{ background: 'rgba(255,255,255,0.07)', borderRadius: 2, height: 4, overflow: 'hidden', marginBottom: 8 }}>
+                      <div style={{ width: `${raceStabilityScore}%`, height: '100%', background: stabilityLevel.color, borderRadius: 9999 }} />
+                    </div>
+                    <span
+                      style={{
+                        display: 'inline-block',
+                        padding: '3px 10px',
+                        borderRadius: 9999,
+                        fontSize: 11,
+                        fontWeight: 700,
+                        background: `${stabilityLevel.color}14`,
+                        color: stabilityLevel.color,
+                        border: `1px solid ${stabilityLevel.color}44`,
+                      }}
+                    >
+                      {stabilityLevel.label}
+                    </span>
+                  </div>
+                  <p style={{ color: '#B0B0B8', fontSize: 13, lineHeight: 1.7, flex: 1, minWidth: 180 }}>
+                    {stabilityStrategy.comment}
+                  </p>
                 </div>
               </div>
 
