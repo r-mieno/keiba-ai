@@ -597,7 +597,7 @@ export default async function RaceDetailPage({
     }
     formation = await rpcRes.json()
 
-    const horseRes = await fetch(`${baseUrl}/rest/v1/horses?select=id,name,style`, {
+    const horseRes = await fetch(`${baseUrl}/rest/v1/horses?select=id,name`, {
       headers: { apikey: key, Authorization: `Bearer ${key}` },
       cache: 'no-store',
     })
@@ -620,6 +620,20 @@ export default async function RaceDetailPage({
     ])
     if (resultsRes.ok) raceResults = await resultsRes.json()
     if (entriesRes.ok) entries = await entriesRes.json()
+
+    // Fetch running style from horse_style_profiles and merge into horses array
+    const raceHorseIdList = entries.map((e) => e.horse_id)
+    if (raceHorseIdList.length > 0) {
+      const styleRes = await fetch(
+        `${baseUrl}/rest/v1/horse_style_profiles?horse_id=in.(${raceHorseIdList.join(',')})&select=horse_id,style`,
+        { headers: { apikey: key, Authorization: `Bearer ${key}` }, cache: 'no-store' }
+      )
+      if (styleRes.ok) {
+        const profiles: { horse_id: string; style: RunningStyle }[] = await styleRes.json()
+        const styleMap = new Map(profiles.map((p) => [p.horse_id, p.style]))
+        horses = horses.map((h) => ({ ...h, style: styleMap.get(h.id) ?? null }))
+      }
+    }
   } catch {
     // results/entries are optional — page renders without them
   }
