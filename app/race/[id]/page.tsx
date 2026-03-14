@@ -924,7 +924,7 @@ export default async function RaceDetailPage({
           const advantageHorses = getPaceAdvantageHorses(raceHorseIds, horses, pace)
           const valueHorse = getValueOpportunity(formation, horses, pace, allRankedHorses, entries)
           const aiSummaryLines = buildAiSummary(raceStabilityScore, pace, advantageHorses, valueHorse)
-          const strategy = getStrategy(pct)
+          const strategy = getStrategy(raceStabilityScore)
 
           const favoredStyles = [...new Set(advantageHorses.map((h) => STYLE_LABELS[h.style]))]
 
