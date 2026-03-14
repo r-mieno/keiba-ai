@@ -864,6 +864,7 @@ export default async function RaceDetailPage({
 
           // Chapter header style
           const CHAPTER_ICONS: Record<string, React.ReactNode> = {
+            'AI予想':     <Brain size={15} color="#818CF8" strokeWidth={2} />,
             'AIの見解':   <Brain size={15} color="#818CF8" strokeWidth={2} />,
             'レース展開': <TrendingUp size={15} color="#818CF8" strokeWidth={2} />,
             '期待値分析': <Gem size={15} color="#818CF8" strokeWidth={2} />,

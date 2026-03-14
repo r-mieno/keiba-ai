@@ -6,19 +6,31 @@ type Race = {
 
 export default async function Home() {
   let races: Race[] = []
+  let resultRaceIds = new Set<string>()
   let errorMessage = ''
 
   try {
     const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-    const url = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/races?select=id,race_name,date&order=date.desc`
-    const res = await fetch(url, {
-      headers: { apikey: key, Authorization: `Bearer ${key}` },
-      cache: 'no-store',
-    })
-    if (!res.ok) {
-      errorMessage = `取得失敗: ${res.status}`
+    const base = process.env.NEXT_PUBLIC_SUPABASE_URL!
+    const headers = { apikey: key, Authorization: `Bearer ${key}` }
+
+    const [racesRes, resultsRes] = await Promise.all([
+      fetch(`${base}/rest/v1/races?select=id,race_name,date&order=date.desc`, {
+        headers, cache: 'no-store',
+      }),
+      fetch(`${base}/rest/v1/race_results?select=race_id`, {
+        headers, cache: 'no-store',
+      }),
+    ])
+
+    if (!racesRes.ok) {
+      errorMessage = `取得失敗: ${racesRes.status}`
     } else {
-      races = await res.json()
+      races = await racesRes.json()
+    }
+    if (resultsRes.ok) {
+      const results: { race_id: string }[] = await resultsRes.json()
+      resultRaceIds = new Set(results.map((r) => r.race_id))
     }
   } catch (e) {
     errorMessage = e instanceof Error ? e.message : 'unknown error'
@@ -100,16 +112,36 @@ export default async function Home() {
         </div>
 
         <div style={{ display: 'flex', flexDirection: 'column' }}>
-          {races.map((race) => (
-            <a key={race.id} href={`/race/${race.id}`} className="race-link">
-              <span style={{ fontSize: 14, fontWeight: 500, color: '#E8E8EA' }}>
-                {race.race_name}
-              </span>
-              <span style={{ fontSize: 12, color: '#9D9DA3', flexShrink: 0, fontVariantNumeric: 'tabular-nums' }}>
-                {race.date.replace(/-/g, '/')}
-              </span>
-            </a>
-          ))}
+          {races.map((race) => {
+            const hasResult = resultRaceIds.has(race.id)
+            return (
+              <a key={race.id} href={`/race/${race.id}`} className="race-link">
+                <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  {hasResult ? (
+                    <span style={{
+                      fontSize: 10, fontWeight: 700, padding: '2px 7px', borderRadius: 4, flexShrink: 0,
+                      background: 'rgba(52,211,153,0.1)', color: '#34D399', border: '1px solid rgba(52,211,153,0.25)',
+                    }}>
+                      結果
+                    </span>
+                  ) : (
+                    <span style={{
+                      fontSize: 10, fontWeight: 700, padding: '2px 7px', borderRadius: 4, flexShrink: 0,
+                      background: 'rgba(99,102,241,0.1)', color: '#818CF8', border: '1px solid rgba(99,102,241,0.25)',
+                    }}>
+                      予想中
+                    </span>
+                  )}
+                  <span style={{ fontSize: 14, fontWeight: 500, color: '#E8E8EA' }}>
+                    {race.race_name}
+                  </span>
+                </span>
+                <span style={{ fontSize: 12, color: '#9D9DA3', flexShrink: 0, fontVariantNumeric: 'tabular-nums' }}>
+                  {race.date.replace(/-/g, '/')}
+                </span>
+              </a>
+            )
+          })}
         </div>
 
         {races.length === 0 && !errorMessage && (
