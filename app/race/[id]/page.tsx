@@ -772,7 +772,6 @@ export default async function RaceDetailPage({
           const advantageHorses = getPaceAdvantageHorses(raceHorseIds, horses, pace)
           const valueHorse = getValueOpportunity(formation, horses, pct, pace)
           const aiSummaryLines = buildAiSummary(pct, pace, advantageHorses, valueHorse)
-          const level = getLevel(pct)
           const strategy = getStrategy(pct)
 
           const paceInfo = computePaceOutlook(raceHorseIds, horses)
@@ -794,10 +793,6 @@ export default async function RaceDetailPage({
           const stabilityStrategy = getStrategy(raceStabilityScore)
 
           const favoredStyles = [...new Set(advantageHorses.map((h) => STYLE_LABELS[h.style]))]
-
-          const edge = Math.round(10 + (100 - pct) * 0.2)
-          const betScore = computeBetScore(pct, edge)
-          const betLevel = getBetLevel(betScore)
 
           return (
             <>
@@ -828,22 +823,6 @@ export default async function RaceDetailPage({
               <div style={card}>
                 <p style={sectionLabel}>AI戦略</p>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                  <div>
-                    <span
-                      style={{
-                        display: 'inline-block',
-                        padding: '3px 10px',
-                        borderRadius: 9999,
-                        fontSize: 12,
-                        fontWeight: 700,
-                        background: `${level.color}14`,
-                        color: level.color,
-                        border: `1px solid ${level.color}44`,
-                      }}
-                    >
-                      {strategy.raceType}
-                    </span>
-                  </div>
                   <div style={{ display: 'flex', gap: 10 }}>
                     <span style={{ color: '#7A7A84', fontSize: 12, width: 68, flexShrink: 0, paddingTop: 1 }}>
                       推奨戦略
@@ -1041,90 +1020,15 @@ export default async function RaceDetailPage({
               {valueHorse && (
                 <div style={card}>
                   <p style={sectionLabel}>AI注目の穴馬</p>
-                  <p style={{ color: '#E8E8EA', fontSize: 16, fontWeight: 700, marginBottom: 16 }}>
+                  <p style={{ color: '#E8E8EA', fontSize: 16, fontWeight: 700, marginBottom: 12 }}>
                     {valueHorse.horseName}
                   </p>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 12 }}>
-                    <div style={{ background: 'rgba(255,255,255,0.04)', borderRadius: 6, padding: '10px 14px', border: '1px solid rgba(255,255,255,0.07)' }}>
-                      <p style={{ color: '#7A7A84', fontSize: 10, marginBottom: 4 }}>AI評価</p>
-                      <p style={{ color: '#E8E8EA', fontSize: 22, fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}>{valueHorse.aiWinProb}%</p>
-                    </div>
-                    <div style={{ background: 'rgba(255,255,255,0.04)', borderRadius: 6, padding: '10px 14px', border: '1px solid rgba(255,255,255,0.07)' }}>
-                      <p style={{ color: '#7A7A84', fontSize: 10, marginBottom: 4 }}>想定人気評価</p>
-                      <p style={{ color: '#7A7A84', fontSize: 22, fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}>{valueHorse.marketProb}%</p>
-                    </div>
-                  </div>
-                  <div
-                    style={{
-                      background: `${level.color}10`,
-                      border: `1px solid ${level.color}25`,
-                      borderRadius: 6,
-                      padding: '10px 14px',
-                      marginBottom: 14,
-                    }}
-                  >
-                    <p style={{ color: '#7A7A84', fontSize: 11, marginBottom: 2 }}>AIはこの馬を</p>
-                    <p style={{ color: level.color, fontSize: 14, fontWeight: 700 }}>
-                      人気より +{valueHorse.edge}% 高く評価しています
-                    </p>
-                  </div>
                   <p style={{ color: '#B0B0B8', fontSize: 12, lineHeight: 1.7 }}>{valueHorse.reason}</p>
                 </div>
               )}
 
-              {/* 買いチャンス */}
-              <div style={card}>
-                <p style={sectionLabel}>買いチャンス</p>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 24, flexWrap: 'wrap' }}>
-                  <div style={{ minWidth: 150 }}>
-                    <div style={{ display: 'flex', alignItems: 'flex-end', gap: 5, marginBottom: 7 }}>
-                      <span style={{ fontSize: 44, fontWeight: 800, lineHeight: 1, color: betLevel.color }}>
-                        {betScore}
-                      </span>
-                      <span style={{ color: '#7A7A84', marginBottom: 6, fontSize: 15 }}>/100</span>
-                    </div>
-                    <div
-                      style={{
-                        background: 'rgba(255,255,255,0.07)',
-                        borderRadius: 2,
-                        height: 4,
-                        overflow: 'hidden',
-                        marginBottom: 8,
-                      }}
-                    >
-                      <div
-                        style={{ width: `${betScore}%`, height: '100%', background: betLevel.color, borderRadius: 9999 }}
-                      />
-                    </div>
-                    <span
-                      style={{
-                        display: 'inline-block',
-                        padding: '3px 10px',
-                        borderRadius: 9999,
-                        fontSize: 11,
-                        fontWeight: 700,
-                        background: `${betLevel.color}14`,
-                        color: betLevel.color,
-                        border: `1px solid ${betLevel.color}44`,
-                      }}
-                    >
-                      {betLevel.label}
-                    </span>
-                  </div>
-                  <p
-                    style={{
-                      color: '#B0B0B8',
-                      fontSize: 13,
-                      lineHeight: 1.7,
-                      flex: 1,
-                      minWidth: 180,
-                      paddingLeft: 0,
-                    }}
-                  >
-                    {betLevel.comment}
-                  </p>
-                </div>
-              </div>
+              {/* TODO: 買いチャンス — race_structure_score が実データになったら復活させる
+                  betScore = computeBetScore(pct, edge), betLevel = getBetLevel(betScore) */}
 
               {/* 馬ランキング */}
               <div style={card}>
