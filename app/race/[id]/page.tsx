@@ -14,6 +14,11 @@ type Race = {
   id: string
   race_name: string
   date: string
+  venue?: string | null
+  grade?: string | null
+  surface?: string | null
+  distance_m?: number | null
+  start_time?: string | null
 }
 
 type RunningStyle = 'front' | 'stalker' | 'closer' | 'deep_closer'
@@ -561,6 +566,21 @@ export default async function RaceDetailPage({
     const raceData = await raceRes.json()
     race = raceData[0] ?? null
 
+    // Fetch extended race metadata (venue, grade, surface, distance_m, start_time).
+    // These columns may not exist yet — silently ignore if the request fails.
+    if (race) {
+      try {
+        const extRes = await fetch(
+          `${baseUrl}/rest/v1/races?id=eq.${id}&select=venue,grade,surface,distance_m,start_time`,
+          { headers: { apikey: key, Authorization: `Bearer ${key}` }, cache: 'no-store' }
+        )
+        if (extRes.ok) {
+          const extData = await extRes.json()
+          race = { ...race, ...(extData[0] ?? {}) }
+        }
+      } catch { /* extended info is optional */ }
+    }
+
     const rpcRes = await fetch(
       `${baseUrl}/rest/v1/rpc/compute_formation_for_race`,
       {
@@ -642,6 +662,21 @@ export default async function RaceDetailPage({
     ...paceAdjustedHimo.map((id) => ({ id, role: 'himo' as const })),
   ]
 
+  // Race info chip helpers
+  const DAY_NAMES = ['日', '月', '火', '水', '木', '金', '土']
+  const raceDayOfWeek = race
+    ? DAY_NAMES[new Date(race.date + 'T12:00:00').getDay()] + '曜日'
+    : null
+  const raceGradeColor = !race?.grade ? null
+    : race.grade === 'G1' ? '#FBBF24'
+    : race.grade === 'G2' ? '#C0C8D0'
+    : race.grade === 'G3' ? '#CD8B5A'
+    : '#818CF8'
+  const raceSurfaceColor = !race?.surface ? null
+    : race.surface === '芝' ? '#34D399'
+    : race.surface === 'ダート' ? '#FB923C'
+    : null
+
   return (
     <main
       style={{
@@ -702,9 +737,52 @@ export default async function RaceDetailPage({
           }}>
             {race.race_name}
           </h1>
-          <p style={{ color: '#7A7A84', marginTop: 6, fontSize: 12, fontVariantNumeric: 'tabular-nums' }}>
+          <p style={{ color: '#7A7A84', marginTop: 6, marginBottom: 14, fontSize: 12, fontVariantNumeric: 'tabular-nums' }}>
             {race.date.replace(/-/g, '/')}
           </p>
+
+          {/* ── Race info chips ─────────────────────────────────────── */}
+          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+            {race.grade && raceGradeColor && (
+              <span style={{
+                padding: '3px 10px', borderRadius: 9999, fontSize: 11, fontWeight: 700,
+                background: `${raceGradeColor}1A`, color: raceGradeColor,
+                border: `1px solid ${raceGradeColor}55`,
+              }}>
+                {race.grade}
+              </span>
+            )}
+            {race.surface && (
+              <span style={{
+                padding: '3px 10px', borderRadius: 9999, fontSize: 11, fontWeight: 600,
+                background: raceSurfaceColor ? `${raceSurfaceColor}14` : 'rgba(255,255,255,0.06)',
+                color: raceSurfaceColor ?? '#B0B0B8',
+                border: `1px solid ${raceSurfaceColor ? raceSurfaceColor + '44' : 'rgba(255,255,255,0.1)'}`,
+              }}>
+                {race.surface}
+              </span>
+            )}
+            {race.distance_m && (
+              <span style={{ padding: '3px 10px', borderRadius: 9999, fontSize: 11, fontWeight: 600, background: 'rgba(255,255,255,0.06)', color: '#B0B0B8', border: '1px solid rgba(255,255,255,0.1)' }}>
+                {race.distance_m}m
+              </span>
+            )}
+            {race.venue && (
+              <span style={{ padding: '3px 10px', borderRadius: 9999, fontSize: 11, fontWeight: 600, background: 'rgba(255,255,255,0.06)', color: '#B0B0B8', border: '1px solid rgba(255,255,255,0.1)' }}>
+                {race.venue}
+              </span>
+            )}
+            {race.start_time && (
+              <span style={{ padding: '3px 10px', borderRadius: 9999, fontSize: 11, fontWeight: 600, background: 'rgba(255,255,255,0.06)', color: '#B0B0B8', border: '1px solid rgba(255,255,255,0.1)' }}>
+                {race.start_time} 発走
+              </span>
+            )}
+            {raceDayOfWeek && (
+              <span style={{ padding: '3px 10px', borderRadius: 9999, fontSize: 11, fontWeight: 600, background: 'rgba(255,255,255,0.06)', color: '#B0B0B8', border: '1px solid rgba(255,255,255,0.1)' }}>
+                {raceDayOfWeek}
+              </span>
+            )}
+          </div>
         </div>
       )}
 

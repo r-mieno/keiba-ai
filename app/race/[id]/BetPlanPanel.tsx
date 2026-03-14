@@ -88,6 +88,7 @@ export default function BetPlanPanel({
   axisDetails,
 }: Props) {
   const [himoCount, setHimoCount] = useState(Math.min(AI_RECOMMENDED, allHimoHorses.length))
+  const [showBetInfo, setShowBetInfo] = useState(false)
 
   const selectedHimo = allHimoHorses.slice(0, himoCount)
   const combinations = computeCombinations(axisCount, himoCount)
@@ -134,20 +135,35 @@ export default function BetPlanPanel({
       {/* Bet type */}
       <div style={{ marginBottom: 18 }}>
         <p style={{ color: '#7A7A84', fontSize: 11, marginBottom: 6 }}>買い方</p>
-        <span
-          style={{
-            display: 'inline-block',
-            padding: '4px 12px',
-            borderRadius: 6,
-            fontSize: 13,
-            fontWeight: 600,
-            background: 'rgba(99,102,241,0.12)',
-            color: '#818CF8',
-            border: '1px solid rgba(99,102,241,0.25)',
-          }}
-        >
-          {betType}
-        </span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <span
+            style={{
+              display: 'inline-block',
+              padding: '4px 12px',
+              borderRadius: 6,
+              fontSize: 13,
+              fontWeight: 600,
+              background: 'rgba(99,102,241,0.12)',
+              color: '#818CF8',
+              border: '1px solid rgba(99,102,241,0.25)',
+            }}
+          >
+            {betType}
+          </span>
+          <button
+            onClick={() => setShowBetInfo(true)}
+            aria-label="三連複フォーメーションの説明を見る"
+            style={{
+              display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+              width: 22, height: 22, borderRadius: '50%',
+              background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.14)',
+              color: '#7A7A84', fontSize: 11, fontWeight: 700, cursor: 'pointer',
+              flexShrink: 0, lineHeight: 1,
+            }}
+          >
+            i
+          </button>
+        </div>
       </div>
 
       {/* Himo count selector */}
@@ -387,6 +403,66 @@ export default function BetPlanPanel({
 
       {/* AI comment */}
       <p style={{ color: '#B0B0B8', fontSize: 12, lineHeight: 1.8 }}>{comment}</p>
+
+      {/* ── 三連複フォーメーション説明モーダル ─────────────────────── */}
+      {showBetInfo && (
+        <div
+          style={{
+            position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)',
+            zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center',
+            padding: 20,
+          }}
+          onClick={() => setShowBetInfo(false)}
+        >
+          <div
+            style={{
+              background: '#1A1A1E', borderRadius: 12, padding: '24px 22px',
+              maxWidth: 420, width: '100%',
+              border: '1px solid rgba(255,255,255,0.1)',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
+              <p style={{ fontSize: 15, fontWeight: 700, color: '#E8E8EA', margin: 0 }}>
+                三連複フォーメーションとは？
+              </p>
+              <button
+                onClick={() => setShowBetInfo(false)}
+                style={{ background: 'none', border: 'none', color: '#7A7A84', cursor: 'pointer', fontSize: 20, lineHeight: 1, padding: '2px 4px' }}
+                aria-label="閉じる"
+              >
+                ×
+              </button>
+            </div>
+
+            {/* Lead */}
+            <p style={{ color: '#B0B0B8', fontSize: 13, lineHeight: 1.8, marginBottom: 16 }}>
+              三連複は、1〜3着に入る3頭を<span style={{ color: '#E8E8EA', fontWeight: 600 }}>順不同</span>で当てる馬券です。
+              三連単のように着順まで当てる必要がないため、比較的当てやすい買い方です。
+            </p>
+
+            {/* Slot breakdown */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 16 }}>
+              {([
+                { label: '1頭目（軸候補）', desc: '3着以内に入る可能性が高い馬。1〜2頭選びます。' },
+                { label: '2頭目（相手候補）', desc: '上位に来る可能性がある馬。2〜4頭選びます。' },
+                { label: '3頭目（穴・相手候補）', desc: '3着以内に入ればよい相手候補。4〜8頭ほど入れます。' },
+              ] as const).map(({ label, desc }) => (
+                <div key={label} style={{ background: 'rgba(255,255,255,0.04)', borderRadius: 8, padding: '10px 14px' }}>
+                  <p style={{ fontSize: 11, fontWeight: 700, color: '#818CF8', margin: '0 0 4px' }}>{label}</p>
+                  <p style={{ fontSize: 12, color: '#B0B0B8', lineHeight: 1.7, margin: 0 }}>{desc}</p>
+                </div>
+              ))}
+            </div>
+
+            {/* Footer note */}
+            <p style={{ fontSize: 12, color: '#7A7A84', lineHeight: 1.7, borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: 12, margin: 0 }}>
+              軸を決めて相手を広めに拾うことで、本命と穴のバランスを取りながら買えるのが特徴です。
+            </p>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
