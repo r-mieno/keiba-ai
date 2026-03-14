@@ -11,11 +11,12 @@ function computeCombinations(axisCount: number, himoCount: number): number {
   return himoCount >= 2 ? (himoCount * (himoCount - 1)) / 2 : 0
 }
 
-function computeHimoValues(pct: number, count: number): number[] {
-  const baseEdge = Math.round(10 + (100 - pct) * 0.2)
-  return Array.from({ length: count }, (_, i) =>
-    Math.max(1, Math.round(baseEdge * (1 - i * 0.15)))
-  )
+function aiEvalToStars(score: number): string {
+  if (score >= 26) return '★★★★★'
+  if (score >= 21) return '★★★★☆'
+  if (score >= 16) return '★★★☆☆'
+  if (score >= 11) return '★★☆☆☆'
+  return '★☆☆☆☆'
 }
 
 function buildComment(axisCount: number, himoCount: number, pct: number): string {
@@ -46,6 +47,7 @@ type AxisDetail = {
 type HimoHorse = {
   name: string
   number: number | null
+  aiEval: number
 }
 
 type Props = {
@@ -89,7 +91,6 @@ export default function BetPlanPanel({
 
   const selectedHimo = allHimoHorses.slice(0, himoCount)
   const combinations = computeCombinations(axisCount, himoCount)
-  const himoValues = computeHimoValues(pct, himoCount)
   const comment = buildComment(axisCount, himoCount, pct)
 
   const axisNums = axisDetails.map((d) => d.horseNumber)
@@ -247,134 +248,140 @@ export default function BetPlanPanel({
         </div>
       </div>
 
-      {/* Axis + Himo grid */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 18 }}>
-        {/* Axis horses */}
-        <div
-          style={{
-            background: 'rgba(99,102,241,0.06)',
-            borderRadius: 6,
-            padding: '12px 14px',
-            border: '1px solid rgba(99,102,241,0.15)',
-          }}
-        >
-          <p style={{ color: '#818CF8', fontSize: 10, fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 10 }}>
-            軸馬
-          </p>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-            {axisDetails.map((detail, i) => (
-              <div
-                key={detail.name}
-                style={{
-                  paddingBottom: i < axisDetails.length - 1 ? 12 : 0,
-                  borderBottom: i < axisDetails.length - 1 ? '1px solid rgba(99,102,241,0.12)' : 'none',
-                }}
-              >
-                <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
-                  {detail.horseNumber !== null && (
-                    <span
-                      style={{
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        width: 22,
-                        height: 22,
-                        borderRadius: '50%',
-                        fontSize: 10,
-                        fontWeight: 700,
-                        background: '#6366F1',
-                        color: '#fff',
-                        flexShrink: 0,
-                      }}
-                    >
-                      {detail.horseNumber}
-                    </span>
-                  )}
-                  <span style={{ color: '#E8E8EA', fontSize: 14, fontWeight: 600 }}>{detail.name}</span>
-                </div>
-                <div style={{ display: 'flex', gap: 10, marginBottom: 6, flexWrap: 'wrap' }}>
-                  <div style={{ display: 'flex', gap: 4, alignItems: 'baseline' }}>
-                    <span style={{ fontSize: 10, color: '#7A7A84' }}>AI評価</span>
-                    <span style={{ fontSize: 13, fontWeight: 700, color: '#818CF8' }}>{detail.aiEval}%</span>
-                  </div>
-                  {detail.styleLabel && detail.styleColor && (
-                    <div style={{ display: 'flex', gap: 4, alignItems: 'baseline' }}>
-                      <span style={{ fontSize: 10, color: '#7A7A84' }}>脚質</span>
-                      <span
-                        style={{
-                          fontSize: 11,
-                          fontWeight: 700,
-                          color: detail.styleColor,
-                          background: `${detail.styleColor}14`,
-                          border: `1px solid ${detail.styleColor}38`,
-                          borderRadius: 9999,
-                          padding: '0px 6px',
-                        }}
-                      >
-                        {detail.styleLabel}
-                      </span>
-                    </div>
-                  )}
-                </div>
-                <div>
-                  <p style={{ fontSize: 10, color: '#7A7A84', marginBottom: 3 }}>軸馬にした理由</p>
-                  <p style={{ fontSize: 11, color: '#B0B0B8', lineHeight: 1.6, margin: 0 }}>{detail.reason}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Himo horses */}
-        <div style={{ background: 'rgba(255,255,255,0.03)', borderRadius: 6, padding: '12px 14px', border: '1px solid rgba(255,255,255,0.06)' }}>
-          <p style={{ color: '#7A7A84', fontSize: 10, fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase' as const, marginBottom: 10 }}>
-            ヒモ馬 ({selectedHimo.length}頭)
-          </p>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-            {selectedHimo.map((horse, i) => (
-              <div
-                key={horse.name}
-                style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 6 }}
-              >
-                <div style={{ display: 'flex', alignItems: 'center', gap: 5, minWidth: 0 }}>
-                  <span style={{ color: '#3C3C42', fontSize: 10, width: 14, flexShrink: 0, fontVariantNumeric: 'tabular-nums' }}>{i + 1}</span>
-                  {horse.number !== null && (
-                    <span
-                      style={{
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        width: 18,
-                        height: 18,
-                        borderRadius: '50%',
-                        fontSize: 9,
-                        fontWeight: 700,
-                        background: 'rgba(255,255,255,0.15)',
-                        color: '#fff',
-                        flexShrink: 0,
-                      }}
-                    >
-                      {horse.number}
-                    </span>
-                  )}
+      {/* ◎ 軸馬 */}
+      <div
+        style={{
+          background: 'rgba(99,102,241,0.06)',
+          borderRadius: 6,
+          padding: '14px 16px',
+          border: '1px solid rgba(99,102,241,0.15)',
+          marginBottom: 10,
+        }}
+      >
+        <p style={{ color: '#818CF8', fontSize: 11, fontWeight: 700, marginBottom: 12 }}>◎ 軸</p>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+          {axisDetails.map((detail, i) => (
+            <div
+              key={detail.name}
+              style={{
+                paddingBottom: i < axisDetails.length - 1 ? 14 : 0,
+                borderBottom: i < axisDetails.length - 1 ? '1px solid rgba(99,102,241,0.12)' : 'none',
+              }}
+            >
+              {/* Horse number + name */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+                {detail.horseNumber !== null && (
                   <span
                     style={{
-                      color: '#B0B0B8',
-                      fontSize: 13,
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                      whiteSpace: 'nowrap',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      minWidth: 26,
+                      height: 26,
+                      borderRadius: 6,
+                      fontSize: 12,
+                      fontWeight: 800,
+                      background: '#6366F1',
+                      color: '#fff',
+                      flexShrink: 0,
+                      padding: '0 4px',
                     }}
                   >
-                    {horse.name}
+                    {detail.horseNumber}
+                  </span>
+                )}
+                <span style={{ color: '#E8E8EA', fontSize: 15, fontWeight: 700 }}>{detail.name}</span>
+              </div>
+
+              {/* AI eval stars + style */}
+              <div style={{ display: 'flex', gap: 10, alignItems: 'center', marginBottom: 8, flexWrap: 'wrap' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                  <span style={{ fontSize: 10, color: '#7A7A84' }}>AI評価</span>
+                  <span style={{ fontSize: 14, color: '#FBBF24', letterSpacing: 1 }}>
+                    {aiEvalToStars(detail.aiEval)}
                   </span>
                 </div>
-                <span style={{ fontSize: 11, fontWeight: 600, color: '#34D399', flexShrink: 0 }}>
-                  +{himoValues[i]}%
-                </span>
+                {detail.styleLabel && detail.styleColor && (
+                  <span
+                    style={{
+                      fontSize: 11,
+                      fontWeight: 700,
+                      color: detail.styleColor,
+                      background: `${detail.styleColor}14`,
+                      border: `1px solid ${detail.styleColor}38`,
+                      borderRadius: 9999,
+                      padding: '1px 8px',
+                    }}
+                  >
+                    {detail.styleLabel}
+                  </span>
+                )}
               </div>
-            ))}
-          </div>
+
+              {/* Reason */}
+              <p style={{ fontSize: 11, color: '#B0B0B8', lineHeight: 1.6, margin: 0 }}>{detail.reason}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* ○ ヒモ馬 */}
+      <div
+        style={{
+          background: 'rgba(255,255,255,0.03)',
+          borderRadius: 6,
+          padding: '14px 16px',
+          border: '1px solid rgba(255,255,255,0.06)',
+          marginBottom: 18,
+        }}
+      >
+        <p style={{ color: '#B0B0B8', fontSize: 11, fontWeight: 700, marginBottom: 12 }}>
+          ○ 相手
+          <span style={{ color: '#7A7A84', fontSize: 10, fontWeight: 400, marginLeft: 6 }}>({selectedHimo.length}頭)</span>
+        </p>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          {selectedHimo.map((horse) => (
+            <div
+              key={horse.name}
+              style={{ display: 'flex', alignItems: 'center', gap: 8 }}
+            >
+              {horse.number !== null && (
+                <span
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    minWidth: 26,
+                    height: 26,
+                    borderRadius: 6,
+                    fontSize: 12,
+                    fontWeight: 800,
+                    background: 'rgba(255,255,255,0.1)',
+                    color: '#E8E8EA',
+                    flexShrink: 0,
+                    padding: '0 4px',
+                  }}
+                >
+                  {horse.number}
+                </span>
+              )}
+              <span
+                style={{
+                  color: '#B0B0B8',
+                  fontSize: 14,
+                  flex: 1,
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                {horse.name}
+              </span>
+              <span style={{ fontSize: 13, color: '#FBBF24', flexShrink: 0, letterSpacing: 1 }}>
+                {aiEvalToStars(horse.aiEval)}
+              </span>
+            </div>
+          ))}
         </div>
       </div>
 
