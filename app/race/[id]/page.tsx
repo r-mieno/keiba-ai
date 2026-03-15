@@ -19,6 +19,7 @@ type Race = {
   surface?: string | null
   distance_m?: number | null
   start_time?: string | null
+  is_test?: boolean | null
 }
 
 type RunningStyle = 'front' | 'stalker' | 'closer' | 'deep_closer'
@@ -581,6 +582,74 @@ function HorseRow({
   )
 }
 
+// ─── Formation v2 (検証レース専用) ───────────────────────────────────────────
+//
+// 既存の compute_formation_for_race RPC 結果をベースに、
+// ヒモを「実力ヒモ」と「穴ヒモ」に分けた新しいフォーメーションを返す。
+//
+// 選定ルール:
+//   軸      : AI順位 1位
+//   実力ヒモ : AI順位 2〜4位
+//   穴ヒモ  : 残馬から穴スコア上位 2頭（軸・実力ヒモを除外）
+//
+// 穴スコア = pace_fit_score * 0.5 + (1 / popularity_rank) * 0.3 + (1 - stability_score) * 0.2
+//   - pace_fit_score  : getPaceAdjustment を [0,1] に正規化
+//   - popularity_rank : entries から取得（欠損時は出走頭数+1 を仮置き）
+//   - stability_score : 0〜1 (computeRaceStabilityScore の結果を /100)
+//
+// 本番レース（is_test=false）には呼び出されない。
+
+function computeFormationV2(
+  formation: FormationResponse,
+  horses: Horse[],
+  entries: Entry[],
+  pace: PaceType,
+  stabilityScore: number,       // 0–100
+): FormationResponse {
+  // AI順位順の全馬リスト（RPC が返す axis → himo の順序がそのまま AI ランキング）
+  const allByAiRank = [...formation.axis_horses, ...formation.himo_horses]
+
+  // 軸 = AI 1位
+  const axisV2 = allByAiRank.slice(0, 1)
+
+  // 実力ヒモ = AI 2〜4位
+  const jitsuryokuHimo = allByAiRank.slice(1, 4)
+
+  // 穴ヒモ候補 = 上記4頭を除いた残馬
+  const usedSet = new Set(allByAiRank.slice(0, 4))
+  const remaining = entries.map((e) => e.horse_id).filter((id) => !usedSet.has(id))
+
+  // 穴スコアを計算
+  const totalHorses = entries.length
+  const scored = remaining.map((horseId) => {
+    const horse = horses.find((h) => h.id === horseId)
+    const entry = entries.find((e) => e.horse_id === horseId)
+    const popularityRank = entry?.popularity_rank ?? totalHorses + 1
+
+    // pace_fit_score: [-0.08, +0.10] → [0, 1] に正規化
+    const rawAdj = getPaceAdjustment(horse?.style ?? null, pace)
+    const paceFitScore = (rawAdj + 0.08) / 0.18
+
+    const holeScore =
+      paceFitScore * 0.5
+      + (1.0 / popularityRank) * 0.3
+      + (1 - stabilityScore / 100) * 0.2
+
+    return { horseId, holeScore }
+  })
+
+  scored.sort((a, b) => b.holeScore - a.holeScore)
+  const anaHimo = scored.slice(0, 2).map((s) => s.horseId)
+
+  return {
+    ...formation,
+    axis_count: 1,
+    axis_horses: axisV2,
+    // 実力ヒモ → 穴ヒモ の順で並べる
+    himo_horses: [...jitsuryokuHimo, ...anaHimo],
+  }
+}
+
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default async function RaceDetailPage({
@@ -614,7 +683,7 @@ export default async function RaceDetailPage({
     if (race) {
       try {
         const extRes = await fetch(
-          `${baseUrl}/rest/v1/races?id=eq.${id}&select=venue,grade,surface,distance_m,start_time`,
+          `${baseUrl}/rest/v1/races?id=eq.${id}&select=venue,grade,surface,distance_m,start_time,is_test`,
           { headers: { apikey: key, Authorization: `Bearer ${key}` }, cache: 'no-store' }
         )
         if (extRes.ok) {
@@ -689,8 +758,17 @@ export default async function RaceDetailPage({
     ? entries.map((e) => e.horse_id)
     : [...(formation?.axis_horses ?? []), ...(formation?.himo_horses ?? [])]
 
-  // Compute pace once so it can be shared across ranking, value opportunity, etc.
-  const pace = formation ? computePaceOutlook(raceHorseIds, horses).pace : 'balanced'
+  // Compute pace and stability once so they can be shared across ranking, v2 logic, etc.
+  const paceInfo = computePaceOutlook(raceHorseIds, horses)
+  const pace: PaceType = formation ? paceInfo.pace : 'balanced'
+  const earlyStabilityScore = computeRaceStabilityScore(
+    paceInfo.frontCount, paceInfo.stalkerCount, paceInfo.closerCount, paceInfo.deepCloserCount, raceHorseIds.length,
+  )
+
+  // 検証レース（is_test=true）のみ v2 フォーメーションで上書き。本番レースは不変。
+  if (race?.is_test && formation) {
+    formation = computeFormationV2(formation, horses, entries, pace, earlyStabilityScore)
+  }
 
   // Axis horses stay in their original AI-determined order.
   // Himo horses are re-sorted by pace adjustment: most favored by current pace comes first.
