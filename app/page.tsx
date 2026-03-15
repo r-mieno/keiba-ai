@@ -2,6 +2,7 @@ type Race = {
   id: string
   race_name: string
   date: string
+  is_test: boolean
 }
 
 export default async function Home() {
@@ -15,7 +16,7 @@ export default async function Home() {
     const headers = { apikey: key, Authorization: `Bearer ${key}` }
 
     const [racesRes, resultsRes] = await Promise.all([
-      fetch(`${base}/rest/v1/races?select=id,race_name,date&order=date.desc`, {
+      fetch(`${base}/rest/v1/races?select=id,race_name,date,is_test&order=date.desc`, {
         headers, cache: 'no-store',
       }),
       fetch(`${base}/rest/v1/race_results?select=race_id`, {
@@ -35,6 +36,64 @@ export default async function Home() {
   } catch (e) {
     errorMessage = e instanceof Error ? e.message : 'unknown error'
   }
+
+  const normalRaces = races.filter((r) => !r.is_test)
+  const testRaces = races.filter((r) => r.is_test)
+
+  const RaceRow = (race: Race, showTestBadge = false) => {
+    const hasResult = resultRaceIds.has(race.id)
+    return (
+      <a key={race.id} href={`/race/${race.id}`} className="race-link">
+        <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          {hasResult ? (
+            <span style={{
+              fontSize: 10, fontWeight: 700, padding: '2px 7px', borderRadius: 4, flexShrink: 0,
+              background: 'rgba(52,211,153,0.1)', color: '#34D399', border: '1px solid rgba(52,211,153,0.25)',
+            }}>
+              結果
+            </span>
+          ) : (
+            <span style={{
+              fontSize: 10, fontWeight: 700, padding: '2px 7px', borderRadius: 4, flexShrink: 0,
+              background: 'rgba(99,102,241,0.1)', color: '#818CF8', border: '1px solid rgba(99,102,241,0.25)',
+            }}>
+              予想中
+            </span>
+          )}
+          {showTestBadge && (
+            <span style={{
+              fontSize: 10, fontWeight: 600, padding: '2px 6px', borderRadius: 4, flexShrink: 0,
+              background: 'rgba(251,191,36,0.08)', color: '#FBBF24', border: '1px solid rgba(251,191,36,0.2)',
+            }}>
+              検証用
+            </span>
+          )}
+          <span style={{ fontSize: 14, fontWeight: 500, color: '#E8E8EA' }}>
+            {race.race_name}
+          </span>
+        </span>
+        <span style={{ fontSize: 12, color: '#9D9DA3', flexShrink: 0, fontVariantNumeric: 'tabular-nums' }}>
+          {race.date.replace(/-/g, '/')}
+        </span>
+      </a>
+    )
+  }
+
+  const SectionHeader = () => (
+    <div style={{
+      display: 'grid',
+      gridTemplateColumns: '1fr 100px',
+      padding: '0 16px 10px',
+      borderBottom: '1px solid rgba(255,255,255,0.1)',
+    }}>
+      <span style={{ fontSize: 11, fontWeight: 600, color: '#9D9DA3', letterSpacing: '0.06em', textTransform: 'uppercase' }}>
+        Race
+      </span>
+      <span style={{ fontSize: 11, fontWeight: 600, color: '#9D9DA3', letterSpacing: '0.06em', textTransform: 'uppercase', textAlign: 'right' }}>
+        Date
+      </span>
+    </div>
+  )
 
   return (
     <main style={{
@@ -95,59 +154,31 @@ export default async function Home() {
           </div>
         )}
 
-        {/* Header row */}
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: '1fr 100px',
-          padding: '0 16px 10px',
-          borderBottom: '1px solid rgba(255,255,255,0.1)',
-          marginBottom: 0,
-        }}>
-          <span style={{ fontSize: 11, fontWeight: 600, color: '#9D9DA3', letterSpacing: '0.06em', textTransform: 'uppercase' }}>
-            Race
-          </span>
-          <span style={{ fontSize: 11, fontWeight: 600, color: '#9D9DA3', letterSpacing: '0.06em', textTransform: 'uppercase', textAlign: 'right' }}>
-            Date
-          </span>
-        </div>
-
+        {/* ── 通常レース ─────────────────────────────────────────────── */}
+        <h2 style={{ fontSize: 13, fontWeight: 600, color: '#9D9DA3', margin: '0 0 12px', letterSpacing: '0.02em' }}>
+          通常レース
+        </h2>
+        <SectionHeader />
         <div style={{ display: 'flex', flexDirection: 'column' }}>
-          {races.map((race) => {
-            const hasResult = resultRaceIds.has(race.id)
-            return (
-              <a key={race.id} href={`/race/${race.id}`} className="race-link">
-                <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  {hasResult ? (
-                    <span style={{
-                      fontSize: 10, fontWeight: 700, padding: '2px 7px', borderRadius: 4, flexShrink: 0,
-                      background: 'rgba(52,211,153,0.1)', color: '#34D399', border: '1px solid rgba(52,211,153,0.25)',
-                    }}>
-                      結果
-                    </span>
-                  ) : (
-                    <span style={{
-                      fontSize: 10, fontWeight: 700, padding: '2px 7px', borderRadius: 4, flexShrink: 0,
-                      background: 'rgba(99,102,241,0.1)', color: '#818CF8', border: '1px solid rgba(99,102,241,0.25)',
-                    }}>
-                      予想中
-                    </span>
-                  )}
-                  <span style={{ fontSize: 14, fontWeight: 500, color: '#E8E8EA' }}>
-                    {race.race_name}
-                  </span>
-                </span>
-                <span style={{ fontSize: 12, color: '#9D9DA3', flexShrink: 0, fontVariantNumeric: 'tabular-nums' }}>
-                  {race.date.replace(/-/g, '/')}
-                </span>
-              </a>
-            )
-          })}
+          {normalRaces.map((race) => RaceRow(race, false))}
         </div>
-
-        {races.length === 0 && !errorMessage && (
-          <p style={{ color: '#5C5C63', fontSize: 13, textAlign: 'center', padding: '48px 0' }}>
+        {normalRaces.length === 0 && !errorMessage && (
+          <p style={{ color: '#5C5C63', fontSize: 13, textAlign: 'center', padding: '32px 0' }}>
             レースデータがありません
           </p>
+        )}
+
+        {/* ── 検証レース ─────────────────────────────────────────────── */}
+        {testRaces.length > 0 && (
+          <div style={{ marginTop: 56 }}>
+            <h2 style={{ fontSize: 13, fontWeight: 600, color: '#9D9DA3', margin: '0 0 12px', letterSpacing: '0.02em' }}>
+              検証レース
+            </h2>
+            <SectionHeader />
+            <div style={{ display: 'flex', flexDirection: 'column' }}>
+              {testRaces.map((race) => RaceRow(race, true))}
+            </div>
+          </div>
         )}
       </div>
     </main>
