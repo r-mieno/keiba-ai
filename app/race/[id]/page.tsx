@@ -599,54 +599,102 @@ function HorseRow({
 //
 // 本番レース（is_test=false）には呼び出されない。
 
+// デバッグパネル用: 馬ごとのスコア内訳
+type FormationV2DebugRow = {
+  horseName: string
+  role: '軸' | '実力ヒモ' | '穴ヒモ' | '穴候補（落選）'
+  aiRank: number | null       // 軸・実力ヒモのみ
+  paceFitScore: number        // [0,1] 正規化済み
+  popularityRank: number      // entries 実測値（欠損時は出走頭数+1）
+  holeScore: number           // 穴スコア（軸・実力ヒモも参考値として算出）
+}
+
+type FormationV2Result = {
+  formation: FormationResponse
+  debug: {
+    // raceStabilityScore（0〜100）はレース全体の安定度。馬ごとの値ではない。
+    stabilityScore: number
+    pace: PaceType
+    rows: FormationV2DebugRow[]
+  }
+}
+
 function computeFormationV2(
   formation: FormationResponse,
   horses: Horse[],
   entries: Entry[],
   pace: PaceType,
-  stabilityScore: number,       // 0–100
-): FormationResponse {
-  // AI順位順の全馬リスト（RPC が返す axis → himo の順序がそのまま AI ランキング）
+  stabilityScore: number,       // raceStabilityScore 0–100（レース共通値）
+): FormationV2Result {
   const allByAiRank = [...formation.axis_horses, ...formation.himo_horses]
 
-  // 軸 = AI 1位
   const axisV2 = allByAiRank.slice(0, 1)
-
-  // 実力ヒモ = AI 2〜4位
   const jitsuryokuHimo = allByAiRank.slice(1, 4)
 
-  // 穴ヒモ候補 = 上記4頭を除いた残馬
   const usedSet = new Set(allByAiRank.slice(0, 4))
   const remaining = entries.map((e) => e.horse_id).filter((id) => !usedSet.has(id))
 
-  // 穴スコアを計算
   const totalHorses = entries.length
-  const scored = remaining.map((horseId) => {
+
+  // 穴スコア計算（残馬のみ選定に使うが、全馬分を計算してデバッグ表示に使う）
+  const scoreOf = (horseId: string) => {
     const horse = horses.find((h) => h.id === horseId)
     const entry = entries.find((e) => e.horse_id === horseId)
     const popularityRank = entry?.popularity_rank ?? totalHorses + 1
-
-    // pace_fit_score: [-0.08, +0.10] → [0, 1] に正規化
     const rawAdj = getPaceAdjustment(horse?.style ?? null, pace)
     const paceFitScore = (rawAdj + 0.08) / 0.18
-
     const holeScore =
       paceFitScore * 0.5
       + (1.0 / popularityRank) * 0.3
       + (1 - stabilityScore / 100) * 0.2
+    return { popularityRank, paceFitScore, holeScore }
+  }
 
-    return { horseId, holeScore }
+  const scoredRemaining = remaining
+    .map((horseId) => ({ horseId, ...scoreOf(horseId) }))
+    .sort((a, b) => b.holeScore - a.holeScore)
+
+  const anaHimo = scoredRemaining.slice(0, 2).map((s) => s.horseId)
+  const anaHimoSet = new Set(anaHimo)
+
+  // デバッグ行を組み立て（軸 → 実力ヒモ → 穴ヒモ → 落選候補の順）
+  const rows: FormationV2DebugRow[] = []
+
+  axisV2.forEach((id, i) => {
+    const { popularityRank, paceFitScore, holeScore } = scoreOf(id)
+    rows.push({
+      horseName: horses.find((h) => h.id === id)?.name ?? id,
+      role: '軸',
+      aiRank: i + 1,
+      paceFitScore, popularityRank, holeScore,
+    })
+  })
+  jitsuryokuHimo.forEach((id, i) => {
+    const { popularityRank, paceFitScore, holeScore } = scoreOf(id)
+    rows.push({
+      horseName: horses.find((h) => h.id === id)?.name ?? id,
+      role: '実力ヒモ',
+      aiRank: i + 2,
+      paceFitScore, popularityRank, holeScore,
+    })
+  })
+  scoredRemaining.forEach(({ horseId, popularityRank, paceFitScore, holeScore }) => {
+    rows.push({
+      horseName: horses.find((h) => h.id === horseId)?.name ?? horseId,
+      role: anaHimoSet.has(horseId) ? '穴ヒモ' : '穴候補（落選）',
+      aiRank: null,
+      paceFitScore, popularityRank, holeScore,
+    })
   })
 
-  scored.sort((a, b) => b.holeScore - a.holeScore)
-  const anaHimo = scored.slice(0, 2).map((s) => s.horseId)
-
   return {
-    ...formation,
-    axis_count: 1,
-    axis_horses: axisV2,
-    // 実力ヒモ → 穴ヒモ の順で並べる
-    himo_horses: [...jitsuryokuHimo, ...anaHimo],
+    formation: {
+      ...formation,
+      axis_count: 1,
+      axis_horses: axisV2,
+      himo_horses: [...jitsuryokuHimo, ...anaHimo],
+    },
+    debug: { stabilityScore, pace, rows },
   }
 }
 
@@ -766,8 +814,11 @@ export default async function RaceDetailPage({
   )
 
   // 検証レース（is_test=true）のみ v2 フォーメーションで上書き。本番レースは不変。
+  let formationV2Debug: FormationV2Result['debug'] | null = null
   if (race?.is_test && formation) {
-    formation = computeFormationV2(formation, horses, entries, pace, earlyStabilityScore)
+    const v2Result = computeFormationV2(formation, horses, entries, pace, earlyStabilityScore)
+    formation = v2Result.formation
+    formationV2Debug = v2Result.debug
   }
 
   // Axis horses stay in their original AI-determined order.
@@ -1019,6 +1070,77 @@ export default async function RaceDetailPage({
                 pace={pace}
                 axisDetails={axisDetails}
               />
+
+              {/* ── v2 デバッグパネル（検証レースのみ表示） ─────────────── */}
+              {formationV2Debug && (() => {
+                const ROLE_COLOR: Record<string, string> = {
+                  '軸':           '#6366F1',
+                  '実力ヒモ':     '#34D399',
+                  '穴ヒモ':       '#FBBF24',
+                  '穴候補（落選）': '#5C5C63',
+                }
+                return (
+                  <div style={{
+                    marginTop: 12,
+                    background: 'rgba(251,191,36,0.04)',
+                    border: '1px solid rgba(251,191,36,0.15)',
+                    borderRadius: 8,
+                    padding: '14px 16px',
+                  }}>
+                    <p style={{ fontSize: 11, fontWeight: 700, color: '#FBBF24', margin: '0 0 4px', letterSpacing: '0.06em', textTransform: 'uppercase' }}>
+                      検証 — v2 穴スコア内訳
+                    </p>
+                    <p style={{ fontSize: 11, color: '#7A7A84', margin: '0 0 12px', lineHeight: 1.6 }}>
+                      stabilityScore = <strong style={{ color: '#B0B0B8' }}>{formationV2Debug.stabilityScore}</strong>（レース共通・0〜100）
+                      pace = <strong style={{ color: '#B0B0B8' }}>{formationV2Debug.pace}</strong>
+                    </p>
+                    {/* ヘッダー行 */}
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 60px 60px 60px 72px', gap: 4, padding: '4px 6px', marginBottom: 4 }}>
+                      {['馬名', 'pace_fit', 'pop_rank', 'stability', 'hole_score'].map((h) => (
+                        <span key={h} style={{ fontSize: 10, color: '#5C5C63', fontWeight: 600, textAlign: 'right' }}>{h}</span>
+                      ))}
+                    </div>
+                    {formationV2Debug.rows.map((row, i) => (
+                      <div
+                        key={i}
+                        style={{
+                          display: 'grid',
+                          gridTemplateColumns: '1fr 60px 60px 60px 72px',
+                          gap: 4,
+                          padding: '5px 6px',
+                          borderRadius: 4,
+                          background: row.role === '穴ヒモ' ? 'rgba(251,191,36,0.07)' : 'transparent',
+                          borderBottom: '1px solid rgba(255,255,255,0.04)',
+                          alignItems: 'center',
+                        }}
+                      >
+                        <span style={{ fontSize: 12, color: ROLE_COLOR[row.role] ?? '#B0B0B8', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {row.horseName}
+                          {row.aiRank !== null && (
+                            <span style={{ fontSize: 10, color: '#5C5C63', marginLeft: 5 }}>AI{row.aiRank}位</span>
+                          )}
+                          <span style={{ fontSize: 10, color: ROLE_COLOR[row.role] ?? '#5C5C63', marginLeft: 5 }}>[{row.role}]</span>
+                        </span>
+                        <span style={{ fontSize: 11, color: '#B0B0B8', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>
+                          {row.paceFitScore.toFixed(3)}
+                        </span>
+                        <span style={{ fontSize: 11, color: '#B0B0B8', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>
+                          {row.popularityRank}
+                        </span>
+                        <span style={{ fontSize: 11, color: '#B0B0B8', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>
+                          {(1 - formationV2Debug.stabilityScore / 100).toFixed(3)}
+                        </span>
+                        <span style={{ fontSize: 12, fontWeight: row.role === '穴ヒモ' ? 700 : 400, color: row.role === '穴ヒモ' ? '#FBBF24' : '#B0B0B8', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>
+                          {row.holeScore.toFixed(4)}
+                        </span>
+                      </div>
+                    ))}
+                    <p style={{ fontSize: 10, color: '#5C5C63', marginTop: 10, lineHeight: 1.7 }}>
+                      hole_score = pace_fit×0.5 + (1/pop_rank)×0.3 + stability×0.2
+                    </p>
+                  </div>
+                )
+              })()}
 
               <div style={{ ...card, background: '#0A0A0C', border: '1px solid rgba(99,102,241,0.15)' }}>
                 <p style={{ ...sectionLabel, color: '#7A7A84', borderBottomColor: 'rgba(255,255,255,0.06)' }}>
