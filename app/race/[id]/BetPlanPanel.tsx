@@ -100,14 +100,14 @@ export default function BetPlanPanel({
   const formationRows =
     axisCount >= 3
       ? [
-          { label: '1着目', nums: axisNums, numAxisItems: axisNums.length },
-          { label: '2着目', nums: [...axisNums, ...himoNums], numAxisItems: axisNums.length },
-          { label: '3着目', nums: [...axisNums, ...himoNums], numAxisItems: axisNums.length },
+          { label: '1頭目', nums: axisNums, numAxisItems: axisNums.length },
+          { label: '2頭目', nums: [...axisNums, ...himoNums], numAxisItems: axisNums.length },
+          { label: '3頭目', nums: [...axisNums, ...himoNums], numAxisItems: axisNums.length },
         ]
       : [
-          { label: '1着目', nums: axisNums, numAxisItems: axisNums.length },
-          { label: '2着目', nums: himoNums, numAxisItems: 0 },
-          { label: '3着目', nums: himoNums, numAxisItems: 0 },
+          { label: '1頭目', nums: axisNums, numAxisItems: axisNums.length },
+          { label: '2頭目', nums: himoNums, numAxisItems: 0 },
+          { label: '3頭目', nums: himoNums, numAxisItems: 0 },
         ]
 
   return (
