@@ -1229,6 +1229,156 @@ function computeFormationV6(
   }
 }
 
+// ─── Formation V7 ─────────────────────────────────────────────────────────────
+// v6 の axis_confidence を改善: 上位4頭のスプレッドも加味
+//
+// axis_confidence_v7 =
+//   (top1_v5score - top2_v5score) * 0.7
+// + (top1_v5score - top4_v5score) * 0.3
+//   ※ top4 が存在しない場合は top1-top2 のみで代用
+//
+// 軸タイプ・ヒモ頭数はv6と同じ閾値
+
+type FormationV7DebugRow = {
+  horseName: string
+  axisGap: number
+  paceFit: number
+  distanceFit: number
+  stabilityComponent: number
+  himoScoreV5: number
+  isHimo: boolean
+}
+
+type FormationV7Result = {
+  formation: FormationResponse
+  debug: {
+    pace: PaceType
+    top1Score: number
+    top2Score: number
+    top4Score: number | null
+    axisConfidenceV6: number
+    axisConfidenceV7: number
+    axisTypeV6: AxisType
+    axisTypeV7: AxisType
+    himoCountV6: number
+    himoCountV7: number
+    axisHorseName: string
+    rank2HorseName: string
+    rank4HorseName: string | null
+    rows: FormationV7DebugRow[]
+  }
+}
+
+function computeFormationV7(
+  formation: FormationResponse,
+  horses: Horse[],
+  entries: Entry[],
+  pace: PaceType,
+  stabilityScore: number,
+  distanceM: number | null,
+): FormationV7Result {
+  const resolveName = (id: string) => horses.find((h) => h.id === id)?.name ?? id
+
+  const allByAiRank: string[] = formation.axis_horses.length > 0
+    ? [...formation.axis_horses, ...formation.himo_horses]
+    : formation.himo_horses
+  const aiRankIndexMap = new Map(allByAiRank.map((id, i) => [id, i]))
+
+  const axisId   = allByAiRank[0] ?? null
+  const rank2Id  = allByAiRank[1] ?? null
+  const rank4Id  = allByAiRank[3] ?? null   // index 3 = AI 4位
+  const axisV7   = axisId ? [axisId] : formation.axis_horses
+
+  const getAxisGap = (id: string): number => {
+    const idx = aiRankIndexMap.get(id)
+    if (idx === undefined) return 1.0
+    if (idx === 0) return 0.0
+    return Math.abs(1 / (idx + 1) - 1.0)
+  }
+
+  const stabilityComp = 1 - stabilityScore / 100
+  const computeV5Score = (id: string): number => {
+    const style = horses.find((h) => h.id === id)?.style ?? null
+    const rawAdj = getPaceAdjustment(style, pace)
+    const paceFit = (rawAdj + 0.08) / 0.18
+    const distanceFit = getDistanceFitScore(style, distanceM)
+    return paceFit * 0.50 + distanceFit * 0.35 + stabilityComp * 0.15
+  }
+
+  const top1Score = axisId  ? computeV5Score(axisId)  : 0
+  const top2Score = rank2Id ? computeV5Score(rank2Id) : 0
+  const top4Score = rank4Id ? computeV5Score(rank4Id) : null
+
+  // v6 confidence（比較用）
+  const axisConfidenceV6 = top1Score - top2Score
+
+  // v7 confidence: top4 があれば加重平均、なければ top1-top2 のみ
+  const axisConfidenceV7 = top4Score !== null
+    ? (top1Score - top2Score) * 0.7 + (top1Score - top4Score) * 0.3
+    : top1Score - top2Score
+
+  const classifyAxisType = (conf: number): AxisType =>
+    conf >= 0.08 ? '軸強い' : conf >= 0.04 ? '標準' : '混戦'
+  const himoFromType = (t: AxisType): number =>
+    t === '軸強い' ? 4 : t === '標準' ? 5 : 6
+
+  const axisTypeV6  = classifyAxisType(axisConfidenceV6)
+  const axisTypeV7  = classifyAxisType(axisConfidenceV7)
+  const himoCountV6 = himoFromType(axisTypeV6)
+  const himoCountV7 = himoFromType(axisTypeV7)
+
+  // candidate_pool: 軸以外の全馬から axis_gap 上位6頭
+  const nonAxisIds = entries.map((e) => e.horse_id).filter((id) => id !== axisId)
+  const candidatePool = nonAxisIds
+    .map((id) => ({ id, axisGap: getAxisGap(id) }))
+    .sort((a, b) => a.axisGap - b.axisGap)
+    .slice(0, 6)
+    .map((c) => c.id)
+
+  const scored = candidatePool.map((id) => {
+    const style = horses.find((h) => h.id === id)?.style ?? null
+    const rawAdj = getPaceAdjustment(style, pace)
+    const paceFit = (rawAdj + 0.08) / 0.18
+    const distanceFit = getDistanceFitScore(style, distanceM)
+    const himoScoreV5 = paceFit * 0.50 + distanceFit * 0.35 + stabilityComp * 0.15
+    return { id, axisGap: getAxisGap(id), paceFit, distanceFit, himoScoreV5 }
+  })
+
+  scored.sort((a, b) => b.himoScoreV5 - a.himoScoreV5)
+  const himoV7  = scored.slice(0, himoCountV7).map((s) => s.id)
+  const himoSet = new Set(himoV7)
+
+  const rows: FormationV7DebugRow[] = scored.map((s) => ({
+    horseName: resolveName(s.id),
+    axisGap: s.axisGap,
+    paceFit: s.paceFit,
+    distanceFit: s.distanceFit,
+    stabilityComponent: stabilityComp,
+    himoScoreV5: s.himoScoreV5,
+    isHimo: himoSet.has(s.id),
+  }))
+
+  return {
+    formation: { ...formation, axis_count: 1, axis_horses: axisV7, himo_horses: himoV7 },
+    debug: {
+      pace,
+      top1Score,
+      top2Score,
+      top4Score,
+      axisConfidenceV6,
+      axisConfidenceV7,
+      axisTypeV6,
+      axisTypeV7,
+      himoCountV6,
+      himoCountV7,
+      axisHorseName:  axisId  ? resolveName(axisId)  : '—',
+      rank2HorseName: rank2Id ? resolveName(rank2Id) : '—',
+      rank4HorseName: rank4Id ? resolveName(rank4Id) : null,
+      rows,
+    },
+  }
+}
+
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default async function RaceDetailPage({
@@ -1351,8 +1501,9 @@ export default async function RaceDetailPage({
   let formationV4Debug: FormationV4Result['debug'] | null = null
   let formationV5Debug: FormationV5Result['debug'] | null = null
   let formationV6Debug: FormationV6Result['debug'] | null = null
+  let formationV7Debug: FormationV7Result['debug'] | null = null
   if (race?.is_test && formation) {
-    const origFormation = formation  // v2〜v6 すべて同じ RPC 結果から計算
+    const origFormation = formation  // v2〜v7 すべて同じ RPC 結果から計算
     const v2Result = computeFormationV2(origFormation, horses, entries, pace, earlyStabilityScore)
     formationV2Debug = v2Result.debug
     const v3Result = computeFormationV3(origFormation, horses, entries, pace)
@@ -1363,7 +1514,9 @@ export default async function RaceDetailPage({
     formationV5Debug = v5Result.debug
     const v6Result = computeFormationV6(origFormation, horses, entries, pace, earlyStabilityScore, race?.distance_m ?? null)
     formationV6Debug = v6Result.debug
-    formation = v6Result.formation  // v6 を実際の表示に使用
+    const v7Result = computeFormationV7(origFormation, horses, entries, pace, earlyStabilityScore, race?.distance_m ?? null)
+    formationV7Debug = v7Result.debug
+    formation = v7Result.formation  // v7 を実際の表示に使用
   }
 
   // Axis horses stay in their original AI-determined order.
@@ -2059,6 +2212,136 @@ export default async function RaceDetailPage({
                     </div>
                     <p style={{ fontSize: 10, color: '#5C5C63', marginTop: 10, lineHeight: 1.7 }}>
                       confidence = v5スコア(AI1位) − v5スコア(AI2位) / ヒモ頭数: 軸強い=4, 標準=5, 混戦=6
+                    </p>
+                  </div>
+                )
+              })()}
+
+              {/* ── 検証パネル v7: axis_confidence 改善版 ─────────────── */}
+              {formationV7Debug && (() => {
+                const AXIS_TYPE_COLOR: Record<string, string> = {
+                  '軸強い': '#34D399',
+                  '標準':   '#FBBF24',
+                  '混戦':   '#F87171',
+                }
+                const v6Color = AXIS_TYPE_COLOR[formationV7Debug.axisTypeV6] ?? '#B0B0B8'
+                const v7Color = AXIS_TYPE_COLOR[formationV7Debug.axisTypeV7] ?? '#B0B0B8'
+                const changed = formationV7Debug.axisTypeV6 !== formationV7Debug.axisTypeV7
+                return (
+                  <div style={{
+                    marginTop: 8,
+                    background: 'rgba(251,191,36,0.03)',
+                    border: '1px solid rgba(251,191,36,0.2)',
+                    borderRadius: 8,
+                    padding: '14px 16px',
+                  }}>
+                    <p style={{ fontSize: 11, fontWeight: 700, color: '#FBBF24', margin: '0 0 4px', letterSpacing: '0.06em', textTransform: 'uppercase' }}>
+                      検証 — v7 axis_confidence（上位4頭スプレッド加味）
+                    </p>
+                    <p style={{ fontSize: 11, color: '#7A7A84', margin: '0 0 14px', lineHeight: 1.6 }}>
+                      pace = <strong style={{ color: '#B0B0B8' }}>{formationV7Debug.pace}</strong>
+                      　　(top1−top2)×0.7 + (top1−top4)×0.3
+                      {formationV7Debug.top4Score === null && <span style={{ color: '#F87171', marginLeft: 6 }}>※ top4なし → top1−top2のみ</span>}
+                    </p>
+
+                    {/* ── top1/2/4 スコア ───────────────── */}
+                    <p style={{ fontSize: 10, fontWeight: 700, color: '#9D9DA3', letterSpacing: '0.06em', textTransform: 'uppercase', margin: '0 0 8px' }}>
+                      スコア算出元（AI順位別）
+                    </p>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginBottom: 14 }}>
+                      {[
+                        { label: 'AI1位 (top1)', name: formationV7Debug.axisHorseName,  score: formationV7Debug.top1Score, accent: true },
+                        { label: 'AI2位 (top2)', name: formationV7Debug.rank2HorseName, score: formationV7Debug.top2Score, accent: false },
+                        { label: 'AI4位 (top4)', name: formationV7Debug.rank4HorseName ?? '—', score: formationV7Debug.top4Score, accent: false },
+                      ].map((row) => (
+                        <div key={row.label} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 8px', borderRadius: 4, background: row.accent ? 'rgba(251,191,36,0.05)' : 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)' }}>
+                          <span style={{ fontSize: 10, fontWeight: 700, color: row.accent ? '#FBBF24' : '#9D9DA3', flexShrink: 0, minWidth: 80 }}>{row.label}</span>
+                          <span style={{ fontSize: 12, color: '#E8E8EA', flex: 1 }}>{row.name}</span>
+                          <span style={{ fontSize: 12, fontWeight: 700, color: row.accent ? '#FBBF24' : '#B0B0B8', fontVariantNumeric: 'tabular-nums' }}>
+                            {row.score !== null ? row.score.toFixed(4) : '—'}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* ── v6 vs v7 比較表 ──────────────── */}
+                    <p style={{ fontSize: 10, fontWeight: 700, color: '#9D9DA3', letterSpacing: '0.06em', textTransform: 'uppercase', margin: '0 0 8px' }}>
+                      v6 vs v7 比較
+                    </p>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 14 }}>
+                      {(['v6', 'v7'] as const).map((ver) => {
+                        const conf  = ver === 'v6' ? formationV7Debug.axisConfidenceV6 : formationV7Debug.axisConfidenceV7
+                        const type  = ver === 'v6' ? formationV7Debug.axisTypeV6       : formationV7Debug.axisTypeV7
+                        const count = ver === 'v6' ? formationV7Debug.himoCountV6      : formationV7Debug.himoCountV7
+                        const col   = ver === 'v6' ? v6Color : v7Color
+                        return (
+                          <div key={ver} style={{ background: 'rgba(255,255,255,0.03)', borderRadius: 6, padding: '10px 12px', border: `1px solid ${changed ? col + '55' : 'rgba(255,255,255,0.06)'}` }}>
+                            <p style={{ fontSize: 10, fontWeight: 700, color: ver === 'v6' ? '#34D399' : '#FBBF24', margin: '0 0 8px', letterSpacing: '0.04em' }}>{ver.toUpperCase()}</p>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                <span style={{ fontSize: 11, color: '#7A7A84' }}>confidence</span>
+                                <span style={{ fontSize: 12, fontWeight: 700, color: col, fontVariantNumeric: 'tabular-nums' }}>
+                                  {conf >= 0 ? '+' : ''}{conf.toFixed(4)}
+                                </span>
+                              </div>
+                              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                <span style={{ fontSize: 11, color: '#7A7A84' }}>軸タイプ</span>
+                                <span style={{ fontSize: 12, fontWeight: 700, color: col }}>{type}</span>
+                              </div>
+                              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                <span style={{ fontSize: 11, color: '#7A7A84' }}>ヒモ頭数</span>
+                                <span style={{ fontSize: 12, fontWeight: 700, color: '#B0B0B8' }}>{count}頭</span>
+                              </div>
+                            </div>
+                          </div>
+                        )
+                      })}
+                    </div>
+                    {changed && (
+                      <div style={{ padding: '8px 10px', borderRadius: 4, background: 'rgba(251,191,36,0.08)', border: '1px solid rgba(251,191,36,0.25)', marginBottom: 14 }}>
+                        <p style={{ fontSize: 11, color: '#FBBF24', margin: 0 }}>
+                          ⚡ v6 → v7 で軸タイプが変化: <strong>{formationV7Debug.axisTypeV6}</strong> → <strong>{formationV7Debug.axisTypeV7}</strong>（ヒモ {formationV7Debug.himoCountV6}頭 → {formationV7Debug.himoCountV7}頭）
+                        </p>
+                      </div>
+                    )}
+
+                    {/* ── ヒモスコアテーブル ─────────────── */}
+                    <p style={{ fontSize: 10, fontWeight: 700, color: '#9D9DA3', letterSpacing: '0.06em', textTransform: 'uppercase', margin: '0 0 8px' }}>
+                      ヒモ候補スコア一覧（v7ヒモ頭数={formationV7Debug.himoCountV7}）
+                    </p>
+                    <div style={{ overflowX: 'auto' }}>
+                      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 11 }}>
+                        <thead>
+                          <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
+                            {['馬名', 'axis_gap', 'pace_fit', 'dist_fit', 'stability', 'score'].map((h) => (
+                              <th key={h} style={{ padding: '4px 6px', color: '#7A7A84', fontWeight: 600, textAlign: 'right', whiteSpace: 'nowrap' }}>{h}</th>
+                            ))}
+                            <th style={{ padding: '4px 6px', color: '#7A7A84', fontWeight: 600, textAlign: 'center' }}>採用</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {formationV7Debug.rows.map((row, i) => (
+                            <tr key={i} style={{ borderBottom: '1px solid rgba(255,255,255,0.04)', background: row.isHimo ? 'rgba(251,191,36,0.05)' : 'transparent' }}>
+                              <td style={{ padding: '5px 6px', color: row.isHimo ? '#FDE68A' : '#B0B0B8', fontWeight: row.isHimo ? 700 : 400, whiteSpace: 'nowrap' }}>{row.horseName}</td>
+                              <td style={{ padding: '5px 6px', color: '#B0B0B8', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{row.axisGap.toFixed(4)}</td>
+                              <td style={{ padding: '5px 6px', color: '#B0B0B8', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{row.paceFit.toFixed(4)}</td>
+                              <td style={{ padding: '5px 6px', color: '#B0B0B8', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{row.distanceFit.toFixed(2)}</td>
+                              <td style={{ padding: '5px 6px', color: '#B0B0B8', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{row.stabilityComponent.toFixed(4)}</td>
+                              <td style={{ padding: '5px 6px', color: row.isHimo ? '#FDE68A' : '#B0B0B8', textAlign: 'right', fontWeight: row.isHimo ? 700 : 400, fontVariantNumeric: 'tabular-nums' }}>{row.himoScoreV5.toFixed(4)}</td>
+                              <td style={{ padding: '5px 6px', textAlign: 'center' }}>
+                                {row.isHimo && (
+                                  <span style={{ fontSize: 10, fontWeight: 700, padding: '1px 6px', borderRadius: 4, background: 'rgba(251,191,36,0.15)', color: '#FBBF24', border: '1px solid rgba(251,191,36,0.3)' }}>
+                                    ◎ヒモ
+                                  </span>
+                                )}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                    <p style={{ fontSize: 10, color: '#5C5C63', marginTop: 10, lineHeight: 1.7 }}>
+                      confidence_v7 = (top1−top2)×0.7 + (top1−top4)×0.3 / 軸強い=4頭, 標準=5頭, 混戦=6頭
                     </p>
                   </div>
                 )
