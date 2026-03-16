@@ -595,7 +595,7 @@ function HorseRow({
 // 穴スコア = pace_fit_score * 0.5 + (1 / popularity_rank) * 0.3 + (1 - stability_score) * 0.2
 //   - pace_fit_score  : getPaceAdjustment を [0,1] に正規化
 //   - popularity_rank : entries から取得（欠損時は出走頭数+1 を仮置き）
-//   - stability_score : 0〜1 (computeRaceStabilityScore の結果を /100)
+//   - stability_score : 0〜100 (computeRaceStabilityScore の戻り値そのまま。式内で /100 して正規化)
 //
 // 本番レース（is_test=false）には呼び出されない。
 
