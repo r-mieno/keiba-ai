@@ -240,6 +240,32 @@ function getPaceAdjustment(style: RunningStyle | null, pace: PaceType): number {
   return 0
 }
 
+function getDistanceFitScore(style: RunningStyle | null, distanceM: number | null): number {
+  if (!style || !distanceM) return 0.5
+  if (distanceM <= 1400) {
+    if (style === 'front') return 0.85
+    if (style === 'stalker') return 0.70
+    if (style === 'closer') return 0.45
+    if (style === 'deep_closer') return 0.30
+  } else if (distanceM <= 1800) {
+    if (style === 'front') return 0.60
+    if (style === 'stalker') return 0.75
+    if (style === 'closer') return 0.65
+    if (style === 'deep_closer') return 0.50
+  } else if (distanceM <= 2200) {
+    if (style === 'front') return 0.50
+    if (style === 'stalker') return 0.65
+    if (style === 'closer') return 0.75
+    if (style === 'deep_closer') return 0.60
+  } else {
+    if (style === 'front') return 0.35
+    if (style === 'stalker') return 0.55
+    if (style === 'closer') return 0.80
+    if (style === 'deep_closer') return 0.85
+  }
+  return 0.5
+}
+
 const STRATEGIES_MAP = STRATEGIES
 const BET_LEVELS_MAP = BET_LEVELS
 
@@ -971,6 +997,101 @@ function computeFormationV4(
   }
 }
 
+// ─── Formation V5 ─────────────────────────────────────────────────────────────
+// 軸: AI1位 / candidate_pool: axis_gap 上位6頭 / ヒモ: himo_score_v5 上位5頭
+// himo_score_v5 = pace_fit*0.50 + distance_fit*0.35 + (1-stability/100)*0.15
+// popularity_rank はロジックで一切使用しない
+
+type FormationV5DebugRow = {
+  horseName: string
+  axisGap: number
+  paceFit: number
+  distanceFit: number
+  stabilityComponent: number
+  himoScoreV5: number
+  isHimo: boolean
+}
+
+type FormationV5Result = {
+  formation: FormationResponse
+  debug: {
+    pace: PaceType
+    rows: FormationV5DebugRow[]
+  }
+}
+
+function computeFormationV5(
+  formation: FormationResponse,
+  horses: Horse[],
+  entries: Entry[],
+  pace: PaceType,
+  stabilityScore: number,
+  distanceM: number | null,
+): FormationV5Result {
+  const resolveName = (id: string) => horses.find((h) => h.id === id)?.name ?? id
+
+  // AI rank order from formation
+  const allByAiRank: string[] = formation.axis_horses.length > 0
+    ? [...formation.axis_horses, ...formation.himo_horses]
+    : formation.himo_horses
+  const aiRankIndexMap = new Map(allByAiRank.map((id, i) => [id, i]))
+
+  // Axis = AI rank 1
+  const axisId = allByAiRank[0]
+  const axisV5 = axisId ? [axisId] : formation.axis_horses
+
+  // axis_gap = abs(prediction_axis_score - 1.0)
+  // prediction_axis_score for rank i = 1/(i+1); axis horse (i=0) = 1.0
+  // Non-ranked horses: score=0, gap=1.0
+  const getAxisGap = (id: string): number => {
+    const idx = aiRankIndexMap.get(id)
+    if (idx === undefined) return 1.0
+    if (idx === 0) return 0.0
+    return Math.abs(1 / (idx + 1) - 1.0)
+  }
+
+  // candidate_pool: all non-axis horses, top 6 by smallest axis_gap
+  const nonAxisIds = entries.map((e) => e.horse_id).filter((id) => id !== axisId)
+  const candidatePool = nonAxisIds
+    .map((id) => ({ id, axisGap: getAxisGap(id) }))
+    .sort((a, b) => a.axisGap - b.axisGap)
+    .slice(0, 6)
+    .map((c) => c.id)
+
+  // Compute himo_score_v5 for each candidate
+  const stabilityComp = 1 - stabilityScore / 100
+
+  const scored = candidatePool.map((id) => {
+    const style = horses.find((h) => h.id === id)?.style ?? null
+    const rawAdj = getPaceAdjustment(style, pace)
+    const paceFit = (rawAdj + 0.08) / 0.18
+    const distanceFit = getDistanceFitScore(style, distanceM)
+    const himoScoreV5 = paceFit * 0.50 + distanceFit * 0.35 + stabilityComp * 0.15
+    return { id, axisGap: getAxisGap(id), paceFit, distanceFit, himoScoreV5 }
+  })
+
+  scored.sort((a, b) => b.himoScoreV5 - a.himoScoreV5)
+  const himoV5 = scored.slice(0, 5).map((s) => s.id)
+  const himoSet = new Set(himoV5)
+
+  const rows: FormationV5DebugRow[] = [
+    ...scored.map((s) => ({
+      horseName: resolveName(s.id),
+      axisGap: s.axisGap,
+      paceFit: s.paceFit,
+      distanceFit: s.distanceFit,
+      stabilityComponent: stabilityComp,
+      himoScoreV5: s.himoScoreV5,
+      isHimo: himoSet.has(s.id),
+    })),
+  ]
+
+  return {
+    formation: { ...formation, axis_count: 1, axis_horses: axisV5, himo_horses: himoV5 },
+    debug: { pace, rows },
+  }
+}
+
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default async function RaceDetailPage({
@@ -1086,20 +1207,23 @@ export default async function RaceDetailPage({
     paceInfo.frontCount, paceInfo.stalkerCount, paceInfo.closerCount, paceInfo.deepCloserCount, raceHorseIds.length,
   )
 
-  // 検証レース（is_test=true）のみ v2/v3/v4 を実行。本番レースは不変。
-  // v2・v3 はデバッグ比較用に残し、実際の表示には v4 を使用する。
+  // 検証レース（is_test=true）のみ v2/v3/v4/v5 を実行。本番レースは不変。
+  // v2〜v4 はデバッグ比較用に残し、実際の表示には v5 を使用する。
   let formationV2Debug: FormationV2Result['debug'] | null = null
   let formationV3Debug: FormationV3Result['debug'] | null = null
   let formationV4Debug: FormationV4Result['debug'] | null = null
+  let formationV5Debug: FormationV5Result['debug'] | null = null
   if (race?.is_test && formation) {
-    const origFormation = formation  // v2/v3/v4 すべて同じ RPC 結果から計算
+    const origFormation = formation  // v2〜v5 すべて同じ RPC 結果から計算
     const v2Result = computeFormationV2(origFormation, horses, entries, pace, earlyStabilityScore)
     formationV2Debug = v2Result.debug
     const v3Result = computeFormationV3(origFormation, horses, entries, pace)
     formationV3Debug = v3Result.debug
     const v4Result = computeFormationV4(origFormation, horses, entries, pace)
     formationV4Debug = v4Result.debug
-    formation = v4Result.formation  // v4 を実際の表示に使用
+    const v5Result = computeFormationV5(origFormation, horses, entries, pace, earlyStabilityScore, race?.distance_m ?? null)
+    formationV5Debug = v5Result.debug
+    formation = v5Result.formation  // v5 を実際の表示に使用
   }
 
   // Axis horses stay in their original AI-determined order.
@@ -1623,6 +1747,70 @@ export default async function RaceDetailPage({
                     })}
                     <p style={{ fontSize: 10, color: '#5C5C63', marginTop: 10, lineHeight: 1.7 }}>
                       穴スコア（v4 も v3 式を流用）: pace_fit×0.45 + pop_comp×0.35 + axis_gap×0.20
+                    </p>
+                  </div>
+                )
+              })()}
+
+              {/* ── 検証パネル v5 ─────────────────────────────────────── */}
+              {formationV5Debug && (() => {
+                return (
+                  <div style={{
+                    marginTop: 8,
+                    background: 'rgba(167,139,250,0.03)',
+                    border: '1px solid rgba(167,139,250,0.2)',
+                    borderRadius: 8,
+                    padding: '14px 16px',
+                  }}>
+                    <p style={{ fontSize: 11, fontWeight: 700, color: '#A78BFA', margin: '0 0 4px', letterSpacing: '0.06em', textTransform: 'uppercase' }}>
+                      検証 — v5 ヒモスコア内訳
+                    </p>
+                    <p style={{ fontSize: 11, color: '#7A7A84', margin: '0 0 14px', lineHeight: 1.6 }}>
+                      pace = <strong style={{ color: '#B0B0B8' }}>{formationV5Debug.pace}</strong>
+                      　　candidate_pool: axis_gap 上位6頭 → himo_score_v5 上位5頭をヒモ採用
+                    </p>
+
+                    {/* ── スコア一覧テーブル ─────────────── */}
+                    <div style={{ overflowX: 'auto' }}>
+                      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 11 }}>
+                        <thead>
+                          <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
+                            {['馬名', 'axis_gap', 'pace_fit', 'distance_fit', 'stability', 'himo_score_v5'].map((h) => (
+                              <th key={h} style={{ padding: '4px 6px', color: '#7A7A84', fontWeight: 600, textAlign: 'right', whiteSpace: 'nowrap' }}>
+                                {h}
+                              </th>
+                            ))}
+                            <th style={{ padding: '4px 6px', color: '#7A7A84', fontWeight: 600, textAlign: 'center' }}>採用</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {formationV5Debug.rows.map((row, i) => (
+                            <tr key={i} style={{
+                              borderBottom: '1px solid rgba(255,255,255,0.04)',
+                              background: row.isHimo ? 'rgba(167,139,250,0.06)' : 'transparent',
+                            }}>
+                              <td style={{ padding: '5px 6px', color: row.isHimo ? '#C4B5FD' : '#B0B0B8', fontWeight: row.isHimo ? 700 : 400, whiteSpace: 'nowrap' }}>
+                                {row.horseName}
+                              </td>
+                              <td style={{ padding: '5px 6px', color: '#B0B0B8', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{row.axisGap.toFixed(4)}</td>
+                              <td style={{ padding: '5px 6px', color: '#B0B0B8', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{row.paceFit.toFixed(4)}</td>
+                              <td style={{ padding: '5px 6px', color: '#B0B0B8', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{row.distanceFit.toFixed(2)}</td>
+                              <td style={{ padding: '5px 6px', color: '#B0B0B8', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{row.stabilityComponent.toFixed(4)}</td>
+                              <td style={{ padding: '5px 6px', color: row.isHimo ? '#C4B5FD' : '#B0B0B8', textAlign: 'right', fontWeight: row.isHimo ? 700 : 400, fontVariantNumeric: 'tabular-nums' }}>{row.himoScoreV5.toFixed(4)}</td>
+                              <td style={{ padding: '5px 6px', textAlign: 'center' }}>
+                                {row.isHimo && (
+                                  <span style={{ fontSize: 10, fontWeight: 700, padding: '1px 6px', borderRadius: 4, background: 'rgba(167,139,250,0.15)', color: '#A78BFA', border: '1px solid rgba(167,139,250,0.3)' }}>
+                                    ◎ヒモ
+                                  </span>
+                                )}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                    <p style={{ fontSize: 10, color: '#5C5C63', marginTop: 10, lineHeight: 1.7 }}>
+                      himo_score_v5 = pace_fit×0.50 + distance_fit×0.35 + (1-stability/100)×0.15
                     </p>
                   </div>
                 )
