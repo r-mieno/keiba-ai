@@ -813,6 +813,164 @@ function computeFormationV3(
   }
 }
 
+// ─── Formation v4 (検証レース専用) ───────────────────────────────────────────
+//
+// v3 から「実力ヒモ枠削減 + 人気相手1頭を明示的に確保」に変更。
+//
+// 選定ルール:
+//   軸       : AI順位 1位
+//   実力ヒモ : AI順位 2〜3位（2頭）
+//   人気相手 : popularity_rank 1〜2 位のうち未採用の先頭1頭
+//   穴ヒモ   : 残馬から hole_score_v3 上位2頭（未採用）
+//
+// 人気相手が全員採用済みの場合はスキップ（軸が1番人気など）。
+
+type FormationV4DebugRow = {
+  horseName: string
+  role: '軸' | '実力ヒモ' | '人気相手' | '穴ヒモ（v4）' | '穴候補（v4落選）'
+  popularityRank: number
+  paceFitScore: number
+  popularityComponent: number
+  predAxisScoreRaw: number
+  predAxisScoreNorm: number
+  axisGapComponent: number
+  holeScoreV3: number          // v3 式をそのまま流用
+}
+
+type FormationV4Result = {
+  formation: FormationResponse
+  debug: {
+    pace: PaceType
+    ninkiAiteName: string | null   // 人気相手として選ばれた馬名
+    himoV3Names: string[]          // v3 の himo_horses（比較用）
+    himoV4Names: string[]          // v4 の himo_horses
+    rows: FormationV4DebugRow[]    // 穴ヒモ候補のスコア内訳
+  }
+}
+
+function computeFormationV4(
+  formation: FormationResponse,
+  horses: Horse[],
+  entries: Entry[],
+  pace: PaceType,
+): FormationV4Result {
+  const allByAiRank = [...formation.axis_horses, ...formation.himo_horses]
+  const aiRankIndexMap = new Map(allByAiRank.map((id, i) => [id, i]))
+  const resolveName = (id: string) => horses.find((h) => h.id === id)?.name ?? id
+
+  // 軸 + 実力ヒモ（2頭に絞る）
+  const axisV4 = allByAiRank.slice(0, 1)
+  const jitsuryokuHimo = allByAiRank.slice(1, 3)
+  const usedSet = new Set([...axisV4, ...jitsuryokuHimo])
+
+  // 人気相手: popularity_rank 1〜2 位のうち未採用の先頭1頭
+  const sortedByPop = [...entries]
+    .filter((e) => e.popularity_rank !== null && e.popularity_rank <= 2)
+    .sort((a, b) => (a.popularity_rank ?? 99) - (b.popularity_rank ?? 99))
+  let ninkiAiteId: string | null = null
+  for (const e of sortedByPop) {
+    if (!usedSet.has(e.horse_id)) { ninkiAiteId = e.horse_id; break }
+  }
+  if (ninkiAiteId) usedSet.add(ninkiAiteId)
+
+  // 残馬プールで穴スコア計算（v3 式を流用）
+  const totalHorses = entries.length
+  const remaining = entries.map((e) => e.horse_id).filter((id) => !usedSet.has(id))
+
+  const rawAxisScores = remaining.map((id) => {
+    const idx = aiRankIndexMap.get(id)
+    return idx !== undefined ? 1 / (idx + 1) : 0
+  })
+  const minRaw = Math.min(...rawAxisScores)
+  const maxRaw = Math.max(...rawAxisScores)
+  const rangeRaw = maxRaw - minRaw
+  const normalizeAxis = (raw: number) => (rangeRaw > 0 ? (raw - minRaw) / rangeRaw : 0)
+
+  const scored = remaining.map((horseId, i) => {
+    const horse = horses.find((h) => h.id === horseId)
+    const entry = entries.find((e) => e.horse_id === horseId)
+    const popularityRank = entry?.popularity_rank ?? totalHorses + 1
+    const rawAdj = getPaceAdjustment(horse?.style ?? null, pace)
+    const paceFitScore = (rawAdj + 0.08) / 0.18
+    const popularityComponent = Math.min(popularityRank / 16.0, 1.0)
+    const predAxisScoreRaw = rawAxisScores[i]
+    const predAxisScoreNorm = normalizeAxis(predAxisScoreRaw)
+    const axisGapComponent = 1 - predAxisScoreNorm
+    const holeScoreV3 = paceFitScore * 0.45 + popularityComponent * 0.35 + axisGapComponent * 0.20
+    return { horseId, popularityRank, paceFitScore, popularityComponent, predAxisScoreRaw, predAxisScoreNorm, axisGapComponent, holeScoreV3 }
+  })
+
+  scored.sort((a, b) => b.holeScoreV3 - a.holeScoreV3)
+  const anaHimo = scored.slice(0, 2).map((s) => s.horseId)
+  const anaHimoSet = new Set(anaHimo)
+
+  const himoV4 = [...jitsuryokuHimo, ...(ninkiAiteId ? [ninkiAiteId] : []), ...anaHimo]
+
+  // v3 の himo（比較用）: AI 2〜4位 + 残から穴 2頭
+  const usedV3 = new Set(allByAiRank.slice(0, 4))
+  const remainingV3 = entries.map((e) => e.horse_id).filter((id) => !usedV3.has(id))
+  const rawV3 = remainingV3.map((id) => {
+    const idx = aiRankIndexMap.get(id); return idx !== undefined ? 1 / (idx + 1) : 0
+  })
+  const minV3 = Math.min(...rawV3); const maxV3 = Math.max(...rawV3); const rV3 = maxV3 - minV3
+  const normV3 = (r: number) => rV3 > 0 ? (r - minV3) / rV3 : 0
+  const scoredV3 = remainingV3.map((id, i) => {
+    const entry = entries.find((e) => e.horse_id === id)
+    const pop = entry?.popularity_rank ?? totalHorses + 1
+    const rawAdj = getPaceAdjustment(horses.find((h) => h.id === id)?.style ?? null, pace)
+    const pf = (rawAdj + 0.08) / 0.18
+    const pc = Math.min(pop / 16, 1)
+    const ag = 1 - normV3(rawV3[i])
+    return { id, score: pf * 0.45 + pc * 0.35 + ag * 0.20 }
+  }).sort((a, b) => b.score - a.score)
+  const himoV3 = [...allByAiRank.slice(1, 4), ...scoredV3.slice(0, 2).map((s) => s.id)]
+
+  const rows: FormationV4DebugRow[] = [
+    ...axisV4.map((id) => {
+      const entry = entries.find((e) => e.horse_id === id)
+      const pop = entry?.popularity_rank ?? totalHorses + 1
+      const rawAdj = getPaceAdjustment(horses.find((h) => h.id === id)?.style ?? null, pace)
+      const pf = (rawAdj + 0.08) / 0.18
+      return { horseName: resolveName(id), role: '軸' as const, popularityRank: pop, paceFitScore: pf, popularityComponent: Math.min(pop / 16, 1), predAxisScoreRaw: 1, predAxisScoreNorm: 1, axisGapComponent: 0, holeScoreV3: 0 }
+    }),
+    ...jitsuryokuHimo.map((id, i) => {
+      const entry = entries.find((e) => e.horse_id === id)
+      const pop = entry?.popularity_rank ?? totalHorses + 1
+      const rawAdj = getPaceAdjustment(horses.find((h) => h.id === id)?.style ?? null, pace)
+      const pf = (rawAdj + 0.08) / 0.18
+      return { horseName: resolveName(id), role: '実力ヒモ' as const, popularityRank: pop, paceFitScore: pf, popularityComponent: Math.min(pop / 16, 1), predAxisScoreRaw: 1 / (i + 2), predAxisScoreNorm: 1, axisGapComponent: 0, holeScoreV3: 0 }
+    }),
+    ...(ninkiAiteId ? [{
+      horseName: resolveName(ninkiAiteId),
+      role: '人気相手' as const,
+      popularityRank: entries.find((e) => e.horse_id === ninkiAiteId)?.popularity_rank ?? 0,
+      paceFitScore: 0, popularityComponent: 0, predAxisScoreRaw: 0, predAxisScoreNorm: 0, axisGapComponent: 0, holeScoreV3: 0,
+    }] : []),
+    ...scored.map((s) => ({
+      horseName: resolveName(s.horseId),
+      role: anaHimoSet.has(s.horseId) ? '穴ヒモ（v4）' as const : '穴候補（v4落選）' as const,
+      popularityRank: s.popularityRank,
+      paceFitScore: s.paceFitScore,
+      popularityComponent: s.popularityComponent,
+      predAxisScoreRaw: s.predAxisScoreRaw,
+      predAxisScoreNorm: s.predAxisScoreNorm,
+      axisGapComponent: s.axisGapComponent,
+      holeScoreV3: s.holeScoreV3,
+    })),
+  ]
+
+  return {
+    formation: { ...formation, axis_count: 1, axis_horses: axisV4, himo_horses: himoV4 },
+    debug: {
+      pace,
+      ninkiAiteName: ninkiAiteId ? resolveName(ninkiAiteId) : null,
+      himoV3Names: himoV3.map(resolveName),
+      himoV4Names: himoV4.map(resolveName),
+      rows,
+    },
+  }
+}
+
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default async function RaceDetailPage({
@@ -928,17 +1086,20 @@ export default async function RaceDetailPage({
     paceInfo.frontCount, paceInfo.stalkerCount, paceInfo.closerCount, paceInfo.deepCloserCount, raceHorseIds.length,
   )
 
-  // 検証レース（is_test=true）のみ v2/v3 を実行。本番レースは不変。
-  // v2 はデバッグ比較用に残し、実際の表示には v3 を使用する。
+  // 検証レース（is_test=true）のみ v2/v3/v4 を実行。本番レースは不変。
+  // v2・v3 はデバッグ比較用に残し、実際の表示には v4 を使用する。
   let formationV2Debug: FormationV2Result['debug'] | null = null
   let formationV3Debug: FormationV3Result['debug'] | null = null
+  let formationV4Debug: FormationV4Result['debug'] | null = null
   if (race?.is_test && formation) {
-    const v2Result = computeFormationV2(formation, horses, entries, pace, earlyStabilityScore)
+    const origFormation = formation  // v2/v3/v4 すべて同じ RPC 結果から計算
+    const v2Result = computeFormationV2(origFormation, horses, entries, pace, earlyStabilityScore)
     formationV2Debug = v2Result.debug
-
-    const v3Result = computeFormationV3(formation, horses, entries, pace)
+    const v3Result = computeFormationV3(origFormation, horses, entries, pace)
     formationV3Debug = v3Result.debug
-    formation = v3Result.formation  // v3 を実際の表示に使用
+    const v4Result = computeFormationV4(origFormation, horses, entries, pace)
+    formationV4Debug = v4Result.debug
+    formation = v4Result.formation  // v4 を実際の表示に使用
   }
 
   // Axis horses stay in their original AI-determined order.
@@ -1317,6 +1478,151 @@ export default async function RaceDetailPage({
                     ))}
                     <p style={{ fontSize: 10, color: '#5C5C63', marginTop: 10, lineHeight: 1.7 }}>
                       score_v3 = pace_fit×0.45 + pop_comp×0.35 + axis_gap×0.20　／　pop_comp = min(pop/16, 1)　／　axis_gap = 1 − norm(1/(AI rank))
+                    </p>
+                  </div>
+                )
+              })()}
+
+              {/* ── v4 デバッグパネル（検証レースのみ表示） ─────────────── */}
+              {formationV4Debug && (() => {
+                const ROLE_COLOR: Record<FormationV4DebugRow['role'], string> = {
+                  '軸':             '#6366F1',
+                  '実力ヒモ':       '#34D399',
+                  '人気相手':       '#60A5FA',
+                  '穴ヒモ（v4）':   '#FBBF24',
+                  '穴候補（v4落選）': '#5C5C63',
+                }
+                // v3 と v4 の himo を比較（名前の集合差）
+                const v3Set = new Set(formationV4Debug.himoV3Names)
+                const v4Set = new Set(formationV4Debug.himoV4Names)
+                const addedInV4   = formationV4Debug.himoV4Names.filter((n) => !v3Set.has(n))
+                const removedInV4 = formationV4Debug.himoV3Names.filter((n) => !v4Set.has(n))
+
+                // 1〜3着確認用
+                const top3Ids = raceResults
+                  .filter((r) => r.finish_pos <= 3)
+                  .sort((a, b) => a.finish_pos - b.finish_pos)
+                  .map((r) => r.horse_id)
+                const v4AllIds = new Set([
+                  ...(formation?.axis_horses ?? []),
+                  ...(formation?.himo_horses ?? []),
+                ])
+
+                return (
+                  <div style={{
+                    marginTop: 8,
+                    background: 'rgba(96,165,250,0.03)',
+                    border: '1px solid rgba(96,165,250,0.2)',
+                    borderRadius: 8,
+                    padding: '14px 16px',
+                  }}>
+                    <p style={{ fontSize: 11, fontWeight: 700, color: '#60A5FA', margin: '0 0 4px', letterSpacing: '0.06em', textTransform: 'uppercase' }}>
+                      検証 — v4 相手選定（改）
+                    </p>
+                    <p style={{ fontSize: 11, color: '#7A7A84', margin: '0 0 14px', lineHeight: 1.6 }}>
+                      pace = <strong style={{ color: '#B0B0B8' }}>{formationV4Debug.pace}</strong>
+                      　　実力ヒモ 2頭 + 人気相手 1頭 + 穴ヒモ 2頭
+                    </p>
+
+                    {/* ── v3 vs v4 比較 ─────────────────── */}
+                    <p style={{ fontSize: 10, fontWeight: 700, color: '#9D9DA3', letterSpacing: '0.06em', textTransform: 'uppercase', margin: '0 0 8px' }}>
+                      相手一覧の比較
+                    </p>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 14 }}>
+                      {(['v3', 'v4'] as const).map((ver) => {
+                        const names = ver === 'v3' ? formationV4Debug.himoV3Names : formationV4Debug.himoV4Names
+                        const otherSet = ver === 'v3' ? v4Set : v3Set
+                        return (
+                          <div key={ver} style={{ background: 'rgba(255,255,255,0.03)', borderRadius: 6, padding: '10px 12px', border: '1px solid rgba(255,255,255,0.06)' }}>
+                            <p style={{ fontSize: 10, fontWeight: 700, color: ver === 'v3' ? '#34D399' : '#60A5FA', margin: '0 0 8px', letterSpacing: '0.04em' }}>
+                              {ver.toUpperCase()} 相手（{names.length}頭）
+                            </p>
+                            {names.map((n, i) => (
+                              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
+                                <span style={{
+                                  width: 6, height: 6, borderRadius: '50%', flexShrink: 0,
+                                  background: otherSet.has(n) ? 'rgba(255,255,255,0.2)' : (ver === 'v3' ? '#F87171' : '#60A5FA'),
+                                }} />
+                                <span style={{ fontSize: 12, color: otherSet.has(n) ? '#7A7A84' : '#E8E8EA' }}>{n}</span>
+                                {!otherSet.has(n) && (
+                                  <span style={{ fontSize: 10, color: ver === 'v3' ? '#F87171' : '#60A5FA' }}>
+                                    {ver === 'v3' ? '→削除' : '→追加'}
+                                  </span>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        )
+                      })}
+                    </div>
+                    {(addedInV4.length > 0 || removedInV4.length > 0) && (
+                      <p style={{ fontSize: 11, color: '#7A7A84', margin: '0 0 14px', lineHeight: 1.7 }}>
+                        {removedInV4.length > 0 && <span style={{ color: '#F87171' }}>削除: {removedInV4.join('、')}　</span>}
+                        {addedInV4.length > 0 && <span style={{ color: '#60A5FA' }}>追加: {addedInV4.join('、')}</span>}
+                        {formationV4Debug.ninkiAiteName && <span style={{ color: '#9D9DA3' }}>　（人気相手: {formationV4Debug.ninkiAiteName}）</span>}
+                      </p>
+                    )}
+
+                    {/* ── 1〜3着チェック ─────────────────── */}
+                    {top3Ids.length > 0 && (
+                      <>
+                        <p style={{ fontSize: 10, fontWeight: 700, color: '#9D9DA3', letterSpacing: '0.06em', textTransform: 'uppercase', margin: '0 0 8px' }}>
+                          着順チェック（v4 フォーメーションに含まれるか）
+                        </p>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginBottom: 14 }}>
+                          {top3Ids.map((hid, i) => {
+                            const name = horses.find((h) => h.id === hid)?.name ?? hid
+                            const inFormation = v4AllIds.has(hid)
+                            return (
+                              <div key={hid} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                <span style={{ fontSize: 12, fontWeight: 700, color: i === 0 ? '#FBBF24' : i === 1 ? '#B0B0B8' : '#CD8B5A', width: 20, flexShrink: 0 }}>{i + 1}着</span>
+                                <span style={{ fontSize: 13, color: '#E8E8EA' }}>{name}</span>
+                                <span style={{
+                                  fontSize: 10, fontWeight: 700, padding: '1px 7px', borderRadius: 4,
+                                  background: inFormation ? 'rgba(52,211,153,0.1)' : 'rgba(248,113,113,0.08)',
+                                  color: inFormation ? '#34D399' : '#F87171',
+                                  border: `1px solid ${inFormation ? 'rgba(52,211,153,0.25)' : 'rgba(248,113,113,0.2)'}`,
+                                }}>
+                                  {inFormation ? '✓ 含む' : '✗ なし'}
+                                </span>
+                              </div>
+                            )
+                          })}
+                        </div>
+                      </>
+                    )}
+
+                    {/* ── 穴ヒモ候補スコア内訳 ──────────── */}
+                    <p style={{ fontSize: 10, fontWeight: 700, color: '#9D9DA3', letterSpacing: '0.06em', textTransform: 'uppercase', margin: '0 0 8px' }}>
+                      フォーメーション構成
+                    </p>
+                    {formationV4Debug.rows.map((row, i) => {
+                      const isAna = row.role === '穴ヒモ（v4）' || row.role === '穴候補（v4落選）'
+                      return (
+                        <div key={i} style={{
+                          display: 'flex', alignItems: 'center', gap: 8, padding: '5px 6px',
+                          borderRadius: 4, borderBottom: '1px solid rgba(255,255,255,0.04)',
+                          background: row.role === '穴ヒモ（v4）' ? 'rgba(251,191,36,0.06)' : row.role === '人気相手' ? 'rgba(96,165,250,0.06)' : 'transparent',
+                        }}>
+                          <span style={{ fontSize: 10, fontWeight: 700, padding: '1px 6px', borderRadius: 4, background: `${ROLE_COLOR[row.role]}18`, color: ROLE_COLOR[row.role], flexShrink: 0, minWidth: 68, textAlign: 'center' }}>
+                            {row.role}
+                          </span>
+                          <span style={{ fontSize: 12, color: ROLE_COLOR[row.role], flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            {row.horseName}
+                          </span>
+                          <span style={{ fontSize: 11, color: '#7A7A84', flexShrink: 0, fontVariantNumeric: 'tabular-nums' }}>
+                            {row.popularityRank}番人気
+                          </span>
+                          {isAna && (
+                            <span style={{ fontSize: 11, color: '#B0B0B8', flexShrink: 0, fontVariantNumeric: 'tabular-nums' }}>
+                              {row.holeScoreV3.toFixed(4)}
+                            </span>
+                          )}
+                        </div>
+                      )
+                    })}
+                    <p style={{ fontSize: 10, color: '#5C5C63', marginTop: 10, lineHeight: 1.7 }}>
+                      穴スコア（v4 も v3 式を流用）: pace_fit×0.45 + pop_comp×0.35 + axis_gap×0.20
                     </p>
                   </div>
                 )
