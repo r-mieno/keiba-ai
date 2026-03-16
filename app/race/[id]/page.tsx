@@ -1622,6 +1622,152 @@ function computeFormationV8(
   }
 }
 
+// ─── Formation V9 ─────────────────────────────────────────────────────────────
+// v8 ベースに「レースタイプ別騎手重み」を導入
+// 3歳戦: jockey 0.25 (フレッシュな騎手起用が結果に直結しやすい)
+// 古馬戦: jockey 0.10 (経験・コース適性の影響が大きく騎手依存度が下がる)
+//
+// レースタイプ判定: race_name に特定キーワードを含む → 3歳戦、それ以外 → 古馬戦
+
+type RaceType3 = '3歳戦' | '古馬戦'
+
+const RACE_3YO_KEYWORDS = [
+  '弥生賞', 'スプリング', '皐月賞', 'ダービー', '菊花賞',
+  'ホープフル', '共同通信杯', '京成杯',
+]
+
+function classifyRaceType(raceName: string | null | undefined): RaceType3 {
+  if (!raceName) return '古馬戦'
+  return RACE_3YO_KEYWORDS.some((kw) => raceName.includes(kw)) ? '3歳戦' : '古馬戦'
+}
+
+type FormationV9DebugRow = {
+  horseName: string
+  paceFit: number
+  distanceFit: number
+  jockeyScore: number
+  stabilityComponent: number
+  himoScoreV8: number
+  himoScoreV9: number
+  isHimo: boolean
+  wasHimoV8: boolean   // v8 でヒモだったか（入れ替わり検出用）
+}
+
+type FormationV9Result = {
+  formation: FormationResponse
+  debug: {
+    pace: PaceType
+    raceType: RaceType3
+    axisTypeV7: AxisType
+    himoCount: number
+    rows: FormationV9DebugRow[]
+  }
+}
+
+function computeFormationV9(
+  formation: FormationResponse,
+  horses: Horse[],
+  entries: Entry[],
+  pace: PaceType,
+  stabilityScore: number,
+  distanceM: number | null,
+  raceName: string | null | undefined,
+): FormationV9Result {
+  const resolveName = (id: string) => horses.find((h) => h.id === id)?.name ?? id
+  const raceType = classifyRaceType(raceName)
+
+  const allByAiRank: string[] = formation.axis_horses.length > 0
+    ? [...formation.axis_horses, ...formation.himo_horses]
+    : formation.himo_horses
+  const aiRankIndexMap = new Map(allByAiRank.map((id, i) => [id, i]))
+
+  const axisId  = allByAiRank[0] ?? null
+  const rank2Id = allByAiRank[1] ?? null
+  const rank4Id = allByAiRank[3] ?? null
+  const axisV9  = axisId ? [axisId] : formation.axis_horses
+
+  const getAxisGap = (id: string): number => {
+    const idx = aiRankIndexMap.get(id)
+    if (idx === undefined) return 1.0
+    if (idx === 0) return 0.0
+    return Math.abs(1 / (idx + 1) - 1.0)
+  }
+
+  const stabilityComp = 1 - stabilityScore / 100
+
+  // axis_confidence (v7 引き継ぎ)
+  const computeV5Score = (id: string): number => {
+    const style = horses.find((h) => h.id === id)?.style ?? null
+    const rawAdj = getPaceAdjustment(style, pace)
+    const paceFit = (rawAdj + 0.08) / 0.18
+    const distanceFit = getDistanceFitScore(style, distanceM)
+    return paceFit * 0.50 + distanceFit * 0.35 + stabilityComp * 0.15
+  }
+  const top1Score = axisId  ? computeV5Score(axisId)  : 0
+  const top2Score = rank2Id ? computeV5Score(rank2Id) : 0
+  const top4Score = rank4Id ? computeV5Score(rank4Id) : null
+  const axisConfidenceV7 = top4Score !== null
+    ? (top1Score - top2Score) * 0.7 + (top1Score - top4Score) * 0.3
+    : top1Score - top2Score
+  const axisTypeV7: AxisType =
+    axisConfidenceV7 >= 0.08 ? '軸強い' : axisConfidenceV7 >= 0.04 ? '標準' : '混戦'
+  const himoCount = axisTypeV7 === '軸強い' ? 4 : axisTypeV7 === '標準' ? 5 : 6
+
+  // candidate_pool: axis_gap 上位6頭（v7/v8 と同一）
+  const nonAxisIds = entries.map((e) => e.horse_id).filter((id) => id !== axisId)
+  const candidatePool = nonAxisIds
+    .map((id) => ({ id, axisGap: getAxisGap(id) }))
+    .sort((a, b) => a.axisGap - b.axisGap)
+    .slice(0, 6)
+    .map((c) => c.id)
+
+  // レースタイプ別の重み
+  const W = raceType === '3歳戦'
+    ? { pace: 0.40, dist: 0.25, jockey: 0.25, stability: 0.10 }
+    : { pace: 0.45, dist: 0.35, jockey: 0.10, stability: 0.10 }
+
+  const scored = candidatePool.map((id) => {
+    const style = horses.find((h) => h.id === id)?.style ?? null
+    const rawAdj = getPaceAdjustment(style, pace)
+    const paceFit = (rawAdj + 0.08) / 0.18
+    const distanceFit = getDistanceFitScore(style, distanceM)
+    const entry = entries.find((e) => e.horse_id === id)
+    const rawJockeyName = entry?.jockey_name ?? ''
+    const aliasKey  = rawJockeyName ? (JOCKEY_ALIAS[rawJockeyName] ?? rawJockeyName) : ''
+    const jockeyScore = aliasKey ? (JOCKEY_PLACE_SCORE[aliasKey] ?? JOCKEY_DEFAULT_SCORE) : JOCKEY_DEFAULT_SCORE
+
+    const himoScoreV8 = paceFit * 0.40 + distanceFit * 0.30 + jockeyScore * 0.20 + stabilityComp * 0.10
+    const himoScoreV9 = paceFit * W.pace + distanceFit * W.dist + jockeyScore * W.jockey + stabilityComp * W.stability
+
+    return { id, axisGap: getAxisGap(id), paceFit, distanceFit, jockeyScore, himoScoreV8, himoScoreV9 }
+  })
+
+  // v8 でのヒモ集合（比較用）
+  const scoredByV8 = [...scored].sort((a, b) => b.himoScoreV8 - a.himoScoreV8)
+  const himoV8Set = new Set(scoredByV8.slice(0, himoCount).map((s) => s.id))
+
+  scored.sort((a, b) => b.himoScoreV9 - a.himoScoreV9)
+  const himoV9  = scored.slice(0, himoCount).map((s) => s.id)
+  const himoSet = new Set(himoV9)
+
+  const rows: FormationV9DebugRow[] = scored.map((s) => ({
+    horseName: resolveName(s.id),
+    paceFit: s.paceFit,
+    distanceFit: s.distanceFit,
+    jockeyScore: s.jockeyScore,
+    stabilityComponent: stabilityComp,
+    himoScoreV8: s.himoScoreV8,
+    himoScoreV9: s.himoScoreV9,
+    isHimo: himoSet.has(s.id),
+    wasHimoV8: himoV8Set.has(s.id),
+  }))
+
+  return {
+    formation: { ...formation, axis_count: 1, axis_horses: axisV9, himo_horses: himoV9 },
+    debug: { pace, raceType, axisTypeV7, himoCount, rows },
+  }
+}
+
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default async function RaceDetailPage({
@@ -1746,6 +1892,7 @@ export default async function RaceDetailPage({
   let formationV6Debug: FormationV6Result['debug'] | null = null
   let formationV7Debug: FormationV7Result['debug'] | null = null
   let formationV8Debug: FormationV8Result['debug'] | null = null
+  let formationV9Debug: FormationV9Result['debug'] | null = null
   if (race?.is_test && formation) {
     const origFormation = formation  // v2〜v8 すべて同じ RPC 結果から計算
     const v2Result = computeFormationV2(origFormation, horses, entries, pace, earlyStabilityScore)
@@ -1762,7 +1909,9 @@ export default async function RaceDetailPage({
     formationV7Debug = v7Result.debug
     const v8Result = computeFormationV8(origFormation, horses, entries, pace, earlyStabilityScore, race?.distance_m ?? null)
     formationV8Debug = v8Result.debug
-    formation = v8Result.formation  // v8 を実際の表示に使用
+    const v9Result = computeFormationV9(origFormation, horses, entries, pace, earlyStabilityScore, race?.distance_m ?? null, race?.race_name ?? null)
+    formationV9Debug = v9Result.debug
+    formation = v9Result.formation  // v9 を実際の表示に使用
   }
 
   // Axis horses stay in their original AI-determined order.
@@ -2701,6 +2850,120 @@ export default async function RaceDetailPage({
                     </div>
                     <p style={{ fontSize: 10, color: '#5C5C63', marginTop: 10, lineHeight: 1.7 }}>
                       騎手未登録の場合はデフォルト {JOCKEY_DEFAULT_SCORE.toFixed(2)} を使用 / マスタは JOCKEY_PLACE_SCORE で管理
+                    </p>
+                  </div>
+                )
+              })()}
+
+              {/* ── 検証パネル v9: レースタイプ別騎手重み ─────────────── */}
+              {formationV9Debug && (() => {
+                const AXIS_TYPE_COLOR: Record<string, string> = {
+                  '軸強い': '#34D399', '標準': '#FBBF24', '混戦': '#F87171',
+                }
+                const raceTypeColor = formationV9Debug.raceType === '3歳戦' ? '#A78BFA' : '#60A5FA'
+
+                // v8→v9 入れ替わり
+                const addedInV9   = formationV9Debug.rows.filter((r) =>  r.isHimo && !r.wasHimoV8)
+                const removedInV9 = formationV9Debug.rows.filter((r) => !r.isHimo &&  r.wasHimoV8)
+
+                // v9 の重み表示用
+                const W = formationV9Debug.raceType === '3歳戦'
+                  ? { pace: '0.40', dist: '0.25', jockey: '0.25', stability: '0.10' }
+                  : { pace: '0.45', dist: '0.35', jockey: '0.10', stability: '0.10' }
+
+                return (
+                  <div style={{
+                    marginTop: 8,
+                    background: 'rgba(167,139,250,0.03)',
+                    border: '1px solid rgba(167,139,250,0.2)',
+                    borderRadius: 8,
+                    padding: '14px 16px',
+                  }}>
+                    <p style={{ fontSize: 11, fontWeight: 700, color: '#A78BFA', margin: '0 0 4px', letterSpacing: '0.06em', textTransform: 'uppercase' }}>
+                      検証 — v9 レースタイプ別騎手重み
+                    </p>
+
+                    {/* ── レースタイプ + 重み ───────────── */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8, flexWrap: 'wrap' }}>
+                      <span style={{ fontSize: 12, fontWeight: 700, padding: '2px 10px', borderRadius: 4, background: `${raceTypeColor}18`, color: raceTypeColor, border: `1px solid ${raceTypeColor}44` }}>
+                        {formationV9Debug.raceType}
+                      </span>
+                      <span style={{ fontSize: 11, color: '#7A7A84' }}>
+                        pace×{W.pace} + dist×{W.dist} + jockey×{W.jockey} + stability×{W.stability}
+                      </span>
+                      <span style={{ fontSize: 11, color: '#7A7A84', marginLeft: 'auto' }}>
+                        軸タイプ: <span style={{ color: AXIS_TYPE_COLOR[formationV9Debug.axisTypeV7], fontWeight: 700 }}>{formationV9Debug.axisTypeV7}</span>　ヒモ <strong style={{ color: '#B0B0B8' }}>{formationV9Debug.himoCount}頭</strong>
+                      </span>
+                    </div>
+                    <p style={{ fontSize: 10, color: '#5C5C63', margin: '0 0 14px' }}>
+                      v8 との差: pace {formationV9Debug.raceType === '3歳戦' ? '同' : '+0.05'} / dist {formationV9Debug.raceType === '3歳戦' ? '-0.05' : '+0.05'} / jockey {formationV9Debug.raceType === '3歳戦' ? '+0.05' : '-0.10'}
+                    </p>
+
+                    {/* ── v8→v9 入れ替わり ──────────────── */}
+                    {(addedInV9.length > 0 || removedInV9.length > 0) ? (
+                      <div style={{ marginBottom: 14, padding: '8px 10px', borderRadius: 4, background: 'rgba(167,139,250,0.07)', border: '1px solid rgba(167,139,250,0.25)' }}>
+                        <p style={{ fontSize: 10, fontWeight: 700, color: '#A78BFA', margin: '0 0 6px', letterSpacing: '0.04em' }}>v8 → v9 ヒモ変更</p>
+                        {addedInV9.length > 0 && (
+                          <p style={{ fontSize: 11, color: '#6EE7B7', margin: '0 0 2px' }}>
+                            ＋ {addedInV9.map((r) => r.horseName).join('、')}
+                          </p>
+                        )}
+                        {removedInV9.length > 0 && (
+                          <p style={{ fontSize: 11, color: '#F87171', margin: 0 }}>
+                            － {removedInV9.map((r) => r.horseName).join('、')}
+                          </p>
+                        )}
+                      </div>
+                    ) : (
+                      <p style={{ fontSize: 11, color: '#5C5C63', marginBottom: 14 }}>v8 と v9 のヒモ構成は同一です</p>
+                    )}
+
+                    {/* ── スコアテーブル ─────────────────── */}
+                    <div style={{ overflowX: 'auto' }}>
+                      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 11 }}>
+                        <thead>
+                          <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
+                            {['馬名', 'pace_fit', 'dist_fit', 'jockey', 'stability', 'v8 score', 'v9 score'].map((h) => (
+                              <th key={h} style={{ padding: '4px 6px', color: '#7A7A84', fontWeight: 600, textAlign: 'right', whiteSpace: 'nowrap' }}>{h}</th>
+                            ))}
+                            <th style={{ padding: '4px 6px', color: '#7A7A84', fontWeight: 600, textAlign: 'center' }}>採用</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {formationV9Debug.rows.map((row, i) => {
+                            const added   =  row.isHimo && !row.wasHimoV8
+                            const removed = !row.isHimo &&  row.wasHimoV8
+                            return (
+                              <tr key={i} style={{
+                                borderBottom: '1px solid rgba(255,255,255,0.04)',
+                                background: row.isHimo ? 'rgba(167,139,250,0.06)' : 'transparent',
+                              }}>
+                                <td style={{ padding: '5px 6px', color: row.isHimo ? '#DDD6FE' : '#B0B0B8', fontWeight: row.isHimo ? 700 : 400, whiteSpace: 'nowrap' }}>
+                                  {row.horseName}
+                                  {added   && <span style={{ marginLeft: 4, fontSize: 9, color: '#6EE7B7' }}>↑</span>}
+                                  {removed && <span style={{ marginLeft: 4, fontSize: 9, color: '#F87171' }}>↓</span>}
+                                </td>
+                                <td style={{ padding: '5px 6px', color: '#B0B0B8', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{row.paceFit.toFixed(4)}</td>
+                                <td style={{ padding: '5px 6px', color: '#B0B0B8', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{row.distanceFit.toFixed(2)}</td>
+                                <td style={{ padding: '5px 6px', color: '#B0B0B8', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{row.jockeyScore.toFixed(2)}</td>
+                                <td style={{ padding: '5px 6px', color: '#B0B0B8', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{row.stabilityComponent.toFixed(4)}</td>
+                                <td style={{ padding: '5px 6px', color: '#9D9DA3', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{row.himoScoreV8.toFixed(4)}</td>
+                                <td style={{ padding: '5px 6px', color: row.isHimo ? '#DDD6FE' : '#B0B0B8', textAlign: 'right', fontWeight: row.isHimo ? 700 : 400, fontVariantNumeric: 'tabular-nums' }}>{row.himoScoreV9.toFixed(4)}</td>
+                                <td style={{ padding: '5px 6px', textAlign: 'center' }}>
+                                  {row.isHimo && (
+                                    <span style={{ fontSize: 10, fontWeight: 700, padding: '1px 6px', borderRadius: 4, background: 'rgba(167,139,250,0.18)', color: '#A78BFA', border: '1px solid rgba(167,139,250,0.35)' }}>
+                                      ◎ヒモ
+                                    </span>
+                                  )}
+                                </td>
+                              </tr>
+                            )
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                    <p style={{ fontSize: 10, color: '#5C5C63', marginTop: 10, lineHeight: 1.7 }}>
+                      3歳戦キーワード: {RACE_3YO_KEYWORDS.join(' / ')}
                     </p>
                   </div>
                 )
