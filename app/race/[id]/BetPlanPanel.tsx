@@ -405,6 +405,28 @@ export default function BetPlanPanel({
       {/* AI comment */}
       <p style={{ color: '#B0B0B8', fontSize: 12, lineHeight: 1.8 }}>{comment}</p>
 
+      {/* ── ネット馬券ガイド導線 ────────────────────────────────────── */}
+      <a
+        href="/how-to-buy"
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 8,
+          marginTop: 14,
+          padding: '9px 12px',
+          background: 'rgba(255,255,255,0.02)',
+          border: '1px solid rgba(255,255,255,0.07)',
+          borderRadius: 6,
+          color: '#7A7A84',
+          fontSize: 12,
+          textDecoration: 'none',
+        }}
+      >
+        <span style={{ fontSize: 13, flexShrink: 0, opacity: 0.6 }}>ℹ</span>
+        <span>はじめての方：ネット馬券の買い方を見る</span>
+        <span style={{ marginLeft: 'auto', fontSize: 11, opacity: 0.4 }}>→</span>
+      </a>
+
       {/* ── 三連複フォーメーション説明モーダル ─────────────────────── */}
       {showBetInfo && (
         <div
