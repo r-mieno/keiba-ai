@@ -698,6 +698,121 @@ function computeFormationV2(
   }
 }
 
+// ─── Formation v3 (検証レース専用) ───────────────────────────────────────────
+//
+// v2 の stability 項（レース共通値）を廃止し、馬ごとに差が出る3成分に変更。
+//
+// hole_score_v3 =
+//   pace_fit_score      * 0.45
+//   + popularity_component * 0.35   = min(popularity_rank / 16.0, 1.0)
+//   + axis_gap_component   * 0.20   = 1 - normalized_prediction_axis_score
+//
+// prediction_axis_score（生値）= AI ランキング位置から 1/(rank+1) で算出。
+// 残馬プール内で min-max 正規化。
+// → AI 下位・非選出馬ほど axis_gap が高くなり穴らしさが上がる。
+//
+// 軸・実力ヒモの選定は v2 と同じ（AI順位 1位 / 2〜4位）。
+// 穴ヒモは残馬から hole_score_v3 上位2頭。
+
+type FormationV3DebugRow = {
+  horseName: string
+  selected: boolean            // 穴ヒモ v3 に選ばれたか
+  paceFitScore: number
+  popularityRank: number
+  popularityComponent: number  // min(pop_rank / 16, 1.0)
+  predAxisScoreRaw: number     // 1/(AI rank index + 1)。非選出馬は 0
+  predAxisScoreNorm: number    // 残馬プール内 min-max 正規化
+  axisGapComponent: number     // 1 - predAxisScoreNorm
+  holeScoreV3: number
+}
+
+type FormationV3Result = {
+  formation: FormationResponse
+  debug: {
+    pace: PaceType
+    rows: FormationV3DebugRow[]
+  }
+}
+
+function computeFormationV3(
+  formation: FormationResponse,
+  horses: Horse[],
+  entries: Entry[],
+  pace: PaceType,
+): FormationV3Result {
+  const allByAiRank = [...formation.axis_horses, ...formation.himo_horses]
+  const aiRankIndexMap = new Map(allByAiRank.map((id, i) => [id, i]))
+
+  const axisV3 = allByAiRank.slice(0, 1)
+  const jitsuryokuHimo = allByAiRank.slice(1, 4)
+
+  const usedSet = new Set(allByAiRank.slice(0, 4))
+  const remaining = entries.map((e) => e.horse_id).filter((id) => !usedSet.has(id))
+
+  const totalHorses = entries.length
+
+  // prediction_axis_score（生値）: AI ランキングにいる馬は 1/(index+1)、それ以外は 0
+  const rawAxisScores = remaining.map((id) => {
+    const idx = aiRankIndexMap.get(id)
+    return idx !== undefined ? 1 / (idx + 1) : 0
+  })
+
+  // 残馬プール内で min-max 正規化
+  const minRaw = Math.min(...rawAxisScores)
+  const maxRaw = Math.max(...rawAxisScores)
+  const rangeRaw = maxRaw - minRaw
+  const normalizeAxis = (raw: number) => (rangeRaw > 0 ? (raw - minRaw) / rangeRaw : 0)
+
+  // hole_score_v3 を計算
+  const scored = remaining.map((horseId, i) => {
+    const horse = horses.find((h) => h.id === horseId)
+    const entry = entries.find((e) => e.horse_id === horseId)
+    const popularityRank = entry?.popularity_rank ?? totalHorses + 1
+
+    const rawAdj = getPaceAdjustment(horse?.style ?? null, pace)
+    const paceFitScore = (rawAdj + 0.08) / 0.18
+
+    const popularityComponent = Math.min(popularityRank / 16.0, 1.0)
+
+    const predAxisScoreRaw = rawAxisScores[i]
+    const predAxisScoreNorm = normalizeAxis(predAxisScoreRaw)
+    const axisGapComponent = 1 - predAxisScoreNorm
+
+    const holeScoreV3 =
+      paceFitScore * 0.45
+      + popularityComponent * 0.35
+      + axisGapComponent * 0.20
+
+    return { horseId, paceFitScore, popularityRank, popularityComponent, predAxisScoreRaw, predAxisScoreNorm, axisGapComponent, holeScoreV3 }
+  })
+
+  scored.sort((a, b) => b.holeScoreV3 - a.holeScoreV3)
+  const anaHimo = scored.slice(0, 2).map((s) => s.horseId)
+  const anaHimoSet = new Set(anaHimo)
+
+  const rows: FormationV3DebugRow[] = scored.map((s) => ({
+    horseName: horses.find((h) => h.id === s.horseId)?.name ?? s.horseId,
+    selected: anaHimoSet.has(s.horseId),
+    paceFitScore: s.paceFitScore,
+    popularityRank: s.popularityRank,
+    popularityComponent: s.popularityComponent,
+    predAxisScoreRaw: s.predAxisScoreRaw,
+    predAxisScoreNorm: s.predAxisScoreNorm,
+    axisGapComponent: s.axisGapComponent,
+    holeScoreV3: s.holeScoreV3,
+  }))
+
+  return {
+    formation: {
+      ...formation,
+      axis_count: 1,
+      axis_horses: axisV3,
+      himo_horses: [...jitsuryokuHimo, ...anaHimo],
+    },
+    debug: { pace, rows },
+  }
+}
+
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default async function RaceDetailPage({
@@ -813,12 +928,17 @@ export default async function RaceDetailPage({
     paceInfo.frontCount, paceInfo.stalkerCount, paceInfo.closerCount, paceInfo.deepCloserCount, raceHorseIds.length,
   )
 
-  // 検証レース（is_test=true）のみ v2 フォーメーションで上書き。本番レースは不変。
+  // 検証レース（is_test=true）のみ v2/v3 を実行。本番レースは不変。
+  // v2 はデバッグ比較用に残し、実際の表示には v3 を使用する。
   let formationV2Debug: FormationV2Result['debug'] | null = null
+  let formationV3Debug: FormationV3Result['debug'] | null = null
   if (race?.is_test && formation) {
     const v2Result = computeFormationV2(formation, horses, entries, pace, earlyStabilityScore)
-    formation = v2Result.formation
     formationV2Debug = v2Result.debug
+
+    const v3Result = computeFormationV3(formation, horses, entries, pace)
+    formationV3Debug = v3Result.debug
+    formation = v3Result.formation  // v3 を実際の表示に使用
   }
 
   // Axis horses stay in their original AI-determined order.
@@ -1137,6 +1257,66 @@ export default async function RaceDetailPage({
                     ))}
                     <p style={{ fontSize: 10, color: '#5C5C63', marginTop: 10, lineHeight: 1.7 }}>
                       hole_score = pace_fit×0.5 + (1/pop_rank)×0.3 + stability×0.2
+                    </p>
+                  </div>
+                )
+              })()}
+
+              {/* ── v3 デバッグパネル（検証レースのみ表示） ─────────────── */}
+              {formationV3Debug && (() => {
+                return (
+                  <div style={{
+                    marginTop: 8,
+                    background: 'rgba(52,211,153,0.03)',
+                    border: '1px solid rgba(52,211,153,0.15)',
+                    borderRadius: 8,
+                    padding: '14px 16px',
+                  }}>
+                    <p style={{ fontSize: 11, fontWeight: 700, color: '#34D399', margin: '0 0 4px', letterSpacing: '0.06em', textTransform: 'uppercase' }}>
+                      検証 — v3 穴スコア内訳
+                    </p>
+                    <p style={{ fontSize: 11, color: '#7A7A84', margin: '0 0 12px', lineHeight: 1.6 }}>
+                      pace = <strong style={{ color: '#B0B0B8' }}>{formationV3Debug.pace}</strong>
+                      　　stability 項を廃止し popularity_component + axis_gap_component に変更
+                    </p>
+                    {/* ヘッダー行 */}
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 52px 52px 60px 60px 60px 72px 44px', gap: 3, padding: '4px 6px', marginBottom: 4 }}>
+                      {['馬名', 'pace_fit', 'pop', 'pop_comp', 'axis_raw', 'axis_gap', 'score_v3', '穴'].map((h) => (
+                        <span key={h} style={{ fontSize: 10, color: '#5C5C63', fontWeight: 600, textAlign: 'right' }}>{h}</span>
+                      ))}
+                    </div>
+                    {formationV3Debug.rows.map((row, i) => (
+                      <div
+                        key={i}
+                        style={{
+                          display: 'grid',
+                          gridTemplateColumns: '1fr 52px 52px 60px 60px 60px 72px 44px',
+                          gap: 3,
+                          padding: '5px 6px',
+                          borderRadius: 4,
+                          background: row.selected ? 'rgba(52,211,153,0.07)' : 'transparent',
+                          borderBottom: '1px solid rgba(255,255,255,0.04)',
+                          alignItems: 'center',
+                        }}
+                      >
+                        <span style={{ fontSize: 12, color: row.selected ? '#34D399' : '#7A7A84', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {row.horseName}
+                        </span>
+                        <span style={{ fontSize: 11, color: '#B0B0B8', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{row.paceFitScore.toFixed(3)}</span>
+                        <span style={{ fontSize: 11, color: '#B0B0B8', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{row.popularityRank}</span>
+                        <span style={{ fontSize: 11, color: '#B0B0B8', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{row.popularityComponent.toFixed(3)}</span>
+                        <span style={{ fontSize: 11, color: '#B0B0B8', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{row.predAxisScoreRaw.toFixed(3)}</span>
+                        <span style={{ fontSize: 11, color: '#B0B0B8', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{row.axisGapComponent.toFixed(3)}</span>
+                        <span style={{ fontSize: 12, fontWeight: row.selected ? 700 : 400, color: row.selected ? '#34D399' : '#B0B0B8', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>
+                          {row.holeScoreV3.toFixed(4)}
+                        </span>
+                        <span style={{ fontSize: 11, color: row.selected ? '#34D399' : '#5C5C63', textAlign: 'right' }}>
+                          {row.selected ? '◎穴' : '—'}
+                        </span>
+                      </div>
+                    ))}
+                    <p style={{ fontSize: 10, color: '#5C5C63', marginTop: 10, lineHeight: 1.7 }}>
+                      score_v3 = pace_fit×0.45 + pop_comp×0.35 + axis_gap×0.20　／　pop_comp = min(pop/16, 1)　／　axis_gap = 1 − norm(1/(AI rank))
                     </p>
                   </div>
                 )
