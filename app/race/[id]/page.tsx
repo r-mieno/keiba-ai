@@ -76,6 +76,45 @@ const JOCKEY_PLACE_SCORE: Record<string, number> = {
 // 騎手名が未登録の場合のデフォルトスコア
 const JOCKEY_DEFAULT_SCORE = 0.60
 
+// DB上の表記 → JOCKEY_PLACE_SCORE のキーへのエイリアスマッピング
+// 同姓が多い日本人騎手を誤マッチしないよう、フルネームから明示的にマップする
+const JOCKEY_ALIAS: Record<string, string> = {
+  // 外国人騎手（全角/半角混在対策）
+  'Ｃ．ルメール':  'ルメール',
+  'C.ルメール':    'ルメール',
+  'C．ルメール':   'ルメール',
+  'M.デムーロ':    'デムーロ',
+  'Ｍ．デムーロ':  'デムーロ',
+  'R.レーン':      'レーン',
+  'Ｒ．レーン':    'レーン',
+  'J.モレイラ':    'モレイラ',
+  'Ｊ．モレイラ':  'モレイラ',
+  // 国内騎手（同姓区別のため必ずフルネームで登録）
+  '川田将雅':  '川田',
+  '戸崎圭太':  '戸崎',
+  '坂井瑠星':  '坂井',
+  '武豊':      '武豊',
+  '福永祐一':  '福永',
+  '横山武史':  '横山武',
+  '横山和生':  '横山和',
+  '横山典弘':  '横山典',
+  '岩田望来':  '岩田望',
+  '岩田康誠':  '岩田康',
+  '北村友一':  '北村友',
+  '吉田隼人':  '吉田隼',
+  '松山弘平':  '松山',
+  '池添謙一':  '池添',
+  '和田竜二':  '和田竜',
+  '浜中俊':    '浜中',
+  '田辺裕信':  '田辺',
+  '三浦皇成':  '三浦',
+  '秋山真一郎': '秋山真',
+  '西村淳也':  '西村淳',
+  '丹内祐次':  '丹内',
+  '幸英明':    '幸',
+  '石川裕紀人': '石川裕',
+}
+
 // ─── Score level data ────────────────────────────────────────────────────────
 
 const SCORE_LEVELS = [
@@ -1429,7 +1468,8 @@ type FormationV8DebugRow = {
   axisGap: number
   paceFit: number
   distanceFit: number
-  jockeyName: string
+  rawJockeyName: string   // DB上の表記そのまま
+  aliasKey: string        // JOCKEY_ALIAS で正規化したキー
   jockeyScore: number
   stabilityComponent: number
   himoScoreV8: number
@@ -1512,13 +1552,14 @@ function computeFormationV8(
     const distanceFit = getDistanceFitScore(style, distanceM)
 
     const entry = entries.find((e) => e.horse_id === id)
-    const jockeyName  = entry?.jockey_name ?? ''
-    const jockeyScore = jockeyName ? (JOCKEY_PLACE_SCORE[jockeyName] ?? JOCKEY_DEFAULT_SCORE) : JOCKEY_DEFAULT_SCORE
+    const rawJockeyName = entry?.jockey_name ?? ''
+    const aliasKey  = rawJockeyName ? (JOCKEY_ALIAS[rawJockeyName] ?? rawJockeyName) : ''
+    const jockeyScore = aliasKey ? (JOCKEY_PLACE_SCORE[aliasKey] ?? JOCKEY_DEFAULT_SCORE) : JOCKEY_DEFAULT_SCORE
 
     const himoScoreV7 = paceFit * 0.50 + distanceFit * 0.35 + stabilityComp * 0.15
     const himoScoreV8 = paceFit * 0.40 + distanceFit * 0.30 + jockeyScore * 0.20 + stabilityComp * 0.10
 
-    return { id, axisGap: getAxisGap(id), paceFit, distanceFit, jockeyName, jockeyScore, himoScoreV7, himoScoreV8 }
+    return { id, axisGap: getAxisGap(id), paceFit, distanceFit, rawJockeyName, aliasKey, jockeyScore, himoScoreV7, himoScoreV8 }
   })
 
   scored.sort((a, b) => b.himoScoreV8 - a.himoScoreV8)
@@ -1530,7 +1571,8 @@ function computeFormationV8(
     axisGap: s.axisGap,
     paceFit: s.paceFit,
     distanceFit: s.distanceFit,
-    jockeyName: s.jockeyName || '—',
+    rawJockeyName: s.rawJockeyName || '—',
+    aliasKey: s.aliasKey || '—',
     jockeyScore: s.jockeyScore,
     stabilityComponent: stabilityComp,
     himoScoreV8: s.himoScoreV8,
@@ -2577,7 +2619,7 @@ export default async function RaceDetailPage({
                       <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 11 }}>
                         <thead>
                           <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
-                            {['馬名', 'pace_fit', 'dist_fit', '騎手', 'jockey', 'stability', 'v7 score', 'v8 score'].map((h) => (
+                            {['馬名', 'pace_fit', 'dist_fit', 'raw_jockey', 'alias_key', 'jockey', 'stability', 'v7 score', 'v8 score'].map((h) => (
                               <th key={h} style={{ padding: '4px 6px', color: '#7A7A84', fontWeight: 600, textAlign: 'right', whiteSpace: 'nowrap' }}>{h}</th>
                             ))}
                             <th style={{ padding: '4px 6px', color: '#7A7A84', fontWeight: 600, textAlign: 'center' }}>採用</th>
@@ -2586,6 +2628,7 @@ export default async function RaceDetailPage({
                         <tbody>
                           {formationV8Debug.rows.map((row, i) => {
                             const rankChanged = row.isHimo !== v7HimoNames.has(row.horseName)
+                            const aliasResolved = row.rawJockeyName !== row.aliasKey && row.aliasKey !== '—'
                             return (
                               <tr key={i} style={{
                                 borderBottom: '1px solid rgba(255,255,255,0.04)',
@@ -2601,7 +2644,8 @@ export default async function RaceDetailPage({
                                 </td>
                                 <td style={{ padding: '5px 6px', color: '#B0B0B8', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{row.paceFit.toFixed(4)}</td>
                                 <td style={{ padding: '5px 6px', color: '#B0B0B8', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{row.distanceFit.toFixed(2)}</td>
-                                <td style={{ padding: '5px 6px', color: '#E8E8EA', textAlign: 'right', whiteSpace: 'nowrap' }}>{row.jockeyName}</td>
+                                <td style={{ padding: '5px 6px', color: aliasResolved ? '#FCD34D' : '#9D9DA3', textAlign: 'right', whiteSpace: 'nowrap', fontSize: 10 }}>{row.rawJockeyName}</td>
+                                <td style={{ padding: '5px 6px', color: '#E8E8EA', textAlign: 'right', whiteSpace: 'nowrap', fontWeight: aliasResolved ? 700 : 400 }}>{row.aliasKey}</td>
                                 <td style={{ padding: '5px 6px', color: '#B0B0B8', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{row.jockeyScore.toFixed(2)}</td>
                                 <td style={{ padding: '5px 6px', color: '#B0B0B8', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{row.stabilityComponent.toFixed(4)}</td>
                                 <td style={{ padding: '5px 6px', color: '#9D9DA3', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{row.himoScoreV7.toFixed(4)}</td>
