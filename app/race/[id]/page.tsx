@@ -1364,7 +1364,7 @@ export default async function RaceDetailPage({
                             fontSize: 10,
                             fontWeight: 700,
                             padding: '2px 7px',
-                            borderRadius: 9999,
+                            borderRadius: 4,
                             background: hint.bg,
                             color: hint.color,
                             whiteSpace: 'nowrap',

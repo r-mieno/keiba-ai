@@ -326,7 +326,7 @@ export default function BetPlanPanel({
                       color: detail.styleColor,
                       background: `${detail.styleColor}14`,
                       border: `1px solid ${detail.styleColor}38`,
-                      borderRadius: 9999,
+                      borderRadius: 4,
                       padding: '1px 8px',
                     }}
                   >
