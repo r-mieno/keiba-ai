@@ -39,7 +39,42 @@ type Entry = {
   horse_id: string
   horse_number: number | null
   popularity_rank: number | null
+  jockey_name: string | null
 }
+
+// ─── 騎手スコアマスタ（仮実装: 主要騎手の連対能力スコア 0〜1）────────────────
+// 出典: JRA通算・直近成績をもとに手入力。更新時はここを修正する。
+const JOCKEY_PLACE_SCORE: Record<string, number> = {
+  'ルメール':   0.92,
+  'レーン':     0.87,
+  'モレイラ':   0.89,
+  'デムーロ':   0.82,
+  '川田':       0.88,
+  '戸崎':       0.84,
+  '横山武':     0.80,
+  '坂井':       0.82,
+  '武豊':       0.83,
+  '福永':       0.81,
+  '岩田望':     0.78,
+  '松山':       0.76,
+  '池添':       0.74,
+  '和田竜':     0.73,
+  '浜中':       0.72,
+  '丹内':       0.66,
+  '幸':         0.65,
+  '北村友':     0.75,
+  '吉田隼':     0.70,
+  '田辺':       0.72,
+  '横山和':     0.74,
+  '石川裕':     0.64,
+  '三浦':       0.68,
+  '岩田康':     0.75,
+  '秋山真':     0.71,
+  '西村淳':     0.69,
+}
+
+// 騎手名が未登録の場合のデフォルトスコア
+const JOCKEY_DEFAULT_SCORE = 0.60
 
 // ─── Score level data ────────────────────────────────────────────────────────
 
@@ -1379,6 +1414,136 @@ function computeFormationV7(
   }
 }
 
+// ─── Formation V8 ─────────────────────────────────────────────────────────────
+// v7 ベースに jockey_place_score をヒモ側だけに追加
+// 軸選定・axis_confidence・軸タイプ・ヒモ頭数は v7 を引き継ぐ
+//
+// himo_score_v8 =
+//   pace_fit_score    * 0.40
+// + distance_fit_score* 0.30
+// + jockey_place_score* 0.20
+// + (1-stability/100) * 0.10
+
+type FormationV8DebugRow = {
+  horseName: string
+  axisGap: number
+  paceFit: number
+  distanceFit: number
+  jockeyName: string
+  jockeyScore: number
+  stabilityComponent: number
+  himoScoreV8: number
+  himoScoreV7: number   // 比較用
+  isHimo: boolean
+}
+
+type FormationV8Result = {
+  formation: FormationResponse
+  debug: {
+    pace: PaceType
+    axisConfidenceV7: number
+    axisTypeV7: AxisType
+    himoCount: number
+    rows: FormationV8DebugRow[]
+  }
+}
+
+function computeFormationV8(
+  formation: FormationResponse,
+  horses: Horse[],
+  entries: Entry[],
+  pace: PaceType,
+  stabilityScore: number,
+  distanceM: number | null,
+): FormationV8Result {
+  const resolveName = (id: string) => horses.find((h) => h.id === id)?.name ?? id
+
+  const allByAiRank: string[] = formation.axis_horses.length > 0
+    ? [...formation.axis_horses, ...formation.himo_horses]
+    : formation.himo_horses
+  const aiRankIndexMap = new Map(allByAiRank.map((id, i) => [id, i]))
+
+  const axisId  = allByAiRank[0] ?? null
+  const rank2Id = allByAiRank[1] ?? null
+  const rank4Id = allByAiRank[3] ?? null
+  const axisV8  = axisId ? [axisId] : formation.axis_horses
+
+  const getAxisGap = (id: string): number => {
+    const idx = aiRankIndexMap.get(id)
+    if (idx === undefined) return 1.0
+    if (idx === 0) return 0.0
+    return Math.abs(1 / (idx + 1) - 1.0)
+  }
+
+  const stabilityComp = 1 - stabilityScore / 100
+
+  // v5スコア（axis_confidence 算出に使用）
+  const computeV5Score = (id: string): number => {
+    const style = horses.find((h) => h.id === id)?.style ?? null
+    const rawAdj = getPaceAdjustment(style, pace)
+    const paceFit = (rawAdj + 0.08) / 0.18
+    const distanceFit = getDistanceFitScore(style, distanceM)
+    return paceFit * 0.50 + distanceFit * 0.35 + stabilityComp * 0.15
+  }
+
+  // axis_confidence_v7 を引き継ぐ
+  const top1Score = axisId  ? computeV5Score(axisId)  : 0
+  const top2Score = rank2Id ? computeV5Score(rank2Id) : 0
+  const top4Score = rank4Id ? computeV5Score(rank4Id) : null
+  const axisConfidenceV7 = top4Score !== null
+    ? (top1Score - top2Score) * 0.7 + (top1Score - top4Score) * 0.3
+    : top1Score - top2Score
+  const axisTypeV7: AxisType =
+    axisConfidenceV7 >= 0.08 ? '軸強い' : axisConfidenceV7 >= 0.04 ? '標準' : '混戦'
+  const himoCount = axisTypeV7 === '軸強い' ? 4 : axisTypeV7 === '標準' ? 5 : 6
+
+  // candidate_pool: 軸以外の全馬から axis_gap 上位6頭（v7と同一）
+  const nonAxisIds = entries.map((e) => e.horse_id).filter((id) => id !== axisId)
+  const candidatePool = nonAxisIds
+    .map((id) => ({ id, axisGap: getAxisGap(id) }))
+    .sort((a, b) => a.axisGap - b.axisGap)
+    .slice(0, 6)
+    .map((c) => c.id)
+
+  const scored = candidatePool.map((id) => {
+    const style = horses.find((h) => h.id === id)?.style ?? null
+    const rawAdj = getPaceAdjustment(style, pace)
+    const paceFit = (rawAdj + 0.08) / 0.18
+    const distanceFit = getDistanceFitScore(style, distanceM)
+
+    const entry = entries.find((e) => e.horse_id === id)
+    const jockeyName  = entry?.jockey_name ?? ''
+    const jockeyScore = jockeyName ? (JOCKEY_PLACE_SCORE[jockeyName] ?? JOCKEY_DEFAULT_SCORE) : JOCKEY_DEFAULT_SCORE
+
+    const himoScoreV7 = paceFit * 0.50 + distanceFit * 0.35 + stabilityComp * 0.15
+    const himoScoreV8 = paceFit * 0.40 + distanceFit * 0.30 + jockeyScore * 0.20 + stabilityComp * 0.10
+
+    return { id, axisGap: getAxisGap(id), paceFit, distanceFit, jockeyName, jockeyScore, himoScoreV7, himoScoreV8 }
+  })
+
+  scored.sort((a, b) => b.himoScoreV8 - a.himoScoreV8)
+  const himoV8  = scored.slice(0, himoCount).map((s) => s.id)
+  const himoSet = new Set(himoV8)
+
+  const rows: FormationV8DebugRow[] = scored.map((s) => ({
+    horseName: resolveName(s.id),
+    axisGap: s.axisGap,
+    paceFit: s.paceFit,
+    distanceFit: s.distanceFit,
+    jockeyName: s.jockeyName || '—',
+    jockeyScore: s.jockeyScore,
+    stabilityComponent: stabilityComp,
+    himoScoreV8: s.himoScoreV8,
+    himoScoreV7: s.himoScoreV7,
+    isHimo: himoSet.has(s.id),
+  }))
+
+  return {
+    formation: { ...formation, axis_count: 1, axis_horses: axisV8, himo_horses: himoV8 },
+    debug: { pace, axisConfidenceV7, axisTypeV7, himoCount, rows },
+  }
+}
+
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default async function RaceDetailPage({
@@ -1454,7 +1619,7 @@ export default async function RaceDetailPage({
       fetch(`${baseUrl}/rest/v1/race_results?race_id=eq.${id}&select=horse_id,finish_pos`, {
         headers: { apikey: key, Authorization: `Bearer ${key}` }, cache: 'no-store',
       }),
-      fetch(`${baseUrl}/rest/v1/entries?race_id=eq.${id}&select=horse_id,horse_number,popularity_rank`, {
+      fetch(`${baseUrl}/rest/v1/entries?race_id=eq.${id}&select=horse_id,horse_number,popularity_rank,jockey_name`, {
         headers: { apikey: key, Authorization: `Bearer ${key}` }, cache: 'no-store',
       }),
     ])
@@ -1502,8 +1667,9 @@ export default async function RaceDetailPage({
   let formationV5Debug: FormationV5Result['debug'] | null = null
   let formationV6Debug: FormationV6Result['debug'] | null = null
   let formationV7Debug: FormationV7Result['debug'] | null = null
+  let formationV8Debug: FormationV8Result['debug'] | null = null
   if (race?.is_test && formation) {
-    const origFormation = formation  // v2〜v7 すべて同じ RPC 結果から計算
+    const origFormation = formation  // v2〜v8 すべて同じ RPC 結果から計算
     const v2Result = computeFormationV2(origFormation, horses, entries, pace, earlyStabilityScore)
     formationV2Debug = v2Result.debug
     const v3Result = computeFormationV3(origFormation, horses, entries, pace)
@@ -1516,7 +1682,9 @@ export default async function RaceDetailPage({
     formationV6Debug = v6Result.debug
     const v7Result = computeFormationV7(origFormation, horses, entries, pace, earlyStabilityScore, race?.distance_m ?? null)
     formationV7Debug = v7Result.debug
-    formation = v7Result.formation  // v7 を実際の表示に使用
+    const v8Result = computeFormationV8(origFormation, horses, entries, pace, earlyStabilityScore, race?.distance_m ?? null)
+    formationV8Debug = v8Result.debug
+    formation = v8Result.formation  // v8 を実際の表示に使用
   }
 
   // Axis horses stay in their original AI-determined order.
@@ -2342,6 +2510,117 @@ export default async function RaceDetailPage({
                     </div>
                     <p style={{ fontSize: 10, color: '#5C5C63', marginTop: 10, lineHeight: 1.7 }}>
                       confidence_v7 = (top1−top2)×0.7 + (top1−top4)×0.3 / 軸強い=4頭, 標準=5頭, 混戦=6頭
+                    </p>
+                  </div>
+                )
+              })()}
+
+              {/* ── 検証パネル v8: 騎手スコア追加 ────────────────────────── */}
+              {formationV8Debug && (() => {
+                const AXIS_TYPE_COLOR: Record<string, string> = {
+                  '軸強い': '#34D399', '標準': '#FBBF24', '混戦': '#F87171',
+                }
+                const typeColor = AXIS_TYPE_COLOR[formationV8Debug.axisTypeV7] ?? '#B0B0B8'
+
+                // v7 と v8 でヒモが変わった馬を検出
+                const v8Names = new Set(formationV8Debug.rows.filter((r) => r.isHimo).map((r) => r.horseName))
+                // v7 のヒモは formationV7Debug から取得
+                const v7HimoNames = formationV7Debug
+                  ? new Set(formationV7Debug.rows.filter((r) => r.isHimo).map((r) => r.horseName))
+                  : new Set<string>()
+                const addedInV8   = [...v8Names].filter((n) => !v7HimoNames.has(n))
+                const removedInV8 = [...v7HimoNames].filter((n) => !v8Names.has(n))
+
+                return (
+                  <div style={{
+                    marginTop: 8,
+                    background: 'rgba(249,115,22,0.03)',
+                    border: '1px solid rgba(249,115,22,0.2)',
+                    borderRadius: 8,
+                    padding: '14px 16px',
+                  }}>
+                    <p style={{ fontSize: 11, fontWeight: 700, color: '#FB923C', margin: '0 0 4px', letterSpacing: '0.06em', textTransform: 'uppercase' }}>
+                      検証 — v8 騎手スコア追加
+                    </p>
+                    <p style={{ fontSize: 11, color: '#7A7A84', margin: '0 0 4px', lineHeight: 1.6 }}>
+                      pace = <strong style={{ color: '#B0B0B8' }}>{formationV8Debug.pace}</strong>
+                      　　軸タイプ:
+                      <span style={{ color: typeColor, fontWeight: 700, marginLeft: 4 }}>{formationV8Debug.axisTypeV7}</span>
+                      　ヒモ: <strong style={{ color: '#B0B0B8' }}>{formationV8Debug.himoCount}頭</strong>
+                    </p>
+                    <p style={{ fontSize: 10, color: '#5C5C63', margin: '0 0 14px', lineHeight: 1.6 }}>
+                      himo_score_v8 = pace_fit×0.40 + distance_fit×0.30 + jockey×0.20 + stability×0.10
+                    </p>
+
+                    {/* ── v7 vs v8 ヒモ差分 ─────────────── */}
+                    {(addedInV8.length > 0 || removedInV8.length > 0) && (
+                      <div style={{ marginBottom: 14, padding: '8px 10px', borderRadius: 4, background: 'rgba(249,115,22,0.07)', border: '1px solid rgba(249,115,22,0.25)' }}>
+                        <p style={{ fontSize: 10, fontWeight: 700, color: '#FB923C', margin: '0 0 6px', letterSpacing: '0.04em' }}>v7 → v8 ヒモ変更</p>
+                        {addedInV8.length > 0 && (
+                          <p style={{ fontSize: 11, color: '#6EE7B7', margin: '0 0 2px' }}>
+                            ＋ {addedInV8.join('、')}
+                          </p>
+                        )}
+                        {removedInV8.length > 0 && (
+                          <p style={{ fontSize: 11, color: '#F87171', margin: 0 }}>
+                            － {removedInV8.join('、')}
+                          </p>
+                        )}
+                      </div>
+                    )}
+                    {addedInV8.length === 0 && removedInV8.length === 0 && (
+                      <p style={{ fontSize: 11, color: '#5C5C63', marginBottom: 14 }}>v7 と v8 のヒモ構成は同一です</p>
+                    )}
+
+                    {/* ── スコアテーブル ─────────────────── */}
+                    <div style={{ overflowX: 'auto' }}>
+                      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 11 }}>
+                        <thead>
+                          <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
+                            {['馬名', 'pace_fit', 'dist_fit', '騎手', 'jockey', 'stability', 'v7 score', 'v8 score'].map((h) => (
+                              <th key={h} style={{ padding: '4px 6px', color: '#7A7A84', fontWeight: 600, textAlign: 'right', whiteSpace: 'nowrap' }}>{h}</th>
+                            ))}
+                            <th style={{ padding: '4px 6px', color: '#7A7A84', fontWeight: 600, textAlign: 'center' }}>採用</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {formationV8Debug.rows.map((row, i) => {
+                            const rankChanged = row.isHimo !== v7HimoNames.has(row.horseName)
+                            return (
+                              <tr key={i} style={{
+                                borderBottom: '1px solid rgba(255,255,255,0.04)',
+                                background: row.isHimo ? 'rgba(249,115,22,0.06)' : 'transparent',
+                              }}>
+                                <td style={{ padding: '5px 6px', color: row.isHimo ? '#FED7AA' : '#B0B0B8', fontWeight: row.isHimo ? 700 : 400, whiteSpace: 'nowrap' }}>
+                                  {row.horseName}
+                                  {rankChanged && (
+                                    <span style={{ marginLeft: 4, fontSize: 9, color: row.isHimo ? '#6EE7B7' : '#F87171' }}>
+                                      {row.isHimo ? '↑' : '↓'}
+                                    </span>
+                                  )}
+                                </td>
+                                <td style={{ padding: '5px 6px', color: '#B0B0B8', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{row.paceFit.toFixed(4)}</td>
+                                <td style={{ padding: '5px 6px', color: '#B0B0B8', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{row.distanceFit.toFixed(2)}</td>
+                                <td style={{ padding: '5px 6px', color: '#E8E8EA', textAlign: 'right', whiteSpace: 'nowrap' }}>{row.jockeyName}</td>
+                                <td style={{ padding: '5px 6px', color: '#B0B0B8', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{row.jockeyScore.toFixed(2)}</td>
+                                <td style={{ padding: '5px 6px', color: '#B0B0B8', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{row.stabilityComponent.toFixed(4)}</td>
+                                <td style={{ padding: '5px 6px', color: '#9D9DA3', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{row.himoScoreV7.toFixed(4)}</td>
+                                <td style={{ padding: '5px 6px', color: row.isHimo ? '#FED7AA' : '#B0B0B8', textAlign: 'right', fontWeight: row.isHimo ? 700 : 400, fontVariantNumeric: 'tabular-nums' }}>{row.himoScoreV8.toFixed(4)}</td>
+                                <td style={{ padding: '5px 6px', textAlign: 'center' }}>
+                                  {row.isHimo && (
+                                    <span style={{ fontSize: 10, fontWeight: 700, padding: '1px 6px', borderRadius: 4, background: 'rgba(249,115,22,0.18)', color: '#FB923C', border: '1px solid rgba(249,115,22,0.35)' }}>
+                                      ◎ヒモ
+                                    </span>
+                                  )}
+                                </td>
+                              </tr>
+                            )
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                    <p style={{ fontSize: 10, color: '#5C5C63', marginTop: 10, lineHeight: 1.7 }}>
+                      騎手未登録の場合はデフォルト {JOCKEY_DEFAULT_SCORE.toFixed(2)} を使用 / マスタは JOCKEY_PLACE_SCORE で管理
                     </p>
                   </div>
                 )
