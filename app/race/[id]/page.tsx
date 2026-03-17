@@ -410,12 +410,12 @@ function buildValueHorseReason(
     ? '展開面では不利だが、'
     : ''
 
-  if (gap != null && gap >= 3) {
-    return `市場よりAIが高く評価している妙味馬。${paceText}ペースが流れれば上位争いに絡みやすい。`
-  } else if (gap != null && gap <= -3) {
-    return `市場人気が先行しているが、${paceText}AIは実力を慎重に評価している。`
+  if (gap != null && gap >= 5) {
+    return `市場評価よりAI評価が大きく上回る配当妙味馬。${paceText}ヒモに加えることで回収率向上が期待できる。`
+  } else if (gap != null && gap >= 3) {
+    return `人気以上にAIが評価している穴候補。${paceText}展開次第で上位に食い込む可能性がある。`
   } else {
-    return `${paceText}実力と人気が釣り合っており、相手として一考の余地がある穴候補。`
+    return `${paceText}人気と実力の乖離から配当妙味が見込める一頭。`
   }
 }
 
@@ -491,21 +491,48 @@ function getValueOpportunity(
   allRankedHorses: { id: string }[],
   entries: Entry[],
 ): { horseName: string; reason: string; aiRank: number; popularityRank: number | null } | null {
-  // Pick the himo horse most favored by the current pace (highest pace adjustment first)
-  const sortedHimo = [...formation.himo_horses].sort((a, b) => {
-    const styleA = horses.find((h) => h.id === a)?.style ?? null
-    const styleB = horses.find((h) => h.id === b)?.style ?? null
-    return getPaceAdjustment(styleB, pace) - getPaceAdjustment(styleA, pace)
-  })
-  const candidateId = sortedHimo[0] ?? formation.axis_horses.at(-1) ?? null
-  if (!candidateId) return null
-  const candidateHorse = horses.find((h) => h.id === candidateId)
-  const horseName = candidateHorse?.name ?? candidateId
-  const aiRankIndex = allRankedHorses.findIndex((h) => h.id === candidateId)
-  const aiRank = aiRankIndex >= 0 ? aiRankIndex + 1 : allRankedHorses.length + 1
-  const popularityRank = entries.find((e) => e.horse_id === candidateId)?.popularity_rank ?? null
-  const reason = buildValueHorseReason(candidateHorse?.style ?? null, pace, aiRank, popularityRank)
-  return { horseName, reason, aiRank, popularityRank }
+  const totalHorses = allRankedHorses.length
+  if (totalHorses === 0) return null
+
+  // AI上位40%のカットライン
+  const aiTopCutoff = Math.ceil(totalHorses * 0.4)
+
+  // ヒモ馬 + 軸馬 全候補からフィルタリング
+  const allCandidateIds = [...formation.himo_horses, ...formation.axis_horses]
+
+  type Scored = {
+    id: string
+    aiRank: number
+    popularityRank: number
+    valueIndex: number
+  }
+
+  const scored: Scored[] = []
+
+  for (const id of allCandidateIds) {
+    const aiRankIndex = allRankedHorses.findIndex((h) => h.id === id)
+    const aiRank = aiRankIndex >= 0 ? aiRankIndex + 1 : totalHorses + 1
+    const popularityRank = entries.find((e) => e.horse_id === id)?.popularity_rank ?? null
+
+    // 条件: 4番人気以下 かつ AI上位40%以内
+    if (popularityRank == null || popularityRank < 4) continue
+    if (aiRank > aiTopCutoff) continue
+
+    // valueIndex: 人気順位 / AI順位 が高いほどAIが市場より高く評価している
+    const valueIndex = popularityRank / aiRank
+    scored.push({ id, aiRank, popularityRank, valueIndex })
+  }
+
+  if (scored.length === 0) return null
+
+  // valueIndexが最も高い馬を選ぶ
+  scored.sort((a, b) => b.valueIndex - a.valueIndex)
+  const best = scored[0]
+
+  const candidateHorse = horses.find((h) => h.id === best.id)
+  const horseName = candidateHorse?.name ?? best.id
+  const reason = buildValueHorseReason(candidateHorse?.style ?? null, pace, best.aiRank, best.popularityRank)
+  return { horseName, reason, aiRank: best.aiRank, popularityRank: best.popularityRank }
 }
 
 // ─── AI summary builder ───────────────────────────────────────────────────────
@@ -552,7 +579,7 @@ function buildAiSummary(
 
   // Line 3: value horse
   if (valueHorse) {
-    lines.push(`AI注目の穴馬は ${valueHorse.horseName}。`)
+    lines.push(`配当妙味が期待できる穴候補として ${valueHorse.horseName} に注目。`)
   }
 
   return lines
