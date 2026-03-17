@@ -123,8 +123,6 @@ export default function BetPlanPanel({
   return (
     <div
       style={{
-        background: '#0E1118',
-        padding: '24px 20px',
         marginBottom: 10,
       }}
     >

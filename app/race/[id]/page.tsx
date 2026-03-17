@@ -2121,6 +2121,9 @@ export default async function RaceDetailPage({
         display: 'flex',
         alignItems: 'center',
         gap: 16,
+        position: 'sticky',
+        top: 0,
+        zIndex: 50,
       }}>
         <a href="/" className="back-link" style={{ color: '#9A9591' }}>
           <ChevronLeft size={14} strokeWidth={2} />
@@ -2297,16 +2300,14 @@ export default async function RaceDetailPage({
               {/* ── Chapter 1: AI予想 ────────────────────────────────────── */}
               {chapterHeader('AI予想')}
 
-              <div style={{ margin: '32px -20px', width: 'calc(100% + 40px)' }}>
-                <BetPlanPanel
-                  betType={betType}
-                  allHimoHorses={himoHorses}
-                  axisCount={formation.axis_count}
-                  stabilityScore={raceStabilityScore}
-                  pace={pace}
-                  axisDetails={axisDetails}
-                />
-              </div>
+              <BetPlanPanel
+                betType={betType}
+                allHimoHorses={himoHorses}
+                axisCount={formation.axis_count}
+                stabilityScore={raceStabilityScore}
+                pace={pace}
+                axisDetails={axisDetails}
+              />
 
               {/* ── v2 デバッグパネル（検証レースのみ表示） ─────────────── */}
               {formationV2Debug && (() => {

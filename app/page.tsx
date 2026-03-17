@@ -90,7 +90,7 @@ export default async function Home() {
             fontSize: 11, fontWeight: 700, letterSpacing: '0.12em',
             color: '#14B8A6', textTransform: 'uppercase', margin: '0 0 12px',
           }}>
-            AI Horse Racing
+            KEIBA AI
           </p>
           <p style={{ fontSize: 14, color: '#9898B0', lineHeight: 1.85, margin: 0 }}>
             脚質・展開・ペース・騎手・出走頭数・コース適性などをAIが総合分析し、軸馬・ヒモ馬のフォーメーション予想を自動生成します。
