@@ -561,10 +561,10 @@ function buildAiSummary(
 // ─── Shared card style ────────────────────────────────────────────────────────
 
 const card: React.CSSProperties = {
-  background: '#FDFCF9',
-  borderRadius: 8,
+  background: '#13141F',
+  borderRadius: 12,
   padding: '20px 20px',
-  border: '1px solid rgba(0,0,0,0.08)',
+  border: '1px solid rgba(255,255,255,0.08)',
   marginBottom: 10,
 }
 
@@ -573,10 +573,10 @@ const sectionLabel: React.CSSProperties = {
   fontWeight: 600,
   letterSpacing: '0.1em',
   textTransform: 'uppercase' as const,
-  color: '#5A5651',
+  color: '#9898B0',
   marginBottom: 14,
   paddingBottom: 10,
-  borderBottom: '1px solid rgba(0,0,0,0.05)',
+  borderBottom: '1px solid rgba(255,255,255,0.05)',
 }
 
 // ─── HorseRow component ───────────────────────────────────────────────────────
@@ -608,8 +608,8 @@ function HorseRow({
         gap: 10,
         padding: isAxis ? '11px 14px' : '9px 14px',
         borderRadius: 6,
-        background: isAxis ? 'rgba(30,79,156,0.08)' : 'transparent',
-        borderLeft: `3px solid ${isAxis ? '#1E4F9C' : 'rgba(0,0,0,0.08)'}`,
+        background: isAxis ? 'rgba(20,184,166,0.08)' : 'transparent',
+        borderLeft: `3px solid ${isAxis ? '#14B8A6' : 'rgba(255,255,255,0.08)'}`,
         marginBottom: 4,
         opacity: isOther ? 0.55 : 1,
       }}
@@ -619,15 +619,15 @@ function HorseRow({
         style={{
           width: isAxis ? 28 : 22,
           height: isAxis ? 28 : 22,
-          borderRadius: 4,
+          borderRadius: 6,
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
           fontSize: isAxis ? 13 : 10,
           fontWeight: 800,
           flexShrink: 0,
-          background: isAxis ? '#1E4F9C' : 'rgba(0,0,0,0.08)',
-          color: isAxis ? '#fff' : '#5A5651',
+          background: isAxis ? '#14B8A6' : 'rgba(255,255,255,0.08)',
+          color: isAxis ? '#fff' : '#9898B0',
           fontVariantNumeric: 'tabular-nums',
         }}
       >
@@ -641,14 +641,14 @@ function HorseRow({
             display: 'block',
             fontWeight: isAxis ? 700 : 500,
             fontSize: isAxis ? 15 : 13,
-            color: isAxis ? '#1A1814' : '#4A4643',
+            color: isAxis ? '#EEEEF5' : '#9898B0',
             letterSpacing: isAxis ? '0.01em' : 0,
           }}
         >
           {name}
         </span>
         {popularityRank != null && (
-          <span style={{ fontSize: 10, color: '#5A5651', marginTop: 2, display: 'block', fontVariantNumeric: 'tabular-nums' }}>
+          <span style={{ fontSize: 10, color: '#9898B0', marginTop: 2, display: 'block', fontVariantNumeric: 'tabular-nums' }}>
             {popularityRank}番人気
           </span>
         )}
@@ -688,12 +688,12 @@ function HorseRow({
           </span>
         )}
         {gapBadge === 'ai_pick' && (
-          <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 7px', borderRadius: 4, background: 'rgba(22,101,52,0.08)', color: '#166534', border: '1px solid rgba(22,101,52,0.25)' }}>
+          <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 7px', borderRadius: 6, background: 'rgba(22,101,52,0.08)', color: '#166534', border: '1px solid rgba(22,101,52,0.25)' }}>
             AI注目
           </span>
         )}
         {gapBadge === 'market_lead' && (
-          <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 7px', borderRadius: 4, background: 'rgba(0,0,0,0.04)', color: '#5A5651', border: '1px solid rgba(0,0,0,0.10)' }}>
+          <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 7px', borderRadius: 6, background: 'rgba(255,255,255,0.04)', color: '#9898B0', border: '1px solid rgba(255,255,255,0.10)' }}>
             人気先行
           </span>
         )}
@@ -703,10 +703,10 @@ function HorseRow({
               fontSize: 10,
               fontWeight: 700,
               padding: '2px 8px',
-              borderRadius: 4,
-              background: isAxis ? '#1E4F9C' : 'transparent',
-              color: isAxis ? '#fff' : '#5A5651',
-              border: `1px solid ${isAxis ? '#1E4F9C' : 'rgba(0,0,0,0.10)'}`,
+              borderRadius: 6,
+              background: isAxis ? '#14B8A6' : 'transparent',
+              color: isAxis ? '#fff' : '#9898B0',
+              border: `1px solid ${isAxis ? '#14B8A6' : 'rgba(255,255,255,0.10)'}`,
               letterSpacing: '0.04em',
             }}
           >
@@ -2089,15 +2089,15 @@ export default async function RaceDetailPage({
     ? (() => {
         const d = new Date(race.date + 'T12:00:00')
         const dow = DAY_NAMES[d.getDay()]
-        const dowColor = d.getDay() === 0 ? '#DC2626' : d.getDay() === 6 ? '#2563EB' : '#7A7571'
+        const dowColor = d.getDay() === 0 ? '#F87171' : d.getDay() === 6 ? '#60A5FA' : '#62627A'
         return { label: `${d.getMonth() + 1}/${d.getDate()}`, dow, dowColor }
       })()
     : null
   const raceGradeColor = !race?.grade ? null
-    : race.grade === 'G1' ? '#92400E'
-    : race.grade === 'G2' ? '#374151'
-    : race.grade === 'G3' ? '#1E4F9C'
-    : '#1E4F9C'
+    : race.grade === 'G1' ? '#FBBF24'
+    : race.grade === 'G2' ? '#C0C8D0'
+    : race.grade === 'G3' ? '#14B8A6'
+    : '#14B8A6'
   const raceSurfaceColor = !race?.surface ? null
     : race.surface === '芝' ? '#166534'
     : race.surface === 'ダート' ? '#FB923C'
@@ -2107,15 +2107,18 @@ export default async function RaceDetailPage({
     <main
       style={{
         minHeight: '100vh',
-        background: '#F4F0E8',
-        color: '#1A1814',
+        background: '#0C0D14',
+        color: '#EEEEF5',
         fontFamily: 'var(--font-geist-sans), -apple-system, Inter, Arial, sans-serif',
       }}
     >
       {/* ── Hero header ───────────────────────────────────────────────── */}
       {/* ── Top bar ────────────────────────────────────────────────── */}
       <div style={{
-        background: '#1C1C1E',
+        background: 'rgba(255,255,255,0.03)',
+        backdropFilter: 'blur(20px)',
+        WebkitBackdropFilter: 'blur(20px)',
+        borderBottom: '1px solid rgba(255,255,255,0.07)',
         padding: '0 20px',
         height: 52,
         display: 'flex',
@@ -2139,7 +2142,7 @@ export default async function RaceDetailPage({
       {/* ── Race hero ────────────────────────────────────────────────── */}
       {race && (
         <div style={{
-          borderBottom: '1px solid rgba(0,0,0,0.08)',
+          borderBottom: '1px solid rgba(255,255,255,0.08)',
           padding: '32px 20px 28px',
           maxWidth: 720,
           margin: '0 auto',
@@ -2148,7 +2151,7 @@ export default async function RaceDetailPage({
             fontSize: 10,
             fontWeight: 600,
             letterSpacing: '0.1em',
-            color: '#1E4F9C',
+            color: '#14B8A6',
             textTransform: 'uppercase',
             marginBottom: 10,
           }}>
@@ -2158,12 +2161,12 @@ export default async function RaceDetailPage({
             fontSize: 24,
             fontWeight: 700,
             margin: 0,
-            color: '#1A1814',
+            color: '#EEEEF5',
             letterSpacing: '-0.02em',
           }}>
             {race.race_name}
           </h1>
-          <p style={{ color: '#5A5651', marginTop: 6, marginBottom: 14, fontSize: 12, fontVariantNumeric: 'tabular-nums' }}>
+          <p style={{ color: '#9898B0', marginTop: 6, marginBottom: 14, fontSize: 12, fontVariantNumeric: 'tabular-nums' }}>
             {raceDateFmt?.label}<span style={{ color: raceDateFmt?.dowColor }}>({raceDateFmt?.dow})</span>
           </p>
 
@@ -2179,32 +2182,32 @@ export default async function RaceDetailPage({
               </span>
             )}
             {race.venue && (
-              <span style={{ padding: '3px 10px', borderRadius: 9999, fontSize: 11, fontWeight: 600, background: 'rgba(0,0,0,0.05)', color: '#4A4643', border: '1px solid rgba(0,0,0,0.10)' }}>
+              <span style={{ padding: '3px 10px', borderRadius: 9999, fontSize: 11, fontWeight: 600, background: 'rgba(255,255,255,0.05)', color: '#9898B0', border: '1px solid rgba(255,255,255,0.10)' }}>
                 {race.venue}
               </span>
             )}
             {race.surface && (
               <span style={{
                 padding: '3px 10px', borderRadius: 9999, fontSize: 11, fontWeight: 600,
-                background: raceSurfaceColor ? `${raceSurfaceColor}14` : 'rgba(0,0,0,0.05)',
-                color: raceSurfaceColor ?? '#4A4643',
-                border: `1px solid ${raceSurfaceColor ? raceSurfaceColor + '44' : 'rgba(0,0,0,0.10)'}`,
+                background: raceSurfaceColor ? `${raceSurfaceColor}14` : 'rgba(255,255,255,0.05)',
+                color: raceSurfaceColor ?? '#9898B0',
+                border: `1px solid ${raceSurfaceColor ? raceSurfaceColor + '44' : 'rgba(255,255,255,0.10)'}`,
               }}>
                 {race.surface}
               </span>
             )}
             {race.distance_m && (
-              <span style={{ padding: '3px 10px', borderRadius: 9999, fontSize: 11, fontWeight: 600, background: 'rgba(0,0,0,0.05)', color: '#4A4643', border: '1px solid rgba(0,0,0,0.10)' }}>
+              <span style={{ padding: '3px 10px', borderRadius: 9999, fontSize: 11, fontWeight: 600, background: 'rgba(255,255,255,0.05)', color: '#9898B0', border: '1px solid rgba(255,255,255,0.10)' }}>
                 {race.distance_m}m
               </span>
             )}
             {race.start_time && (
-              <span style={{ padding: '3px 10px', borderRadius: 9999, fontSize: 11, fontWeight: 600, background: 'rgba(0,0,0,0.05)', color: '#4A4643', border: '1px solid rgba(0,0,0,0.10)' }}>
+              <span style={{ padding: '3px 10px', borderRadius: 9999, fontSize: 11, fontWeight: 600, background: 'rgba(255,255,255,0.05)', color: '#9898B0', border: '1px solid rgba(255,255,255,0.10)' }}>
                 {race.start_time.slice(0, 5)}発走
               </span>
             )}
             {raceDayOfWeek && (
-              <span style={{ padding: '3px 10px', borderRadius: 9999, fontSize: 11, fontWeight: 600, background: 'rgba(0,0,0,0.05)', color: '#4A4643', border: '1px solid rgba(0,0,0,0.10)' }}>
+              <span style={{ padding: '3px 10px', borderRadius: 9999, fontSize: 11, fontWeight: 600, background: 'rgba(255,255,255,0.05)', color: '#9898B0', border: '1px solid rgba(255,255,255,0.10)' }}>
                 {raceDayOfWeek}
               </span>
             )}
@@ -2218,7 +2221,7 @@ export default async function RaceDetailPage({
           <div style={{
             background: 'rgba(248,113,113,0.08)',
             border: '1px solid rgba(248,113,113,0.2)',
-            borderRadius: 6,
+            borderRadius: 10,
             padding: '10px 14px',
             color: '#DC2626',
             fontSize: 13,
@@ -2233,10 +2236,10 @@ export default async function RaceDetailPage({
 
           // Chapter header style
           const CHAPTER_ICONS: Record<string, React.ReactNode> = {
-            'AI予想':     <Brain size={15} color="#3B6DC1" strokeWidth={2} />,
-            'AIの見解':   <Brain size={15} color="#3B6DC1" strokeWidth={2} />,
-            'レース展開': <TrendingUp size={15} color="#3B6DC1" strokeWidth={2} />,
-            '期待値分析': <Gem size={15} color="#3B6DC1" strokeWidth={2} />,
+            'AI予想':     <Brain size={15} color="#14B8A6" strokeWidth={2} />,
+            'AIの見解':   <Brain size={15} color="#14B8A6" strokeWidth={2} />,
+            'レース展開': <TrendingUp size={15} color="#14B8A6" strokeWidth={2} />,
+            '期待値分析': <Gem size={15} color="#14B8A6" strokeWidth={2} />,
           }
           const chapterHeader = (label: string) => (
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 32, marginBottom: 16 }}>
@@ -2245,10 +2248,10 @@ export default async function RaceDetailPage({
                   {CHAPTER_ICONS[label]}
                 </span>
               )}
-              <span style={{ fontSize: 16, fontWeight: 700, color: '#1A1814', letterSpacing: '-0.02em' }}>
+              <span style={{ fontSize: 16, fontWeight: 700, color: '#EEEEF5', letterSpacing: '-0.02em' }}>
                 {label}
               </span>
-              <div style={{ flex: 1, height: 1, background: 'rgba(0,0,0,0.08)' }} />
+              <div style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.08)' }} />
             </div>
           )
 
@@ -2316,30 +2319,30 @@ export default async function RaceDetailPage({
               {/* ── v2 デバッグパネル（検証レースのみ表示） ─────────────── */}
               {formationV2Debug && (() => {
                 const ROLE_COLOR: Record<string, string> = {
-                  '軸':           '#1E4F9C',
+                  '軸':           '#14B8A6',
                   '実力ヒモ':     '#166534',
                   '穴ヒモ':       '#92400E',
-                  '穴候補（落選）': '#A09C97',
+                  '穴候補（落選）': '#62627A',
                 }
                 return (
                   <div style={{
                     marginTop: 12,
                     background: 'rgba(251,191,36,0.04)',
                     border: '1px solid rgba(251,191,36,0.15)',
-                    borderRadius: 8,
+                    borderRadius: 12,
                     padding: '14px 16px',
                   }}>
                     <p style={{ fontSize: 11, fontWeight: 700, color: '#92400E', margin: '0 0 4px', letterSpacing: '0.06em', textTransform: 'uppercase' }}>
                       検証 — v2 穴スコア内訳
                     </p>
-                    <p style={{ fontSize: 11, color: '#5A5651', margin: '0 0 12px', lineHeight: 1.6 }}>
-                      stabilityScore = <strong style={{ color: '#4A4643' }}>{formationV2Debug.stabilityScore}</strong>（レース共通・0〜100）
-                      pace = <strong style={{ color: '#4A4643' }}>{formationV2Debug.pace}</strong>
+                    <p style={{ fontSize: 11, color: '#9898B0', margin: '0 0 12px', lineHeight: 1.6 }}>
+                      stabilityScore = <strong style={{ color: '#EEEEF5' }}>{formationV2Debug.stabilityScore}</strong>（レース共通・0〜100）
+                      pace = <strong style={{ color: '#EEEEF5' }}>{formationV2Debug.pace}</strong>
                     </p>
                     {/* ヘッダー行 */}
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 60px 60px 60px 72px', gap: 4, padding: '4px 6px', marginBottom: 4 }}>
                       {['馬名', 'pace_fit', 'pop_rank', 'stability', 'hole_score'].map((h) => (
-                        <span key={h} style={{ fontSize: 10, color: '#A09C97', fontWeight: 600, textAlign: 'right' }}>{h}</span>
+                        <span key={h} style={{ fontSize: 10, color: '#62627A', fontWeight: 600, textAlign: 'right' }}>{h}</span>
                       ))}
                     </div>
                     {formationV2Debug.rows.map((row, i) => (
@@ -2350,34 +2353,34 @@ export default async function RaceDetailPage({
                           gridTemplateColumns: '1fr 60px 60px 60px 72px',
                           gap: 4,
                           padding: '5px 6px',
-                          borderRadius: 4,
+                          borderRadius: 6,
                           background: row.role === '穴ヒモ' ? 'rgba(251,191,36,0.07)' : 'transparent',
-                          borderBottom: '1px solid rgba(0,0,0,0.04)',
+                          borderBottom: '1px solid rgba(255,255,255,0.04)',
                           alignItems: 'center',
                         }}
                       >
-                        <span style={{ fontSize: 12, color: ROLE_COLOR[row.role] ?? '#4A4643', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        <span style={{ fontSize: 12, color: ROLE_COLOR[row.role] ?? '#9898B0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                           {row.horseName}
                           {row.aiRank !== null && (
-                            <span style={{ fontSize: 10, color: '#A09C97', marginLeft: 5 }}>AI{row.aiRank}位</span>
+                            <span style={{ fontSize: 10, color: '#62627A', marginLeft: 5 }}>AI{row.aiRank}位</span>
                           )}
-                          <span style={{ fontSize: 10, color: ROLE_COLOR[row.role] ?? '#A09C97', marginLeft: 5 }}>[{row.role}]</span>
+                          <span style={{ fontSize: 10, color: ROLE_COLOR[row.role] ?? '#62627A', marginLeft: 5 }}>[{row.role}]</span>
                         </span>
-                        <span style={{ fontSize: 11, color: '#4A4643', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>
+                        <span style={{ fontSize: 11, color: '#9898B0', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>
                           {row.paceFitScore.toFixed(3)}
                         </span>
-                        <span style={{ fontSize: 11, color: '#4A4643', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>
+                        <span style={{ fontSize: 11, color: '#9898B0', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>
                           {row.popularityRank}
                         </span>
-                        <span style={{ fontSize: 11, color: '#4A4643', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>
+                        <span style={{ fontSize: 11, color: '#9898B0', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>
                           {(1 - formationV2Debug.stabilityScore / 100).toFixed(3)}
                         </span>
-                        <span style={{ fontSize: 12, fontWeight: row.role === '穴ヒモ' ? 700 : 400, color: row.role === '穴ヒモ' ? '#92400E' : '#4A4643', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>
+                        <span style={{ fontSize: 12, fontWeight: row.role === '穴ヒモ' ? 700 : 400, color: row.role === '穴ヒモ' ? '#92400E' : '#9898B0', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>
                           {row.holeScore.toFixed(4)}
                         </span>
                       </div>
                     ))}
-                    <p style={{ fontSize: 10, color: '#A09C97', marginTop: 10, lineHeight: 1.7 }}>
+                    <p style={{ fontSize: 10, color: '#62627A', marginTop: 10, lineHeight: 1.7 }}>
                       hole_score = pace_fit×0.5 + (1/pop_rank)×0.3 + stability×0.2
                     </p>
                   </div>
@@ -2391,20 +2394,20 @@ export default async function RaceDetailPage({
                     marginTop: 8,
                     background: 'rgba(52,211,153,0.03)',
                     border: '1px solid rgba(52,211,153,0.15)',
-                    borderRadius: 8,
+                    borderRadius: 12,
                     padding: '14px 16px',
                   }}>
                     <p style={{ fontSize: 11, fontWeight: 700, color: '#166534', margin: '0 0 4px', letterSpacing: '0.06em', textTransform: 'uppercase' }}>
                       検証 — v3 穴スコア内訳
                     </p>
-                    <p style={{ fontSize: 11, color: '#5A5651', margin: '0 0 12px', lineHeight: 1.6 }}>
-                      pace = <strong style={{ color: '#4A4643' }}>{formationV3Debug.pace}</strong>
+                    <p style={{ fontSize: 11, color: '#9898B0', margin: '0 0 12px', lineHeight: 1.6 }}>
+                      pace = <strong style={{ color: '#EEEEF5' }}>{formationV3Debug.pace}</strong>
                       　　stability 項を廃止し popularity_component + axis_gap_component に変更
                     </p>
                     {/* ヘッダー行 */}
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 52px 52px 60px 60px 60px 72px 44px', gap: 3, padding: '4px 6px', marginBottom: 4 }}>
                       {['馬名', 'pace_fit', 'pop', 'pop_comp', 'axis_raw', 'axis_gap', 'score_v3', '穴'].map((h) => (
-                        <span key={h} style={{ fontSize: 10, color: '#A09C97', fontWeight: 600, textAlign: 'right' }}>{h}</span>
+                        <span key={h} style={{ fontSize: 10, color: '#62627A', fontWeight: 600, textAlign: 'right' }}>{h}</span>
                       ))}
                     </div>
                     {formationV3Debug.rows.map((row, i) => (
@@ -2415,29 +2418,29 @@ export default async function RaceDetailPage({
                           gridTemplateColumns: '1fr 52px 52px 60px 60px 60px 72px 44px',
                           gap: 3,
                           padding: '5px 6px',
-                          borderRadius: 4,
+                          borderRadius: 6,
                           background: row.selected ? 'rgba(52,211,153,0.07)' : 'transparent',
-                          borderBottom: '1px solid rgba(0,0,0,0.04)',
+                          borderBottom: '1px solid rgba(255,255,255,0.04)',
                           alignItems: 'center',
                         }}
                       >
-                        <span style={{ fontSize: 12, color: row.selected ? '#166534' : '#5A5651', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        <span style={{ fontSize: 12, color: row.selected ? '#166534' : '#9898B0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                           {row.horseName}
                         </span>
-                        <span style={{ fontSize: 11, color: '#4A4643', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{row.paceFitScore.toFixed(3)}</span>
-                        <span style={{ fontSize: 11, color: '#4A4643', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{row.popularityRank}</span>
-                        <span style={{ fontSize: 11, color: '#4A4643', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{row.popularityComponent.toFixed(3)}</span>
-                        <span style={{ fontSize: 11, color: '#4A4643', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{row.predAxisScoreRaw.toFixed(3)}</span>
-                        <span style={{ fontSize: 11, color: '#4A4643', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{row.axisGapComponent.toFixed(3)}</span>
-                        <span style={{ fontSize: 12, fontWeight: row.selected ? 700 : 400, color: row.selected ? '#166534' : '#4A4643', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>
+                        <span style={{ fontSize: 11, color: '#9898B0', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{row.paceFitScore.toFixed(3)}</span>
+                        <span style={{ fontSize: 11, color: '#9898B0', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{row.popularityRank}</span>
+                        <span style={{ fontSize: 11, color: '#9898B0', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{row.popularityComponent.toFixed(3)}</span>
+                        <span style={{ fontSize: 11, color: '#9898B0', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{row.predAxisScoreRaw.toFixed(3)}</span>
+                        <span style={{ fontSize: 11, color: '#9898B0', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{row.axisGapComponent.toFixed(3)}</span>
+                        <span style={{ fontSize: 12, fontWeight: row.selected ? 700 : 400, color: row.selected ? '#166534' : '#9898B0', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>
                           {row.holeScoreV3.toFixed(4)}
                         </span>
-                        <span style={{ fontSize: 11, color: row.selected ? '#166534' : '#A09C97', textAlign: 'right' }}>
+                        <span style={{ fontSize: 11, color: row.selected ? '#166534' : '#62627A', textAlign: 'right' }}>
                           {row.selected ? '◎穴' : '—'}
                         </span>
                       </div>
                     ))}
-                    <p style={{ fontSize: 10, color: '#A09C97', marginTop: 10, lineHeight: 1.7 }}>
+                    <p style={{ fontSize: 10, color: '#62627A', marginTop: 10, lineHeight: 1.7 }}>
                       score_v3 = pace_fit×0.45 + pop_comp×0.35 + axis_gap×0.20　／　pop_comp = min(pop/16, 1)　／　axis_gap = 1 − norm(1/(AI rank))
                     </p>
                   </div>
@@ -2447,11 +2450,11 @@ export default async function RaceDetailPage({
               {/* ── v4 デバッグパネル（検証レースのみ表示） ─────────────── */}
               {formationV4Debug && (() => {
                 const ROLE_COLOR: Record<FormationV4DebugRow['role'], string> = {
-                  '軸':             '#1E4F9C',
+                  '軸':             '#14B8A6',
                   '実力ヒモ':       '#166534',
                   '人気相手':       '#2563EB',
                   '穴ヒモ（v4）':   '#92400E',
-                  '穴候補（v4落選）': '#A09C97',
+                  '穴候補（v4落選）': '#62627A',
                 }
                 // v3 と v4 の himo を比較（名前の集合差）
                 const v3Set = new Set(formationV4Debug.himoV3Names)
@@ -2474,19 +2477,19 @@ export default async function RaceDetailPage({
                     marginTop: 8,
                     background: 'rgba(96,165,250,0.03)',
                     border: '1px solid rgba(96,165,250,0.2)',
-                    borderRadius: 8,
+                    borderRadius: 12,
                     padding: '14px 16px',
                   }}>
                     <p style={{ fontSize: 11, fontWeight: 700, color: '#2563EB', margin: '0 0 4px', letterSpacing: '0.06em', textTransform: 'uppercase' }}>
                       検証 — v4 相手選定（改）
                     </p>
-                    <p style={{ fontSize: 11, color: '#5A5651', margin: '0 0 14px', lineHeight: 1.6 }}>
-                      pace = <strong style={{ color: '#4A4643' }}>{formationV4Debug.pace}</strong>
+                    <p style={{ fontSize: 11, color: '#9898B0', margin: '0 0 14px', lineHeight: 1.6 }}>
+                      pace = <strong style={{ color: '#EEEEF5' }}>{formationV4Debug.pace}</strong>
                       　　実力ヒモ 2頭 + 人気相手 1頭 + 穴ヒモ 2頭
                     </p>
 
                     {/* ── v3 vs v4 比較 ─────────────────── */}
-                    <p style={{ fontSize: 10, fontWeight: 700, color: '#7A7571', letterSpacing: '0.06em', textTransform: 'uppercase', margin: '0 0 8px' }}>
+                    <p style={{ fontSize: 10, fontWeight: 700, color: '#62627A', letterSpacing: '0.06em', textTransform: 'uppercase', margin: '0 0 8px' }}>
                       相手一覧の比較
                     </p>
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 14 }}>
@@ -2494,7 +2497,7 @@ export default async function RaceDetailPage({
                         const names = ver === 'v3' ? formationV4Debug.himoV3Names : formationV4Debug.himoV4Names
                         const otherSet = ver === 'v3' ? v4Set : v3Set
                         return (
-                          <div key={ver} style={{ background: 'rgba(0,0,0,0.03)', borderRadius: 6, padding: '10px 12px', border: '1px solid rgba(0,0,0,0.05)' }}>
+                          <div key={ver} style={{ background: 'rgba(255,255,255,0.03)', borderRadius: 10, padding: '10px 12px', border: '1px solid rgba(255,255,255,0.05)' }}>
                             <p style={{ fontSize: 10, fontWeight: 700, color: ver === 'v3' ? '#166534' : '#2563EB', margin: '0 0 8px', letterSpacing: '0.04em' }}>
                               {ver.toUpperCase()} 相手（{names.length}頭）
                             </p>
@@ -2502,9 +2505,9 @@ export default async function RaceDetailPage({
                               <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
                                 <span style={{
                                   width: 6, height: 6, borderRadius: '50%', flexShrink: 0,
-                                  background: otherSet.has(n) ? 'rgba(0,0,0,0.15)' : (ver === 'v3' ? '#DC2626' : '#2563EB'),
+                                  background: otherSet.has(n) ? 'rgba(255,255,255,0.15)' : (ver === 'v3' ? '#DC2626' : '#2563EB'),
                                 }} />
-                                <span style={{ fontSize: 12, color: otherSet.has(n) ? '#5A5651' : '#1A1814' }}>{n}</span>
+                                <span style={{ fontSize: 12, color: otherSet.has(n) ? '#9898B0' : '#EEEEF5' }}>{n}</span>
                                 {!otherSet.has(n) && (
                                   <span style={{ fontSize: 10, color: ver === 'v3' ? '#DC2626' : '#2563EB' }}>
                                     {ver === 'v3' ? '→削除' : '→追加'}
@@ -2517,17 +2520,17 @@ export default async function RaceDetailPage({
                       })}
                     </div>
                     {(addedInV4.length > 0 || removedInV4.length > 0) && (
-                      <p style={{ fontSize: 11, color: '#5A5651', margin: '0 0 14px', lineHeight: 1.7 }}>
+                      <p style={{ fontSize: 11, color: '#9898B0', margin: '0 0 14px', lineHeight: 1.7 }}>
                         {removedInV4.length > 0 && <span style={{ color: '#DC2626' }}>削除: {removedInV4.join('、')}　</span>}
                         {addedInV4.length > 0 && <span style={{ color: '#2563EB' }}>追加: {addedInV4.join('、')}</span>}
-                        {formationV4Debug.ninkiAiteName && <span style={{ color: '#7A7571' }}>　（人気相手: {formationV4Debug.ninkiAiteName}）</span>}
+                        {formationV4Debug.ninkiAiteName && <span style={{ color: '#62627A' }}>　（人気相手: {formationV4Debug.ninkiAiteName}）</span>}
                       </p>
                     )}
 
                     {/* ── 1〜3着チェック ─────────────────── */}
                     {top3Ids.length > 0 && (
                       <>
-                        <p style={{ fontSize: 10, fontWeight: 700, color: '#7A7571', letterSpacing: '0.06em', textTransform: 'uppercase', margin: '0 0 8px' }}>
+                        <p style={{ fontSize: 10, fontWeight: 700, color: '#62627A', letterSpacing: '0.06em', textTransform: 'uppercase', margin: '0 0 8px' }}>
                           着順チェック（v4 フォーメーションに含まれるか）
                         </p>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginBottom: 14 }}>
@@ -2536,8 +2539,8 @@ export default async function RaceDetailPage({
                             const inFormation = v4AllIds.has(hid)
                             return (
                               <div key={hid} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                                <span style={{ fontSize: 12, fontWeight: 700, color: i === 0 ? '#92400E' : i === 1 ? '#374151' : '#1E4F9C', width: 20, flexShrink: 0 }}>{i + 1}着</span>
-                                <span style={{ fontSize: 13, color: '#1A1814' }}>{name}</span>
+                                <span style={{ fontSize: 12, fontWeight: 700, color: i === 0 ? '#92400E' : i === 1 ? '#C0C8D0' : '#14B8A6', width: 20, flexShrink: 0 }}>{i + 1}着</span>
+                                <span style={{ fontSize: 13, color: '#EEEEF5' }}>{name}</span>
                                 <span style={{
                                   fontSize: 10, fontWeight: 700, padding: '1px 7px', borderRadius: 4,
                                   background: inFormation ? 'rgba(22,101,52,0.08)' : 'rgba(248,113,113,0.08)',
@@ -2554,7 +2557,7 @@ export default async function RaceDetailPage({
                     )}
 
                     {/* ── 穴ヒモ候補スコア内訳 ──────────── */}
-                    <p style={{ fontSize: 10, fontWeight: 700, color: '#7A7571', letterSpacing: '0.06em', textTransform: 'uppercase', margin: '0 0 8px' }}>
+                    <p style={{ fontSize: 10, fontWeight: 700, color: '#62627A', letterSpacing: '0.06em', textTransform: 'uppercase', margin: '0 0 8px' }}>
                       フォーメーション構成
                     </p>
                     {formationV4Debug.rows.map((row, i) => {
@@ -2562,27 +2565,27 @@ export default async function RaceDetailPage({
                       return (
                         <div key={i} style={{
                           display: 'flex', alignItems: 'center', gap: 8, padding: '5px 6px',
-                          borderRadius: 4, borderBottom: '1px solid rgba(0,0,0,0.04)',
+                          borderRadius: 6, borderBottom: '1px solid rgba(255,255,255,0.04)',
                           background: row.role === '穴ヒモ（v4）' ? 'rgba(251,191,36,0.06)' : row.role === '人気相手' ? 'rgba(96,165,250,0.06)' : 'transparent',
                         }}>
-                          <span style={{ fontSize: 10, fontWeight: 700, padding: '1px 6px', borderRadius: 4, background: `${ROLE_COLOR[row.role]}18`, color: ROLE_COLOR[row.role], flexShrink: 0, minWidth: 68, textAlign: 'center' }}>
+                          <span style={{ fontSize: 10, fontWeight: 700, padding: '1px 6px', borderRadius: 6, background: `${ROLE_COLOR[row.role]}18`, color: ROLE_COLOR[row.role], flexShrink: 0, minWidth: 68, textAlign: 'center' }}>
                             {row.role}
                           </span>
                           <span style={{ fontSize: 12, color: ROLE_COLOR[row.role], flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                             {row.horseName}
                           </span>
-                          <span style={{ fontSize: 11, color: '#5A5651', flexShrink: 0, fontVariantNumeric: 'tabular-nums' }}>
+                          <span style={{ fontSize: 11, color: '#9898B0', flexShrink: 0, fontVariantNumeric: 'tabular-nums' }}>
                             {row.popularityRank}番人気
                           </span>
                           {isAna && (
-                            <span style={{ fontSize: 11, color: '#4A4643', flexShrink: 0, fontVariantNumeric: 'tabular-nums' }}>
+                            <span style={{ fontSize: 11, color: '#9898B0', flexShrink: 0, fontVariantNumeric: 'tabular-nums' }}>
                               {row.holeScoreV3.toFixed(4)}
                             </span>
                           )}
                         </div>
                       )
                     })}
-                    <p style={{ fontSize: 10, color: '#A09C97', marginTop: 10, lineHeight: 1.7 }}>
+                    <p style={{ fontSize: 10, color: '#62627A', marginTop: 10, lineHeight: 1.7 }}>
                       穴スコア（v4 も v3 式を流用）: pace_fit×0.45 + pop_comp×0.35 + axis_gap×0.20
                     </p>
                   </div>
@@ -2596,14 +2599,14 @@ export default async function RaceDetailPage({
                     marginTop: 8,
                     background: 'rgba(167,139,250,0.03)',
                     border: '1px solid rgba(167,139,250,0.2)',
-                    borderRadius: 8,
+                    borderRadius: 12,
                     padding: '14px 16px',
                   }}>
                     <p style={{ fontSize: 11, fontWeight: 700, color: '#A78BFA', margin: '0 0 4px', letterSpacing: '0.06em', textTransform: 'uppercase' }}>
                       検証 — v5 ヒモスコア内訳
                     </p>
-                    <p style={{ fontSize: 11, color: '#5A5651', margin: '0 0 14px', lineHeight: 1.6 }}>
-                      pace = <strong style={{ color: '#4A4643' }}>{formationV5Debug.pace}</strong>
+                    <p style={{ fontSize: 11, color: '#9898B0', margin: '0 0 14px', lineHeight: 1.6 }}>
+                      pace = <strong style={{ color: '#EEEEF5' }}>{formationV5Debug.pace}</strong>
                       　　candidate_pool: axis_gap 上位6頭 → himo_score_v5 上位5頭をヒモ採用
                     </p>
 
@@ -2611,32 +2614,32 @@ export default async function RaceDetailPage({
                     <div style={{ overflowX: 'auto' }}>
                       <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 11 }}>
                         <thead>
-                          <tr style={{ borderBottom: '1px solid rgba(0,0,0,0.05)' }}>
+                          <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
                             {['馬名', 'axis_gap', 'pace_fit', 'distance_fit', 'stability', 'himo_score_v5'].map((h) => (
-                              <th key={h} style={{ padding: '4px 6px', color: '#5A5651', fontWeight: 600, textAlign: 'right', whiteSpace: 'nowrap' }}>
+                              <th key={h} style={{ padding: '4px 6px', color: '#9898B0', fontWeight: 600, textAlign: 'right', whiteSpace: 'nowrap' }}>
                                 {h}
                               </th>
                             ))}
-                            <th style={{ padding: '4px 6px', color: '#5A5651', fontWeight: 600, textAlign: 'center' }}>採用</th>
+                            <th style={{ padding: '4px 6px', color: '#9898B0', fontWeight: 600, textAlign: 'center' }}>採用</th>
                           </tr>
                         </thead>
                         <tbody>
                           {formationV5Debug.rows.map((row, i) => (
                             <tr key={i} style={{
-                              borderBottom: '1px solid rgba(0,0,0,0.04)',
+                              borderBottom: '1px solid rgba(255,255,255,0.04)',
                               background: row.isHimo ? 'rgba(167,139,250,0.06)' : 'transparent',
                             }}>
-                              <td style={{ padding: '5px 6px', color: row.isHimo ? '#4338CA' : '#4A4643', fontWeight: row.isHimo ? 700 : 400, whiteSpace: 'nowrap' }}>
+                              <td style={{ padding: '5px 6px', color: row.isHimo ? '#A78BFA' : '#9898B0', fontWeight: row.isHimo ? 700 : 400, whiteSpace: 'nowrap' }}>
                                 {row.horseName}
                               </td>
-                              <td style={{ padding: '5px 6px', color: '#4A4643', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{row.axisGap.toFixed(4)}</td>
-                              <td style={{ padding: '5px 6px', color: '#4A4643', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{row.paceFit.toFixed(4)}</td>
-                              <td style={{ padding: '5px 6px', color: '#4A4643', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{row.distanceFit.toFixed(2)}</td>
-                              <td style={{ padding: '5px 6px', color: '#4A4643', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{row.stabilityComponent.toFixed(4)}</td>
-                              <td style={{ padding: '5px 6px', color: row.isHimo ? '#4338CA' : '#4A4643', textAlign: 'right', fontWeight: row.isHimo ? 700 : 400, fontVariantNumeric: 'tabular-nums' }}>{row.himoScoreV5.toFixed(4)}</td>
+                              <td style={{ padding: '5px 6px', color: '#9898B0', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{row.axisGap.toFixed(4)}</td>
+                              <td style={{ padding: '5px 6px', color: '#9898B0', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{row.paceFit.toFixed(4)}</td>
+                              <td style={{ padding: '5px 6px', color: '#9898B0', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{row.distanceFit.toFixed(2)}</td>
+                              <td style={{ padding: '5px 6px', color: '#9898B0', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{row.stabilityComponent.toFixed(4)}</td>
+                              <td style={{ padding: '5px 6px', color: row.isHimo ? '#A78BFA' : '#9898B0', textAlign: 'right', fontWeight: row.isHimo ? 700 : 400, fontVariantNumeric: 'tabular-nums' }}>{row.himoScoreV5.toFixed(4)}</td>
                               <td style={{ padding: '5px 6px', textAlign: 'center' }}>
                                 {row.isHimo && (
-                                  <span style={{ fontSize: 10, fontWeight: 700, padding: '1px 6px', borderRadius: 4, background: 'rgba(167,139,250,0.15)', color: '#A78BFA', border: '1px solid rgba(167,139,250,0.3)' }}>
+                                  <span style={{ fontSize: 10, fontWeight: 700, padding: '1px 6px', borderRadius: 6, background: 'rgba(167,139,250,0.15)', color: '#A78BFA', border: '1px solid rgba(167,139,250,0.3)' }}>
                                     ◎ヒモ
                                   </span>
                                 )}
@@ -2646,7 +2649,7 @@ export default async function RaceDetailPage({
                         </tbody>
                       </table>
                     </div>
-                    <p style={{ fontSize: 10, color: '#A09C97', marginTop: 10, lineHeight: 1.7 }}>
+                    <p style={{ fontSize: 10, color: '#62627A', marginTop: 10, lineHeight: 1.7 }}>
                       himo_score_v5 = pace_fit×0.50 + distance_fit×0.35 + (1-stability/100)×0.15
                     </p>
                   </div>
@@ -2660,50 +2663,50 @@ export default async function RaceDetailPage({
                   '標準':   '#92400E',
                   '混戦':   '#DC2626',
                 }
-                const typeColor = AXIS_TYPE_COLOR[formationV6Debug.axisType] ?? '#4A4643'
+                const typeColor = AXIS_TYPE_COLOR[formationV6Debug.axisType] ?? '#9898B0'
                 return (
                   <div style={{
                     marginTop: 8,
                     background: 'rgba(52,211,153,0.03)',
                     border: '1px solid rgba(52,211,153,0.2)',
-                    borderRadius: 8,
+                    borderRadius: 12,
                     padding: '14px 16px',
                   }}>
                     <p style={{ fontSize: 11, fontWeight: 700, color: '#166534', margin: '0 0 4px', letterSpacing: '0.06em', textTransform: 'uppercase' }}>
                       検証 — v6 axis_confidence（可変ヒモ頭数）
                     </p>
-                    <p style={{ fontSize: 11, color: '#5A5651', margin: '0 0 14px', lineHeight: 1.6 }}>
-                      pace = <strong style={{ color: '#4A4643' }}>{formationV6Debug.pace}</strong>
+                    <p style={{ fontSize: 11, color: '#9898B0', margin: '0 0 14px', lineHeight: 1.6 }}>
+                      pace = <strong style={{ color: '#EEEEF5' }}>{formationV6Debug.pace}</strong>
                       　　v5スコアを軸馬・AI2位馬にも適用し差をconfidenceとして算出
                     </p>
 
                     {/* ── confidence サマリ ─────────────── */}
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8, marginBottom: 14 }}>
                       {/* axis_confidence */}
-                      <div style={{ background: 'rgba(0,0,0,0.03)', borderRadius: 6, padding: '10px 12px', border: '1px solid rgba(0,0,0,0.05)', textAlign: 'center' }}>
-                        <p style={{ fontSize: 10, color: '#5A5651', margin: '0 0 4px' }}>axis_confidence</p>
+                      <div style={{ background: 'rgba(255,255,255,0.03)', borderRadius: 10, padding: '10px 12px', border: '1px solid rgba(255,255,255,0.05)', textAlign: 'center' }}>
+                        <p style={{ fontSize: 10, color: '#9898B0', margin: '0 0 4px' }}>axis_confidence</p>
                         <p style={{ fontSize: 18, fontWeight: 800, color: typeColor, margin: 0, fontVariantNumeric: 'tabular-nums' }}>
                           {formationV6Debug.axisConfidence >= 0 ? '+' : ''}{formationV6Debug.axisConfidence.toFixed(4)}
                         </p>
                       </div>
                       {/* 軸タイプ */}
-                      <div style={{ background: 'rgba(0,0,0,0.03)', borderRadius: 6, padding: '10px 12px', border: '1px solid rgba(0,0,0,0.05)', textAlign: 'center' }}>
-                        <p style={{ fontSize: 10, color: '#5A5651', margin: '0 0 4px' }}>軸タイプ</p>
+                      <div style={{ background: 'rgba(255,255,255,0.03)', borderRadius: 10, padding: '10px 12px', border: '1px solid rgba(255,255,255,0.05)', textAlign: 'center' }}>
+                        <p style={{ fontSize: 10, color: '#9898B0', margin: '0 0 4px' }}>軸タイプ</p>
                         <p style={{ fontSize: 16, fontWeight: 800, color: typeColor, margin: 0 }}>
                           {formationV6Debug.axisType}
                         </p>
                       </div>
                       {/* ヒモ頭数 */}
-                      <div style={{ background: 'rgba(0,0,0,0.03)', borderRadius: 6, padding: '10px 12px', border: '1px solid rgba(0,0,0,0.05)', textAlign: 'center' }}>
-                        <p style={{ fontSize: 10, color: '#5A5651', margin: '0 0 4px' }}>ヒモ頭数</p>
-                        <p style={{ fontSize: 18, fontWeight: 800, color: '#4A4643', margin: 0 }}>
+                      <div style={{ background: 'rgba(255,255,255,0.03)', borderRadius: 10, padding: '10px 12px', border: '1px solid rgba(255,255,255,0.05)', textAlign: 'center' }}>
+                        <p style={{ fontSize: 10, color: '#9898B0', margin: '0 0 4px' }}>ヒモ頭数</p>
+                        <p style={{ fontSize: 18, fontWeight: 800, color: '#9898B0', margin: 0 }}>
                           {formationV6Debug.himoCount}<span style={{ fontSize: 11, fontWeight: 400, marginLeft: 2 }}>頭</span>
                         </p>
                       </div>
                     </div>
 
                     {/* ── v5スコア比較（軸 vs AI2位） ──── */}
-                    <p style={{ fontSize: 10, fontWeight: 700, color: '#7A7571', letterSpacing: '0.06em', textTransform: 'uppercase', margin: '0 0 8px' }}>
+                    <p style={{ fontSize: 10, fontWeight: 700, color: '#62627A', letterSpacing: '0.06em', textTransform: 'uppercase', margin: '0 0 8px' }}>
                       confidence 算出元
                     </p>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginBottom: 14 }}>
@@ -2711,40 +2714,40 @@ export default async function RaceDetailPage({
                         { label: '軸 (AI1位)', name: formationV6Debug.axisHorseName, score: formationV6Debug.axisHorseScore, highlight: true },
                         { label: 'AI2位', name: formationV6Debug.rank2HorseName, score: formationV6Debug.rank2HorseScore, highlight: false },
                       ].map((row) => (
-                        <div key={row.label} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 8px', borderRadius: 4, background: row.highlight ? 'rgba(52,211,153,0.06)' : 'rgba(0,0,0,0.02)', border: '1px solid rgba(0,0,0,0.05)' }}>
-                          <span style={{ fontSize: 10, fontWeight: 700, color: row.highlight ? '#166534' : '#7A7571', flexShrink: 0, minWidth: 50 }}>{row.label}</span>
-                          <span style={{ fontSize: 12, color: '#1A1814', flex: 1 }}>{row.name}</span>
-                          <span style={{ fontSize: 12, fontWeight: 700, color: row.highlight ? '#166534' : '#4A4643', fontVariantNumeric: 'tabular-nums' }}>{row.score.toFixed(4)}</span>
+                        <div key={row.label} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 8px', borderRadius: 6, background: row.highlight ? 'rgba(52,211,153,0.06)' : 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)' }}>
+                          <span style={{ fontSize: 10, fontWeight: 700, color: row.highlight ? '#166534' : '#62627A', flexShrink: 0, minWidth: 50 }}>{row.label}</span>
+                          <span style={{ fontSize: 12, color: '#EEEEF5', flex: 1 }}>{row.name}</span>
+                          <span style={{ fontSize: 12, fontWeight: 700, color: row.highlight ? '#166534' : '#9898B0', fontVariantNumeric: 'tabular-nums' }}>{row.score.toFixed(4)}</span>
                         </div>
                       ))}
                     </div>
 
                     {/* ── ヒモスコアテーブル ─────────────── */}
-                    <p style={{ fontSize: 10, fontWeight: 700, color: '#7A7571', letterSpacing: '0.06em', textTransform: 'uppercase', margin: '0 0 8px' }}>
+                    <p style={{ fontSize: 10, fontWeight: 700, color: '#62627A', letterSpacing: '0.06em', textTransform: 'uppercase', margin: '0 0 8px' }}>
                       ヒモ候補スコア一覧
                     </p>
                     <div style={{ overflowX: 'auto' }}>
                       <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 11 }}>
                         <thead>
-                          <tr style={{ borderBottom: '1px solid rgba(0,0,0,0.05)' }}>
+                          <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
                             {['馬名', 'axis_gap', 'pace_fit', 'dist_fit', 'stability', 'score'].map((h) => (
-                              <th key={h} style={{ padding: '4px 6px', color: '#5A5651', fontWeight: 600, textAlign: 'right', whiteSpace: 'nowrap' }}>{h}</th>
+                              <th key={h} style={{ padding: '4px 6px', color: '#9898B0', fontWeight: 600, textAlign: 'right', whiteSpace: 'nowrap' }}>{h}</th>
                             ))}
-                            <th style={{ padding: '4px 6px', color: '#5A5651', fontWeight: 600, textAlign: 'center' }}>採用</th>
+                            <th style={{ padding: '4px 6px', color: '#9898B0', fontWeight: 600, textAlign: 'center' }}>採用</th>
                           </tr>
                         </thead>
                         <tbody>
                           {formationV6Debug.rows.map((row, i) => (
-                            <tr key={i} style={{ borderBottom: '1px solid rgba(0,0,0,0.04)', background: row.isHimo ? 'rgba(52,211,153,0.05)' : 'transparent' }}>
-                              <td style={{ padding: '5px 6px', color: row.isHimo ? '#166534' : '#4A4643', fontWeight: row.isHimo ? 700 : 400, whiteSpace: 'nowrap' }}>{row.horseName}</td>
-                              <td style={{ padding: '5px 6px', color: '#4A4643', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{row.axisGap.toFixed(4)}</td>
-                              <td style={{ padding: '5px 6px', color: '#4A4643', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{row.paceFit.toFixed(4)}</td>
-                              <td style={{ padding: '5px 6px', color: '#4A4643', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{row.distanceFit.toFixed(2)}</td>
-                              <td style={{ padding: '5px 6px', color: '#4A4643', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{row.stabilityComponent.toFixed(4)}</td>
-                              <td style={{ padding: '5px 6px', color: row.isHimo ? '#166534' : '#4A4643', textAlign: 'right', fontWeight: row.isHimo ? 700 : 400, fontVariantNumeric: 'tabular-nums' }}>{row.himoScoreV5.toFixed(4)}</td>
+                            <tr key={i} style={{ borderBottom: '1px solid rgba(255,255,255,0.04)', background: row.isHimo ? 'rgba(52,211,153,0.05)' : 'transparent' }}>
+                              <td style={{ padding: '5px 6px', color: row.isHimo ? '#166534' : '#9898B0', fontWeight: row.isHimo ? 700 : 400, whiteSpace: 'nowrap' }}>{row.horseName}</td>
+                              <td style={{ padding: '5px 6px', color: '#9898B0', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{row.axisGap.toFixed(4)}</td>
+                              <td style={{ padding: '5px 6px', color: '#9898B0', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{row.paceFit.toFixed(4)}</td>
+                              <td style={{ padding: '5px 6px', color: '#9898B0', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{row.distanceFit.toFixed(2)}</td>
+                              <td style={{ padding: '5px 6px', color: '#9898B0', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{row.stabilityComponent.toFixed(4)}</td>
+                              <td style={{ padding: '5px 6px', color: row.isHimo ? '#166534' : '#9898B0', textAlign: 'right', fontWeight: row.isHimo ? 700 : 400, fontVariantNumeric: 'tabular-nums' }}>{row.himoScoreV5.toFixed(4)}</td>
                               <td style={{ padding: '5px 6px', textAlign: 'center' }}>
                                 {row.isHimo && (
-                                  <span style={{ fontSize: 10, fontWeight: 700, padding: '1px 6px', borderRadius: 4, background: 'rgba(52,211,153,0.15)', color: '#166534', border: '1px solid rgba(52,211,153,0.3)' }}>
+                                  <span style={{ fontSize: 10, fontWeight: 700, padding: '1px 6px', borderRadius: 6, background: 'rgba(52,211,153,0.15)', color: '#166534', border: '1px solid rgba(52,211,153,0.3)' }}>
                                     ◎ヒモ
                                   </span>
                                 )}
@@ -2754,7 +2757,7 @@ export default async function RaceDetailPage({
                         </tbody>
                       </table>
                     </div>
-                    <p style={{ fontSize: 10, color: '#A09C97', marginTop: 10, lineHeight: 1.7 }}>
+                    <p style={{ fontSize: 10, color: '#62627A', marginTop: 10, lineHeight: 1.7 }}>
                       confidence = v5スコア(AI1位) − v5スコア(AI2位) / ヒモ頭数: 軸強い=4, 標準=5, 混戦=6
                     </p>
                   </div>
@@ -2768,28 +2771,28 @@ export default async function RaceDetailPage({
                   '標準':   '#92400E',
                   '混戦':   '#DC2626',
                 }
-                const v6Color = AXIS_TYPE_COLOR[formationV7Debug.axisTypeV6] ?? '#4A4643'
-                const v7Color = AXIS_TYPE_COLOR[formationV7Debug.axisTypeV7] ?? '#4A4643'
+                const v6Color = AXIS_TYPE_COLOR[formationV7Debug.axisTypeV6] ?? '#9898B0'
+                const v7Color = AXIS_TYPE_COLOR[formationV7Debug.axisTypeV7] ?? '#9898B0'
                 const changed = formationV7Debug.axisTypeV6 !== formationV7Debug.axisTypeV7
                 return (
                   <div style={{
                     marginTop: 8,
                     background: 'rgba(251,191,36,0.03)',
                     border: '1px solid rgba(251,191,36,0.2)',
-                    borderRadius: 8,
+                    borderRadius: 12,
                     padding: '14px 16px',
                   }}>
                     <p style={{ fontSize: 11, fontWeight: 700, color: '#92400E', margin: '0 0 4px', letterSpacing: '0.06em', textTransform: 'uppercase' }}>
                       検証 — v7 axis_confidence（上位4頭スプレッド加味）
                     </p>
-                    <p style={{ fontSize: 11, color: '#5A5651', margin: '0 0 14px', lineHeight: 1.6 }}>
-                      pace = <strong style={{ color: '#4A4643' }}>{formationV7Debug.pace}</strong>
+                    <p style={{ fontSize: 11, color: '#9898B0', margin: '0 0 14px', lineHeight: 1.6 }}>
+                      pace = <strong style={{ color: '#EEEEF5' }}>{formationV7Debug.pace}</strong>
                       　　(top1−top2)×0.7 + (top1−top4)×0.3
                       {formationV7Debug.top4Score === null && <span style={{ color: '#DC2626', marginLeft: 6 }}>※ top4なし → top1−top2のみ</span>}
                     </p>
 
                     {/* ── top1/2/4 スコア ───────────────── */}
-                    <p style={{ fontSize: 10, fontWeight: 700, color: '#7A7571', letterSpacing: '0.06em', textTransform: 'uppercase', margin: '0 0 8px' }}>
+                    <p style={{ fontSize: 10, fontWeight: 700, color: '#62627A', letterSpacing: '0.06em', textTransform: 'uppercase', margin: '0 0 8px' }}>
                       スコア算出元（AI順位別）
                     </p>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginBottom: 14 }}>
@@ -2798,10 +2801,10 @@ export default async function RaceDetailPage({
                         { label: 'AI2位 (top2)', name: formationV7Debug.rank2HorseName, score: formationV7Debug.top2Score, accent: false },
                         { label: 'AI4位 (top4)', name: formationV7Debug.rank4HorseName ?? '—', score: formationV7Debug.top4Score, accent: false },
                       ].map((row) => (
-                        <div key={row.label} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 8px', borderRadius: 4, background: row.accent ? 'rgba(251,191,36,0.05)' : 'rgba(0,0,0,0.02)', border: '1px solid rgba(0,0,0,0.05)' }}>
-                          <span style={{ fontSize: 10, fontWeight: 700, color: row.accent ? '#92400E' : '#7A7571', flexShrink: 0, minWidth: 80 }}>{row.label}</span>
-                          <span style={{ fontSize: 12, color: '#1A1814', flex: 1 }}>{row.name}</span>
-                          <span style={{ fontSize: 12, fontWeight: 700, color: row.accent ? '#92400E' : '#4A4643', fontVariantNumeric: 'tabular-nums' }}>
+                        <div key={row.label} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 8px', borderRadius: 6, background: row.accent ? 'rgba(251,191,36,0.05)' : 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)' }}>
+                          <span style={{ fontSize: 10, fontWeight: 700, color: row.accent ? '#92400E' : '#62627A', flexShrink: 0, minWidth: 80 }}>{row.label}</span>
+                          <span style={{ fontSize: 12, color: '#EEEEF5', flex: 1 }}>{row.name}</span>
+                          <span style={{ fontSize: 12, fontWeight: 700, color: row.accent ? '#92400E' : '#9898B0', fontVariantNumeric: 'tabular-nums' }}>
                             {row.score !== null ? row.score.toFixed(4) : '—'}
                           </span>
                         </div>
@@ -2809,7 +2812,7 @@ export default async function RaceDetailPage({
                     </div>
 
                     {/* ── v6 vs v7 比較表 ──────────────── */}
-                    <p style={{ fontSize: 10, fontWeight: 700, color: '#7A7571', letterSpacing: '0.06em', textTransform: 'uppercase', margin: '0 0 8px' }}>
+                    <p style={{ fontSize: 10, fontWeight: 700, color: '#62627A', letterSpacing: '0.06em', textTransform: 'uppercase', margin: '0 0 8px' }}>
                       v6 vs v7 比較
                     </p>
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 14 }}>
@@ -2819,22 +2822,22 @@ export default async function RaceDetailPage({
                         const count = ver === 'v6' ? formationV7Debug.himoCountV6      : formationV7Debug.himoCountV7
                         const col   = ver === 'v6' ? v6Color : v7Color
                         return (
-                          <div key={ver} style={{ background: 'rgba(0,0,0,0.03)', borderRadius: 6, padding: '10px 12px', border: `1px solid ${changed ? col + '55' : 'rgba(0,0,0,0.05)'}` }}>
+                          <div key={ver} style={{ background: 'rgba(255,255,255,0.03)', borderRadius: 10, padding: '10px 12px', border: `1px solid ${changed ? col + '55' : 'rgba(255,255,255,0.05)'}` }}>
                             <p style={{ fontSize: 10, fontWeight: 700, color: ver === 'v6' ? '#166534' : '#92400E', margin: '0 0 8px', letterSpacing: '0.04em' }}>{ver.toUpperCase()}</p>
                             <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
                               <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                                <span style={{ fontSize: 11, color: '#5A5651' }}>confidence</span>
+                                <span style={{ fontSize: 11, color: '#9898B0' }}>confidence</span>
                                 <span style={{ fontSize: 12, fontWeight: 700, color: col, fontVariantNumeric: 'tabular-nums' }}>
                                   {conf >= 0 ? '+' : ''}{conf.toFixed(4)}
                                 </span>
                               </div>
                               <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                                <span style={{ fontSize: 11, color: '#5A5651' }}>軸タイプ</span>
+                                <span style={{ fontSize: 11, color: '#9898B0' }}>軸タイプ</span>
                                 <span style={{ fontSize: 12, fontWeight: 700, color: col }}>{type}</span>
                               </div>
                               <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                                <span style={{ fontSize: 11, color: '#5A5651' }}>ヒモ頭数</span>
-                                <span style={{ fontSize: 12, fontWeight: 700, color: '#4A4643' }}>{count}頭</span>
+                                <span style={{ fontSize: 11, color: '#9898B0' }}>ヒモ頭数</span>
+                                <span style={{ fontSize: 12, fontWeight: 700, color: '#9898B0' }}>{count}頭</span>
                               </div>
                             </div>
                           </div>
@@ -2842,7 +2845,7 @@ export default async function RaceDetailPage({
                       })}
                     </div>
                     {changed && (
-                      <div style={{ padding: '8px 10px', borderRadius: 4, background: 'rgba(146,64,14,0.07)', border: '1px solid rgba(251,191,36,0.25)', marginBottom: 14 }}>
+                      <div style={{ padding: '8px 10px', borderRadius: 6, background: 'rgba(146,64,14,0.07)', border: '1px solid rgba(251,191,36,0.25)', marginBottom: 14 }}>
                         <p style={{ fontSize: 11, color: '#92400E', margin: 0 }}>
                           ⚡ v6 → v7 で軸タイプが変化: <strong>{formationV7Debug.axisTypeV6}</strong> → <strong>{formationV7Debug.axisTypeV7}</strong>（ヒモ {formationV7Debug.himoCountV6}頭 → {formationV7Debug.himoCountV7}頭）
                         </p>
@@ -2850,31 +2853,31 @@ export default async function RaceDetailPage({
                     )}
 
                     {/* ── ヒモスコアテーブル ─────────────── */}
-                    <p style={{ fontSize: 10, fontWeight: 700, color: '#7A7571', letterSpacing: '0.06em', textTransform: 'uppercase', margin: '0 0 8px' }}>
+                    <p style={{ fontSize: 10, fontWeight: 700, color: '#62627A', letterSpacing: '0.06em', textTransform: 'uppercase', margin: '0 0 8px' }}>
                       ヒモ候補スコア一覧（v7ヒモ頭数={formationV7Debug.himoCountV7}）
                     </p>
                     <div style={{ overflowX: 'auto' }}>
                       <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 11 }}>
                         <thead>
-                          <tr style={{ borderBottom: '1px solid rgba(0,0,0,0.05)' }}>
+                          <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
                             {['馬名', 'axis_gap', 'pace_fit', 'dist_fit', 'stability', 'score'].map((h) => (
-                              <th key={h} style={{ padding: '4px 6px', color: '#5A5651', fontWeight: 600, textAlign: 'right', whiteSpace: 'nowrap' }}>{h}</th>
+                              <th key={h} style={{ padding: '4px 6px', color: '#9898B0', fontWeight: 600, textAlign: 'right', whiteSpace: 'nowrap' }}>{h}</th>
                             ))}
-                            <th style={{ padding: '4px 6px', color: '#5A5651', fontWeight: 600, textAlign: 'center' }}>採用</th>
+                            <th style={{ padding: '4px 6px', color: '#9898B0', fontWeight: 600, textAlign: 'center' }}>採用</th>
                           </tr>
                         </thead>
                         <tbody>
                           {formationV7Debug.rows.map((row, i) => (
-                            <tr key={i} style={{ borderBottom: '1px solid rgba(0,0,0,0.04)', background: row.isHimo ? 'rgba(251,191,36,0.05)' : 'transparent' }}>
-                              <td style={{ padding: '5px 6px', color: row.isHimo ? '#92400E' : '#4A4643', fontWeight: row.isHimo ? 700 : 400, whiteSpace: 'nowrap' }}>{row.horseName}</td>
-                              <td style={{ padding: '5px 6px', color: '#4A4643', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{row.axisGap.toFixed(4)}</td>
-                              <td style={{ padding: '5px 6px', color: '#4A4643', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{row.paceFit.toFixed(4)}</td>
-                              <td style={{ padding: '5px 6px', color: '#4A4643', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{row.distanceFit.toFixed(2)}</td>
-                              <td style={{ padding: '5px 6px', color: '#4A4643', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{row.stabilityComponent.toFixed(4)}</td>
-                              <td style={{ padding: '5px 6px', color: row.isHimo ? '#92400E' : '#4A4643', textAlign: 'right', fontWeight: row.isHimo ? 700 : 400, fontVariantNumeric: 'tabular-nums' }}>{row.himoScoreV5.toFixed(4)}</td>
+                            <tr key={i} style={{ borderBottom: '1px solid rgba(255,255,255,0.04)', background: row.isHimo ? 'rgba(251,191,36,0.05)' : 'transparent' }}>
+                              <td style={{ padding: '5px 6px', color: row.isHimo ? '#92400E' : '#9898B0', fontWeight: row.isHimo ? 700 : 400, whiteSpace: 'nowrap' }}>{row.horseName}</td>
+                              <td style={{ padding: '5px 6px', color: '#9898B0', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{row.axisGap.toFixed(4)}</td>
+                              <td style={{ padding: '5px 6px', color: '#9898B0', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{row.paceFit.toFixed(4)}</td>
+                              <td style={{ padding: '5px 6px', color: '#9898B0', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{row.distanceFit.toFixed(2)}</td>
+                              <td style={{ padding: '5px 6px', color: '#9898B0', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{row.stabilityComponent.toFixed(4)}</td>
+                              <td style={{ padding: '5px 6px', color: row.isHimo ? '#92400E' : '#9898B0', textAlign: 'right', fontWeight: row.isHimo ? 700 : 400, fontVariantNumeric: 'tabular-nums' }}>{row.himoScoreV5.toFixed(4)}</td>
                               <td style={{ padding: '5px 6px', textAlign: 'center' }}>
                                 {row.isHimo && (
-                                  <span style={{ fontSize: 10, fontWeight: 700, padding: '1px 6px', borderRadius: 4, background: 'rgba(251,191,36,0.15)', color: '#92400E', border: '1px solid rgba(251,191,36,0.3)' }}>
+                                  <span style={{ fontSize: 10, fontWeight: 700, padding: '1px 6px', borderRadius: 6, background: 'rgba(251,191,36,0.15)', color: '#92400E', border: '1px solid rgba(251,191,36,0.3)' }}>
                                     ◎ヒモ
                                   </span>
                                 )}
@@ -2884,7 +2887,7 @@ export default async function RaceDetailPage({
                         </tbody>
                       </table>
                     </div>
-                    <p style={{ fontSize: 10, color: '#A09C97', marginTop: 10, lineHeight: 1.7 }}>
+                    <p style={{ fontSize: 10, color: '#62627A', marginTop: 10, lineHeight: 1.7 }}>
                       confidence_v7 = (top1−top2)×0.7 + (top1−top4)×0.3 / 軸強い=4頭, 標準=5頭, 混戦=6頭
                     </p>
                   </div>
@@ -2896,7 +2899,7 @@ export default async function RaceDetailPage({
                 const AXIS_TYPE_COLOR: Record<string, string> = {
                   '軸強い': '#166534', '標準': '#92400E', '混戦': '#DC2626',
                 }
-                const typeColor = AXIS_TYPE_COLOR[formationV8Debug.axisTypeV7] ?? '#4A4643'
+                const typeColor = AXIS_TYPE_COLOR[formationV8Debug.axisTypeV7] ?? '#9898B0'
 
                 // v7 と v8 でヒモが変わった馬を検出
                 const v8Names = new Set(formationV8Debug.rows.filter((r) => r.isHimo).map((r) => r.horseName))
@@ -2912,25 +2915,25 @@ export default async function RaceDetailPage({
                     marginTop: 8,
                     background: 'rgba(249,115,22,0.03)',
                     border: '1px solid rgba(249,115,22,0.2)',
-                    borderRadius: 8,
+                    borderRadius: 12,
                     padding: '14px 16px',
                   }}>
                     <p style={{ fontSize: 11, fontWeight: 700, color: '#FB923C', margin: '0 0 4px', letterSpacing: '0.06em', textTransform: 'uppercase' }}>
                       検証 — v8 騎手スコア追加
                     </p>
-                    <p style={{ fontSize: 11, color: '#5A5651', margin: '0 0 4px', lineHeight: 1.6 }}>
-                      pace = <strong style={{ color: '#4A4643' }}>{formationV8Debug.pace}</strong>
+                    <p style={{ fontSize: 11, color: '#9898B0', margin: '0 0 4px', lineHeight: 1.6 }}>
+                      pace = <strong style={{ color: '#EEEEF5' }}>{formationV8Debug.pace}</strong>
                       　　軸タイプ:
                       <span style={{ color: typeColor, fontWeight: 700, marginLeft: 4 }}>{formationV8Debug.axisTypeV7}</span>
-                      　ヒモ: <strong style={{ color: '#4A4643' }}>{formationV8Debug.himoCount}頭</strong>
+                      　ヒモ: <strong style={{ color: '#EEEEF5' }}>{formationV8Debug.himoCount}頭</strong>
                     </p>
-                    <p style={{ fontSize: 10, color: '#A09C97', margin: '0 0 14px', lineHeight: 1.6 }}>
+                    <p style={{ fontSize: 10, color: '#62627A', margin: '0 0 14px', lineHeight: 1.6 }}>
                       himo_score_v8 = pace_fit×0.40 + distance_fit×0.30 + jockey×0.20 + stability×0.10
                     </p>
 
                     {/* ── v7 vs v8 ヒモ差分 ─────────────── */}
                     {(addedInV8.length > 0 || removedInV8.length > 0) && (
-                      <div style={{ marginBottom: 14, padding: '8px 10px', borderRadius: 4, background: 'rgba(249,115,22,0.07)', border: '1px solid rgba(249,115,22,0.25)' }}>
+                      <div style={{ marginBottom: 14, padding: '8px 10px', borderRadius: 6, background: 'rgba(249,115,22,0.07)', border: '1px solid rgba(249,115,22,0.25)' }}>
                         <p style={{ fontSize: 10, fontWeight: 700, color: '#FB923C', margin: '0 0 6px', letterSpacing: '0.04em' }}>v7 → v8 ヒモ変更</p>
                         {addedInV8.length > 0 && (
                           <p style={{ fontSize: 11, color: '#6EE7B7', margin: '0 0 2px' }}>
@@ -2945,18 +2948,18 @@ export default async function RaceDetailPage({
                       </div>
                     )}
                     {addedInV8.length === 0 && removedInV8.length === 0 && (
-                      <p style={{ fontSize: 11, color: '#A09C97', marginBottom: 14 }}>v7 と v8 のヒモ構成は同一です</p>
+                      <p style={{ fontSize: 11, color: '#62627A', marginBottom: 14 }}>v7 と v8 のヒモ構成は同一です</p>
                     )}
 
                     {/* ── スコアテーブル ─────────────────── */}
                     <div style={{ overflowX: 'auto' }}>
                       <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 11 }}>
                         <thead>
-                          <tr style={{ borderBottom: '1px solid rgba(0,0,0,0.05)' }}>
+                          <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
                             {['馬名', 'pace_fit', 'dist_fit', 'raw_jockey', 'alias_key', 'jockey', 'stability', 'v7 score', 'v8 score'].map((h) => (
-                              <th key={h} style={{ padding: '4px 6px', color: '#5A5651', fontWeight: 600, textAlign: 'right', whiteSpace: 'nowrap' }}>{h}</th>
+                              <th key={h} style={{ padding: '4px 6px', color: '#9898B0', fontWeight: 600, textAlign: 'right', whiteSpace: 'nowrap' }}>{h}</th>
                             ))}
-                            <th style={{ padding: '4px 6px', color: '#5A5651', fontWeight: 600, textAlign: 'center' }}>採用</th>
+                            <th style={{ padding: '4px 6px', color: '#9898B0', fontWeight: 600, textAlign: 'center' }}>採用</th>
                           </tr>
                         </thead>
                         <tbody>
@@ -2965,10 +2968,10 @@ export default async function RaceDetailPage({
                             const aliasResolved = row.rawJockeyName !== row.aliasKey && row.aliasKey !== '—'
                             return (
                               <tr key={i} style={{
-                                borderBottom: '1px solid rgba(0,0,0,0.04)',
+                                borderBottom: '1px solid rgba(255,255,255,0.04)',
                                 background: row.isHimo ? 'rgba(249,115,22,0.06)' : 'transparent',
                               }}>
-                                <td style={{ padding: '5px 6px', color: row.isHimo ? '#7C2D12' : '#4A4643', fontWeight: row.isHimo ? 700 : 400, whiteSpace: 'nowrap' }}>
+                                <td style={{ padding: '5px 6px', color: row.isHimo ? '#FB923C' : '#9898B0', fontWeight: row.isHimo ? 700 : 400, whiteSpace: 'nowrap' }}>
                                   {row.horseName}
                                   {rankChanged && (
                                     <span style={{ marginLeft: 4, fontSize: 9, color: row.isHimo ? '#166534' : '#DC2626' }}>
@@ -2976,17 +2979,17 @@ export default async function RaceDetailPage({
                                     </span>
                                   )}
                                 </td>
-                                <td style={{ padding: '5px 6px', color: '#4A4643', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{row.paceFit.toFixed(4)}</td>
-                                <td style={{ padding: '5px 6px', color: '#4A4643', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{row.distanceFit.toFixed(2)}</td>
-                                <td style={{ padding: '5px 6px', color: aliasResolved ? '#92400E' : '#7A7571', textAlign: 'right', whiteSpace: 'nowrap', fontSize: 10 }}>{row.rawJockeyName}</td>
-                                <td style={{ padding: '5px 6px', color: '#1A1814', textAlign: 'right', whiteSpace: 'nowrap', fontWeight: aliasResolved ? 700 : 400 }}>{row.aliasKey}</td>
-                                <td style={{ padding: '5px 6px', color: '#4A4643', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{row.jockeyScore.toFixed(2)}</td>
-                                <td style={{ padding: '5px 6px', color: '#4A4643', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{row.stabilityComponent.toFixed(4)}</td>
-                                <td style={{ padding: '5px 6px', color: '#7A7571', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{row.himoScoreV7.toFixed(4)}</td>
-                                <td style={{ padding: '5px 6px', color: row.isHimo ? '#7C2D12' : '#4A4643', textAlign: 'right', fontWeight: row.isHimo ? 700 : 400, fontVariantNumeric: 'tabular-nums' }}>{row.himoScoreV8.toFixed(4)}</td>
+                                <td style={{ padding: '5px 6px', color: '#9898B0', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{row.paceFit.toFixed(4)}</td>
+                                <td style={{ padding: '5px 6px', color: '#9898B0', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{row.distanceFit.toFixed(2)}</td>
+                                <td style={{ padding: '5px 6px', color: aliasResolved ? '#92400E' : '#62627A', textAlign: 'right', whiteSpace: 'nowrap', fontSize: 10 }}>{row.rawJockeyName}</td>
+                                <td style={{ padding: '5px 6px', color: '#EEEEF5', textAlign: 'right', whiteSpace: 'nowrap', fontWeight: aliasResolved ? 700 : 400 }}>{row.aliasKey}</td>
+                                <td style={{ padding: '5px 6px', color: '#9898B0', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{row.jockeyScore.toFixed(2)}</td>
+                                <td style={{ padding: '5px 6px', color: '#9898B0', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{row.stabilityComponent.toFixed(4)}</td>
+                                <td style={{ padding: '5px 6px', color: '#62627A', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{row.himoScoreV7.toFixed(4)}</td>
+                                <td style={{ padding: '5px 6px', color: row.isHimo ? '#FB923C' : '#9898B0', textAlign: 'right', fontWeight: row.isHimo ? 700 : 400, fontVariantNumeric: 'tabular-nums' }}>{row.himoScoreV8.toFixed(4)}</td>
                                 <td style={{ padding: '5px 6px', textAlign: 'center' }}>
                                   {row.isHimo && (
-                                    <span style={{ fontSize: 10, fontWeight: 700, padding: '1px 6px', borderRadius: 4, background: 'rgba(249,115,22,0.18)', color: '#FB923C', border: '1px solid rgba(249,115,22,0.35)' }}>
+                                    <span style={{ fontSize: 10, fontWeight: 700, padding: '1px 6px', borderRadius: 6, background: 'rgba(249,115,22,0.18)', color: '#FB923C', border: '1px solid rgba(249,115,22,0.35)' }}>
                                       ◎ヒモ
                                     </span>
                                   )}
@@ -2997,7 +3000,7 @@ export default async function RaceDetailPage({
                         </tbody>
                       </table>
                     </div>
-                    <p style={{ fontSize: 10, color: '#A09C97', marginTop: 10, lineHeight: 1.7 }}>
+                    <p style={{ fontSize: 10, color: '#62627A', marginTop: 10, lineHeight: 1.7 }}>
                       騎手未登録の場合はデフォルト {JOCKEY_DEFAULT_SCORE.toFixed(2)} を使用 / マスタは JOCKEY_PLACE_SCORE で管理
                     </p>
                   </div>
@@ -3025,7 +3028,7 @@ export default async function RaceDetailPage({
                     marginTop: 8,
                     background: 'rgba(167,139,250,0.03)',
                     border: '1px solid rgba(167,139,250,0.2)',
-                    borderRadius: 8,
+                    borderRadius: 12,
                     padding: '14px 16px',
                   }}>
                     <p style={{ fontSize: 11, fontWeight: 700, color: '#A78BFA', margin: '0 0 4px', letterSpacing: '0.06em', textTransform: 'uppercase' }}>
@@ -3034,23 +3037,23 @@ export default async function RaceDetailPage({
 
                     {/* ── レースタイプ + 重み ───────────── */}
                     <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8, flexWrap: 'wrap' }}>
-                      <span style={{ fontSize: 12, fontWeight: 700, padding: '2px 10px', borderRadius: 4, background: `${raceTypeColor}18`, color: raceTypeColor, border: `1px solid ${raceTypeColor}44` }}>
+                      <span style={{ fontSize: 12, fontWeight: 700, padding: '2px 10px', borderRadius: 6, background: `${raceTypeColor}18`, color: raceTypeColor, border: `1px solid ${raceTypeColor}44` }}>
                         {formationV9Debug.raceType}
                       </span>
-                      <span style={{ fontSize: 11, color: '#5A5651' }}>
+                      <span style={{ fontSize: 11, color: '#9898B0' }}>
                         pace×{W.pace} + dist×{W.dist} + jockey×{W.jockey} + stability×{W.stability}
                       </span>
-                      <span style={{ fontSize: 11, color: '#5A5651', marginLeft: 'auto' }}>
-                        軸タイプ: <span style={{ color: AXIS_TYPE_COLOR[formationV9Debug.axisTypeV7], fontWeight: 700 }}>{formationV9Debug.axisTypeV7}</span>　ヒモ <strong style={{ color: '#4A4643' }}>{formationV9Debug.himoCount}頭</strong>
+                      <span style={{ fontSize: 11, color: '#9898B0', marginLeft: 'auto' }}>
+                        軸タイプ: <span style={{ color: AXIS_TYPE_COLOR[formationV9Debug.axisTypeV7], fontWeight: 700 }}>{formationV9Debug.axisTypeV7}</span>　ヒモ <strong style={{ color: '#EEEEF5' }}>{formationV9Debug.himoCount}頭</strong>
                       </span>
                     </div>
-                    <p style={{ fontSize: 10, color: '#A09C97', margin: '0 0 14px' }}>
+                    <p style={{ fontSize: 10, color: '#62627A', margin: '0 0 14px' }}>
                       v8 との差: pace {formationV9Debug.raceType === '3歳戦' ? '同' : '+0.05'} / dist {formationV9Debug.raceType === '3歳戦' ? '-0.05' : '+0.05'} / jockey {formationV9Debug.raceType === '3歳戦' ? '+0.05' : '-0.10'}
                     </p>
 
                     {/* ── v8→v9 入れ替わり ──────────────── */}
                     {(addedInV9.length > 0 || removedInV9.length > 0) ? (
-                      <div style={{ marginBottom: 14, padding: '8px 10px', borderRadius: 4, background: 'rgba(167,139,250,0.07)', border: '1px solid rgba(167,139,250,0.25)' }}>
+                      <div style={{ marginBottom: 14, padding: '8px 10px', borderRadius: 6, background: 'rgba(167,139,250,0.07)', border: '1px solid rgba(167,139,250,0.25)' }}>
                         <p style={{ fontSize: 10, fontWeight: 700, color: '#A78BFA', margin: '0 0 6px', letterSpacing: '0.04em' }}>v8 → v9 ヒモ変更</p>
                         {addedInV9.length > 0 && (
                           <p style={{ fontSize: 11, color: '#6EE7B7', margin: '0 0 2px' }}>
@@ -3064,18 +3067,18 @@ export default async function RaceDetailPage({
                         )}
                       </div>
                     ) : (
-                      <p style={{ fontSize: 11, color: '#A09C97', marginBottom: 14 }}>v8 と v9 のヒモ構成は同一です</p>
+                      <p style={{ fontSize: 11, color: '#62627A', marginBottom: 14 }}>v8 と v9 のヒモ構成は同一です</p>
                     )}
 
                     {/* ── スコアテーブル ─────────────────── */}
                     <div style={{ overflowX: 'auto' }}>
                       <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 11 }}>
                         <thead>
-                          <tr style={{ borderBottom: '1px solid rgba(0,0,0,0.05)' }}>
+                          <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
                             {['馬名', 'pace_fit', 'dist_fit', 'jockey', 'stability', 'v8 score', 'v9 score'].map((h) => (
-                              <th key={h} style={{ padding: '4px 6px', color: '#5A5651', fontWeight: 600, textAlign: 'right', whiteSpace: 'nowrap' }}>{h}</th>
+                              <th key={h} style={{ padding: '4px 6px', color: '#9898B0', fontWeight: 600, textAlign: 'right', whiteSpace: 'nowrap' }}>{h}</th>
                             ))}
-                            <th style={{ padding: '4px 6px', color: '#5A5651', fontWeight: 600, textAlign: 'center' }}>採用</th>
+                            <th style={{ padding: '4px 6px', color: '#9898B0', fontWeight: 600, textAlign: 'center' }}>採用</th>
                           </tr>
                         </thead>
                         <tbody>
@@ -3084,23 +3087,23 @@ export default async function RaceDetailPage({
                             const removed = !row.isHimo &&  row.wasHimoV8
                             return (
                               <tr key={i} style={{
-                                borderBottom: '1px solid rgba(0,0,0,0.04)',
+                                borderBottom: '1px solid rgba(255,255,255,0.04)',
                                 background: row.isHimo ? 'rgba(167,139,250,0.06)' : 'transparent',
                               }}>
-                                <td style={{ padding: '5px 6px', color: row.isHimo ? '#4338CA' : '#4A4643', fontWeight: row.isHimo ? 700 : 400, whiteSpace: 'nowrap' }}>
+                                <td style={{ padding: '5px 6px', color: row.isHimo ? '#A78BFA' : '#9898B0', fontWeight: row.isHimo ? 700 : 400, whiteSpace: 'nowrap' }}>
                                   {row.horseName}
                                   {added   && <span style={{ marginLeft: 4, fontSize: 9, color: '#6EE7B7' }}>↑</span>}
                                   {removed && <span style={{ marginLeft: 4, fontSize: 9, color: '#DC2626' }}>↓</span>}
                                 </td>
-                                <td style={{ padding: '5px 6px', color: '#4A4643', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{row.paceFit.toFixed(4)}</td>
-                                <td style={{ padding: '5px 6px', color: '#4A4643', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{row.distanceFit.toFixed(2)}</td>
-                                <td style={{ padding: '5px 6px', color: '#4A4643', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{row.jockeyScore.toFixed(2)}</td>
-                                <td style={{ padding: '5px 6px', color: '#4A4643', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{row.stabilityComponent.toFixed(4)}</td>
-                                <td style={{ padding: '5px 6px', color: '#7A7571', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{row.himoScoreV8.toFixed(4)}</td>
-                                <td style={{ padding: '5px 6px', color: row.isHimo ? '#4338CA' : '#4A4643', textAlign: 'right', fontWeight: row.isHimo ? 700 : 400, fontVariantNumeric: 'tabular-nums' }}>{row.himoScoreV9.toFixed(4)}</td>
+                                <td style={{ padding: '5px 6px', color: '#9898B0', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{row.paceFit.toFixed(4)}</td>
+                                <td style={{ padding: '5px 6px', color: '#9898B0', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{row.distanceFit.toFixed(2)}</td>
+                                <td style={{ padding: '5px 6px', color: '#9898B0', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{row.jockeyScore.toFixed(2)}</td>
+                                <td style={{ padding: '5px 6px', color: '#9898B0', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{row.stabilityComponent.toFixed(4)}</td>
+                                <td style={{ padding: '5px 6px', color: '#62627A', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{row.himoScoreV8.toFixed(4)}</td>
+                                <td style={{ padding: '5px 6px', color: row.isHimo ? '#A78BFA' : '#9898B0', textAlign: 'right', fontWeight: row.isHimo ? 700 : 400, fontVariantNumeric: 'tabular-nums' }}>{row.himoScoreV9.toFixed(4)}</td>
                                 <td style={{ padding: '5px 6px', textAlign: 'center' }}>
                                   {row.isHimo && (
-                                    <span style={{ fontSize: 10, fontWeight: 700, padding: '1px 6px', borderRadius: 4, background: 'rgba(167,139,250,0.18)', color: '#A78BFA', border: '1px solid rgba(167,139,250,0.35)' }}>
+                                    <span style={{ fontSize: 10, fontWeight: 700, padding: '1px 6px', borderRadius: 6, background: 'rgba(167,139,250,0.18)', color: '#A78BFA', border: '1px solid rgba(167,139,250,0.35)' }}>
                                       ◎ヒモ
                                     </span>
                                   )}
@@ -3111,7 +3114,7 @@ export default async function RaceDetailPage({
                         </tbody>
                       </table>
                     </div>
-                    <p style={{ fontSize: 10, color: '#A09C97', marginTop: 10, lineHeight: 1.7 }}>
+                    <p style={{ fontSize: 10, color: '#62627A', marginTop: 10, lineHeight: 1.7 }}>
                       3歳戦キーワード: {RACE_3YO_KEYWORDS.join(' / ')}
                     </p>
                   </div>
@@ -3139,7 +3142,7 @@ export default async function RaceDetailPage({
                     marginTop: 8,
                     background: 'rgba(96,165,250,0.03)',
                     border: '1px solid rgba(96,165,250,0.2)',
-                    borderRadius: 8,
+                    borderRadius: 12,
                     padding: '14px 16px',
                   }}>
                     <p style={{ fontSize: 11, fontWeight: 700, color: '#2563EB', margin: '0 0 4px', letterSpacing: '0.06em', textTransform: 'uppercase' }}>
@@ -3148,14 +3151,14 @@ export default async function RaceDetailPage({
 
                     {/* ── レースタイプ + 重み ───────────── */}
                     <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6, flexWrap: 'wrap' }}>
-                      <span style={{ fontSize: 12, fontWeight: 700, padding: '2px 10px', borderRadius: 4, background: `${raceTypeColor}18`, color: raceTypeColor, border: `1px solid ${raceTypeColor}44` }}>
+                      <span style={{ fontSize: 12, fontWeight: 700, padding: '2px 10px', borderRadius: 6, background: `${raceTypeColor}18`, color: raceTypeColor, border: `1px solid ${raceTypeColor}44` }}>
                         {formationV9_1Debug.raceType}
                       </span>
-                      <span style={{ fontSize: 11, color: '#5A5651' }}>
+                      <span style={{ fontSize: 11, color: '#9898B0' }}>
                         pace×{W.pace} + dist×{W.dist} + jockey×{W.jockey} + stability×{W.stability}
                       </span>
                     </div>
-                    <p style={{ fontSize: 10, color: '#A09C97', margin: '0 0 8px' }}>
+                    <p style={{ fontSize: 10, color: '#62627A', margin: '0 0 8px' }}>
                       jockey重み: v9 {Wv9.jockey} → v9.1 {W.jockey}
                       （{formationV9_1Debug.raceType === '3歳戦' ? '3歳戦: −0.03' : '古馬戦: +0.05'}）
                     </p>
@@ -3166,7 +3169,7 @@ export default async function RaceDetailPage({
                         { label: 'v9', weights: formationV9_1Debug.raceType === '3歳戦' ? { pace: '0.40', dist: '0.25', jockey: '0.25', stab: '0.10' } : { pace: '0.45', dist: '0.35', jockey: '0.10', stab: '0.10' }, color: '#A78BFA' },
                         { label: 'v9.1', weights: formationV9_1Debug.raceType === '3歳戦' ? { pace: '0.40', dist: '0.28', jockey: '0.22', stab: '0.10' } : { pace: '0.43', dist: '0.32', jockey: '0.15', stab: '0.10' }, color: '#2563EB' },
                       ].map(({ label, weights, color }) => (
-                        <div key={label} style={{ background: 'rgba(0,0,0,0.03)', borderRadius: 6, padding: '8px 10px', border: '1px solid rgba(0,0,0,0.05)' }}>
+                        <div key={label} style={{ background: 'rgba(255,255,255,0.03)', borderRadius: 10, padding: '8px 10px', border: '1px solid rgba(255,255,255,0.05)' }}>
                           <p style={{ fontSize: 10, fontWeight: 700, color, margin: '0 0 6px' }}>{label}</p>
                           {[
                             { k: 'pace', v: weights.pace },
@@ -3175,8 +3178,8 @@ export default async function RaceDetailPage({
                             { k: 'stability', v: weights.stab },
                           ].map(({ k, v }) => (
                             <div key={k} style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 2 }}>
-                              <span style={{ fontSize: 10, color: '#5A5651' }}>{k}</span>
-                              <span style={{ fontSize: 11, fontWeight: k === 'jockey' ? 700 : 400, color: k === 'jockey' ? color : '#4A4643' }}>×{v}</span>
+                              <span style={{ fontSize: 10, color: '#9898B0' }}>{k}</span>
+                              <span style={{ fontSize: 11, fontWeight: k === 'jockey' ? 700 : 400, color: k === 'jockey' ? color : '#9898B0' }}>×{v}</span>
                             </div>
                           ))}
                         </div>
@@ -3185,7 +3188,7 @@ export default async function RaceDetailPage({
 
                     {/* ── v9→v9.1 入れ替わり ─────────────── */}
                     {(addedInV9_1.length > 0 || removedInV9_1.length > 0) ? (
-                      <div style={{ marginBottom: 14, padding: '8px 10px', borderRadius: 4, background: 'rgba(96,165,250,0.07)', border: '1px solid rgba(96,165,250,0.25)' }}>
+                      <div style={{ marginBottom: 14, padding: '8px 10px', borderRadius: 6, background: 'rgba(96,165,250,0.07)', border: '1px solid rgba(96,165,250,0.25)' }}>
                         <p style={{ fontSize: 10, fontWeight: 700, color: '#2563EB', margin: '0 0 6px' }}>v9 → v9.1 ヒモ変更</p>
                         {addedInV9_1.length > 0 && (
                           <p style={{ fontSize: 11, color: '#6EE7B7', margin: '0 0 2px' }}>
@@ -3199,18 +3202,18 @@ export default async function RaceDetailPage({
                         )}
                       </div>
                     ) : (
-                      <p style={{ fontSize: 11, color: '#A09C97', marginBottom: 14 }}>v9 と v9.1 のヒモ構成は同一です</p>
+                      <p style={{ fontSize: 11, color: '#62627A', marginBottom: 14 }}>v9 と v9.1 のヒモ構成は同一です</p>
                     )}
 
                     {/* ── スコアテーブル ─────────────────── */}
                     <div style={{ overflowX: 'auto' }}>
                       <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 11 }}>
                         <thead>
-                          <tr style={{ borderBottom: '1px solid rgba(0,0,0,0.05)' }}>
+                          <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
                             {['馬名', 'pace_fit', 'dist_fit', 'jockey', 'stability', 'v9 score', 'v9.1 score'].map((h) => (
-                              <th key={h} style={{ padding: '4px 6px', color: '#5A5651', fontWeight: 600, textAlign: 'right', whiteSpace: 'nowrap' }}>{h}</th>
+                              <th key={h} style={{ padding: '4px 6px', color: '#9898B0', fontWeight: 600, textAlign: 'right', whiteSpace: 'nowrap' }}>{h}</th>
                             ))}
-                            <th style={{ padding: '4px 6px', color: '#5A5651', fontWeight: 600, textAlign: 'center' }}>採用</th>
+                            <th style={{ padding: '4px 6px', color: '#9898B0', fontWeight: 600, textAlign: 'center' }}>採用</th>
                           </tr>
                         </thead>
                         <tbody>
@@ -3219,23 +3222,23 @@ export default async function RaceDetailPage({
                             const removed = !row.isHimo &&  row.wasHimoV9
                             return (
                               <tr key={i} style={{
-                                borderBottom: '1px solid rgba(0,0,0,0.04)',
+                                borderBottom: '1px solid rgba(255,255,255,0.04)',
                                 background: row.isHimo ? 'rgba(96,165,250,0.06)' : 'transparent',
                               }}>
-                                <td style={{ padding: '5px 6px', color: row.isHimo ? '#1E40AF' : '#4A4643', fontWeight: row.isHimo ? 700 : 400, whiteSpace: 'nowrap' }}>
+                                <td style={{ padding: '5px 6px', color: row.isHimo ? '#60A5FA' : '#9898B0', fontWeight: row.isHimo ? 700 : 400, whiteSpace: 'nowrap' }}>
                                   {row.horseName}
                                   {added   && <span style={{ marginLeft: 4, fontSize: 9, color: '#6EE7B7' }}>↑</span>}
                                   {removed && <span style={{ marginLeft: 4, fontSize: 9, color: '#DC2626' }}>↓</span>}
                                 </td>
-                                <td style={{ padding: '5px 6px', color: '#4A4643', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{row.paceFit.toFixed(4)}</td>
-                                <td style={{ padding: '5px 6px', color: '#4A4643', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{row.distanceFit.toFixed(2)}</td>
-                                <td style={{ padding: '5px 6px', color: '#4A4643', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{row.jockeyScore.toFixed(2)}</td>
-                                <td style={{ padding: '5px 6px', color: '#4A4643', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{row.stabilityComponent.toFixed(4)}</td>
-                                <td style={{ padding: '5px 6px', color: '#7A7571', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{row.himoScoreV9.toFixed(4)}</td>
-                                <td style={{ padding: '5px 6px', color: row.isHimo ? '#1E40AF' : '#4A4643', textAlign: 'right', fontWeight: row.isHimo ? 700 : 400, fontVariantNumeric: 'tabular-nums' }}>{row.himoScoreV9_1.toFixed(4)}</td>
+                                <td style={{ padding: '5px 6px', color: '#9898B0', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{row.paceFit.toFixed(4)}</td>
+                                <td style={{ padding: '5px 6px', color: '#9898B0', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{row.distanceFit.toFixed(2)}</td>
+                                <td style={{ padding: '5px 6px', color: '#9898B0', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{row.jockeyScore.toFixed(2)}</td>
+                                <td style={{ padding: '5px 6px', color: '#9898B0', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{row.stabilityComponent.toFixed(4)}</td>
+                                <td style={{ padding: '5px 6px', color: '#62627A', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{row.himoScoreV9.toFixed(4)}</td>
+                                <td style={{ padding: '5px 6px', color: row.isHimo ? '#60A5FA' : '#9898B0', textAlign: 'right', fontWeight: row.isHimo ? 700 : 400, fontVariantNumeric: 'tabular-nums' }}>{row.himoScoreV9_1.toFixed(4)}</td>
                                 <td style={{ padding: '5px 6px', textAlign: 'center' }}>
                                   {row.isHimo && (
-                                    <span style={{ fontSize: 10, fontWeight: 700, padding: '1px 6px', borderRadius: 4, background: 'rgba(96,165,250,0.18)', color: '#2563EB', border: '1px solid rgba(96,165,250,0.35)' }}>
+                                    <span style={{ fontSize: 10, fontWeight: 700, padding: '1px 6px', borderRadius: 6, background: 'rgba(96,165,250,0.18)', color: '#2563EB', border: '1px solid rgba(96,165,250,0.35)' }}>
                                       ◎ヒモ
                                     </span>
                                   )}
@@ -3246,29 +3249,29 @@ export default async function RaceDetailPage({
                         </tbody>
                       </table>
                     </div>
-                    <p style={{ fontSize: 10, color: '#A09C97', marginTop: 10, lineHeight: 1.7 }}>
+                    <p style={{ fontSize: 10, color: '#62627A', marginTop: 10, lineHeight: 1.7 }}>
                       軸タイプ: <span style={{ color: AXIS_TYPE_COLOR[formationV9_1Debug.axisTypeV7] }}>{formationV9_1Debug.axisTypeV7}</span>　ヒモ {formationV9_1Debug.himoCount}頭　jockey重み(v9.1)={formationV9_1Debug.jockeyWeight}
                     </p>
                   </div>
                 )
               })()}
 
-              <div style={{ ...card, background: '#EDE9DF', border: '1px solid rgba(99,102,241,0.15)' }}>
-                <p style={{ ...sectionLabel, color: '#5A5651', borderBottomColor: 'rgba(0,0,0,0.05)' }}>
+              <div style={{ ...card, background: '#13141F', border: '1px solid rgba(20,184,166,0.15)' }}>
+                <p style={{ ...sectionLabel, color: '#9898B0', borderBottomColor: 'rgba(255,255,255,0.05)' }}>
                   AIの予想まとめ
                 </p>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 14 }}>
                   {aiSummaryLines.map((line, i) => (
-                    <p key={i} style={{ color: '#4A4643', fontSize: 13, lineHeight: 1.8, margin: 0 }}>
+                    <p key={i} style={{ color: '#9898B0', fontSize: 13, lineHeight: 1.8, margin: 0 }}>
                       {line}
                     </p>
                   ))}
                 </div>
                 <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                  <span style={{ fontSize: 11, color: '#5A5651', flexShrink: 0 }}>推奨戦略</span>
+                  <span style={{ fontSize: 11, color: '#9898B0', flexShrink: 0 }}>推奨戦略</span>
                   <span style={{
-                    fontSize: 12, fontWeight: 700, padding: '3px 10px', borderRadius: 4,
-                    background: 'rgba(30,79,156,0.08)', color: '#3B6DC1', border: '1px solid rgba(99,102,241,0.2)',
+                    fontSize: 12, fontWeight: 700, padding: '3px 10px', borderRadius: 6,
+                    background: 'rgba(20,184,166,0.08)', color: '#14B8A6', border: '1px solid rgba(20,184,166,0.2)',
                   }}>
                     {strategy.approach}
                   </span>
@@ -3305,30 +3308,30 @@ export default async function RaceDetailPage({
                           flexDirection: 'column',
                           alignItems: 'center',
                           background: `${STYLE_COLORS[rs]}10`,
-                          borderRadius: 6,
+                          borderRadius: 10,
                           padding: '4px 10px',
                           minWidth: 36,
                           border: `1px solid ${STYLE_COLORS[rs]}30`,
                         }}
                       >
                         <span style={{ color: STYLE_COLORS[rs], fontSize: 10, fontWeight: 700 }}>{label}</span>
-                        <span style={{ color: '#1A1814', fontSize: 15, fontWeight: 700 }}>{count}</span>
+                        <span style={{ color: '#EEEEF5', fontSize: 15, fontWeight: 700 }}>{count}</span>
                       </div>
                     ))}
                   </div>
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                   <div style={{ display: 'flex', gap: 10 }}>
-                    <span style={{ color: '#5A5651', fontSize: 12, width: 68, flexShrink: 0, paddingTop: 1 }}>
+                    <span style={{ color: '#9898B0', fontSize: 12, width: 68, flexShrink: 0, paddingTop: 1 }}>
                       展開予想
                     </span>
-                    <span style={{ color: '#4A4643', fontSize: 13, lineHeight: 1.6 }}>{paceMeta.explanation}</span>
+                    <span style={{ color: '#9898B0', fontSize: 13, lineHeight: 1.6 }}>{paceMeta.explanation}</span>
                   </div>
                   <div style={{ display: 'flex', gap: 10 }}>
-                    <span style={{ color: '#5A5651', fontSize: 12, width: 68, flexShrink: 0, paddingTop: 1 }}>
+                    <span style={{ color: '#9898B0', fontSize: 12, width: 68, flexShrink: 0, paddingTop: 1 }}>
                       AIコメント
                     </span>
-                    <span style={{ color: '#4A4643', fontSize: 13, lineHeight: 1.6 }}>{paceMeta.aiComment}</span>
+                    <span style={{ color: '#9898B0', fontSize: 13, lineHeight: 1.6 }}>{paceMeta.aiComment}</span>
                   </div>
                 </div>
               </div>
@@ -3336,7 +3339,7 @@ export default async function RaceDetailPage({
               {/* レース安定性スコア */}
               <div style={card}>
                 <p style={sectionLabel}>レース安定性スコア</p>
-                <p style={{ fontSize: 11, color: '#5A5651', marginBottom: 16 }}>
+                <p style={{ fontSize: 11, color: '#9898B0', marginBottom: 16 }}>
                   今回の出走馬の脚質構成から算出。展開の読みやすさ・軸の決めやすさ・混戦度を示します。
                 </p>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 24, flexWrap: 'wrap' }}>
@@ -3345,9 +3348,9 @@ export default async function RaceDetailPage({
                       <span style={{ fontSize: 44, fontWeight: 800, lineHeight: 1, color: stabilityLevel.color }}>
                         {raceStabilityScore}
                       </span>
-                      <span style={{ color: '#5A5651', marginBottom: 6, fontSize: 15 }}>/100</span>
+                      <span style={{ color: '#9898B0', marginBottom: 6, fontSize: 15 }}>/100</span>
                     </div>
-                    <div style={{ background: 'rgba(0,0,0,0.08)', borderRadius: 2, height: 4, overflow: 'hidden', marginBottom: 8 }}>
+                    <div style={{ background: 'rgba(255,255,255,0.08)', borderRadius: 2, height: 4, overflow: 'hidden', marginBottom: 8 }}>
                       <div style={{ width: `${raceStabilityScore}%`, height: '100%', background: stabilityLevel.color, borderRadius: 9999 }} />
                     </div>
                     <span
@@ -3365,7 +3368,7 @@ export default async function RaceDetailPage({
                       {stabilityLevel.label}
                     </span>
                   </div>
-                  <p style={{ color: '#4A4643', fontSize: 13, lineHeight: 1.7, flex: 1, minWidth: 180 }}>
+                  <p style={{ color: '#9898B0', fontSize: 13, lineHeight: 1.7, flex: 1, minWidth: 180 }}>
                     {stabilityStrategy.comment}
                   </p>
                 </div>
@@ -3400,7 +3403,7 @@ export default async function RaceDetailPage({
                     })}
                   </div>
                 ) : (
-                  <p style={{ color: '#9b9490', fontSize: 13 }}>
+                  <p style={{ color: '#62627A', fontSize: 13 }}>
                     平均ペース想定のため、展開による有利・不利はありません。
                   </p>
                 )}
@@ -3410,7 +3413,7 @@ export default async function RaceDetailPage({
               {advantageHorses.length > 0 && (
                 <div style={card}>
                   <p style={sectionLabel}>展開有利馬</p>
-                  <p style={{ color: '#5A5651', fontSize: 11, marginBottom: 14 }}>
+                  <p style={{ color: '#9898B0', fontSize: 11, marginBottom: 14 }}>
                     ※ ペース適性による恩恵馬です。総合的な強さとは異なります。
                   </p>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -3441,9 +3444,9 @@ export default async function RaceDetailPage({
                           >
                             {STYLE_LABELS[style]}
                           </span>
-                          <span style={{ fontSize: 14, fontWeight: 600, color: '#1A1814' }}>{name}</span>
+                          <span style={{ fontSize: 14, fontWeight: 600, color: '#EEEEF5' }}>{name}</span>
                         </div>
-                        <p style={{ color: '#4A4643', fontSize: 12, lineHeight: 1.6, margin: 0 }}>{comment}</p>
+                        <p style={{ color: '#9898B0', fontSize: 12, lineHeight: 1.6, margin: 0 }}>{comment}</p>
                       </div>
                     ))}
                   </div>
@@ -3457,20 +3460,20 @@ export default async function RaceDetailPage({
               {valueHorse && (
                 <div style={card}>
                   <p style={sectionLabel}>AI注目の穴馬</p>
-                  <p style={{ color: '#1A1814', fontSize: 16, fontWeight: 700, marginBottom: 8 }}>
+                  <p style={{ color: '#EEEEF5', fontSize: 16, fontWeight: 700, marginBottom: 8 }}>
                     {valueHorse.horseName}
                   </p>
                   <div style={{ display: 'flex', gap: 6, marginBottom: 12 }}>
-                    <span style={{ fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 4, background: 'rgba(99,102,241,0.12)', color: '#3B6DC1', border: '1px solid rgba(99,102,241,0.3)' }}>
+                    <span style={{ fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 6, background: 'rgba(20,184,166,0.12)', color: '#14B8A6', border: '1px solid rgba(20,184,166,0.3)' }}>
                       AI順位 {valueHorse.aiRank}位
                     </span>
                     {valueHorse.popularityRank != null && (
-                      <span style={{ fontSize: 11, fontWeight: 600, padding: '2px 8px', borderRadius: 4, background: 'rgba(0,0,0,0.05)', color: '#4A4643', border: '1px solid rgba(0,0,0,0.10)' }}>
+                      <span style={{ fontSize: 11, fontWeight: 600, padding: '2px 8px', borderRadius: 6, background: 'rgba(255,255,255,0.05)', color: '#9898B0', border: '1px solid rgba(255,255,255,0.10)' }}>
                         {valueHorse.popularityRank}番人気
                       </span>
                     )}
                   </div>
-                  <p style={{ color: '#4A4643', fontSize: 12, lineHeight: 1.7 }}>{valueHorse.reason}</p>
+                  <p style={{ color: '#9898B0', fontSize: 12, lineHeight: 1.7 }}>{valueHorse.reason}</p>
                 </div>
               )}
 
@@ -3525,12 +3528,12 @@ export default async function RaceDetailPage({
                   gridTemplateColumns: '40px 44px 1fr 56px 64px',
                   gap: 4,
                   paddingBottom: 8,
-                  borderBottom: '1px solid rgba(0,0,0,0.05)',
+                  borderBottom: '1px solid rgba(255,255,255,0.05)',
                   marginBottom: 4,
                 }}
               >
                 {['着順', '馬番', '馬名', 'AI順位', ''].map((h) => (
-                  <span key={h} style={{ color: '#5A5651', fontSize: 10, fontWeight: 600, letterSpacing: '0.05em' }}>{h}</span>
+                  <span key={h} style={{ color: '#9898B0', fontSize: 10, fontWeight: 600, letterSpacing: '0.05em' }}>{h}</span>
                 ))}
               </div>
 
@@ -3560,28 +3563,28 @@ export default async function RaceDetailPage({
                       gap: 4,
                       alignItems: 'center',
                       padding: '8px 0',
-                      borderBottom: '1px solid rgba(0,0,0,0.04)',
-                      background: isTop3 ? 'rgba(99,102,241,0.04)' : 'transparent',
+                      borderBottom: '1px solid rgba(255,255,255,0.04)',
+                      background: isTop3 ? 'rgba(20,184,166,0.04)' : 'transparent',
                     }}
                   >
                     <span
                       style={{
                         fontSize: 14,
                         fontWeight: isTop3 ? 700 : 400,
-                        color: isTop3 ? '#3B6DC1' : '#5A5651',
+                        color: isTop3 ? '#14B8A6' : '#9898B0',
                         fontVariantNumeric: 'tabular-nums',
                       }}
                     >
                       {finish_pos}着
                     </span>
-                    <span style={{ fontSize: 13, color: '#5A5651', fontVariantNumeric: 'tabular-nums' }}>
+                    <span style={{ fontSize: 13, color: '#9898B0', fontVariantNumeric: 'tabular-nums' }}>
                       {horseNumber !== null ? `${horseNumber}番` : '—'}
                     </span>
                     <span
                       style={{
                         fontSize: 14,
                         fontWeight: isTop3 ? 600 : 400,
-                        color: isTop3 ? '#1A1814' : '#4A4643',
+                        color: isTop3 ? '#EEEEF5' : '#9898B0',
                         overflow: 'hidden',
                         textOverflow: 'ellipsis',
                         whiteSpace: 'nowrap',
@@ -3589,7 +3592,7 @@ export default async function RaceDetailPage({
                     >
                       {name}
                     </span>
-                    <span style={{ fontSize: 12, color: '#5A5651', fontVariantNumeric: 'tabular-nums' }}>{aiRankDisplay}</span>
+                    <span style={{ fontSize: 12, color: '#9898B0', fontVariantNumeric: 'tabular-nums' }}>{aiRankDisplay}</span>
                     <span>
                       {hint && (
                         <span

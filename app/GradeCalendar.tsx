@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
 
 type GradeRace = {
   date: string   // YYYY-MM-DD
@@ -113,13 +114,12 @@ const GRADE_RACES_2026: GradeRace[] = [
 const MONTH_NAMES = ['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月']
 
 const gradeColor: Record<string, { color: string; border: string; background: string }> = {
-  G1: { color: '#92400E', border: '1px solid rgba(146,64,14,0.30)',  background: 'rgba(146,64,14,0.07)'  },
-  G2: { color: '#374151', border: '1px solid rgba(55,65,81,0.25)',   background: 'rgba(55,65,81,0.07)'   },
-  G3: { color: '#1E4F9C', border: '1px solid rgba(30,79,156,0.25)',  background: 'rgba(30,79,156,0.07)'  },
+  G1: { color: '#FBBF24', border: '1px solid rgba(251,191,36,0.40)',  background: 'rgba(251,191,36,0.10)' },
+  G2: { color: '#C0C8D0', border: '1px solid rgba(192,200,208,0.35)', background: 'rgba(192,200,208,0.08)' },
+  G3: { color: '#14B8A6', border: '1px solid rgba(20,184,166,0.35)',  background: 'rgba(20,184,166,0.08)' },
 }
 
 function RaceRows({ races, today }: { races: GradeRace[]; today: string }) {
-  // 同日レースをグループ化
   const groups: GradeRace[][] = []
   const dateMap = new Map<string, GradeRace[]>()
   for (const r of races) {
@@ -132,55 +132,49 @@ function RaceRows({ races, today }: { races: GradeRace[]; today: string }) {
   }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
       {groups.map((group, gi) => {
         const d = new Date(group[0].date + 'T12:00:00')
-        const isPast = group[0].date < today  // 文字列比較: timezone非依存
+        const isPast = group[0].date < today
         const dayStr = `${d.getMonth() + 1}/${d.getDate()}`
         const DOW = ['日','月','火','水','木','金','土'][d.getDay()]
-        const dowColor = d.getDay() === 0 ? '#DC2626' : d.getDay() === 6 ? '#2563EB' : '#A09C97'
+        const dowColor = d.getDay() === 0 ? '#F87171' : d.getDay() === 6 ? '#60A5FA' : '#62627A'
         return (
           <div
             key={gi}
             style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 10,
-              padding: '7px 12px',
-              borderRadius: 6,
-              background: 'rgba(0,0,0,0.02)',
-              opacity: isPast ? 0.38 : 1,
+              display: 'flex', alignItems: 'center', gap: 10,
+              padding: '7px 12px', borderRadius: 8,
+              background: 'rgba(255,255,255,0.02)',
+              opacity: isPast ? 0.35 : 1,
             }}
           >
-            {/* 日付 */}
             <span style={{
-              fontSize: 12, color: '#7A7571', fontVariantNumeric: 'tabular-nums',
+              fontSize: 12, color: '#62627A', fontVariantNumeric: 'tabular-nums',
               width: 52, flexShrink: 0,
             }}>
-              {dayStr}<span style={{ color: dowColor, marginLeft: 3, fontSize: 11 }}>({DOW})</span>
+              {dayStr}<span style={{ color: dowColor, marginLeft: 2, fontSize: 11 }}>({DOW})</span>
             </span>
-            {/* レース（同日2レースは横並び） */}
             <div style={{
-              flex: 1,
-              display: 'grid',
+              flex: 1, display: 'grid',
               gridTemplateColumns: group.length >= 2 ? '1fr 1fr' : '1fr',
               gap: 8,
             }}>
               {group.map((race, ri) => (
                 <div key={ri} style={{ display: 'flex', alignItems: 'center', gap: 6, minWidth: 0 }}>
                   <span style={{
-                    fontSize: 10, fontWeight: 700, padding: '2px 6px', borderRadius: 4,
+                    fontSize: 9, fontWeight: 700, padding: '2px 5px', borderRadius: 4,
                     flexShrink: 0, ...gradeColor[race.grade],
                   }}>
                     {race.grade}
                   </span>
                   <span style={{
-                    fontSize: 13, fontWeight: 500, color: '#1A1814',
+                    fontSize: 13, fontWeight: 500, color: '#EEEEF5',
                     flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
                   }}>
                     {race.name}
                   </span>
-                  <span style={{ fontSize: 11, color: '#A09C97', flexShrink: 0 }}>
+                  <span style={{ fontSize: 11, color: '#62627A', flexShrink: 0 }}>
                     {race.venue}
                   </span>
                 </div>
@@ -198,7 +192,7 @@ function MonthHeader({ month, isCurrentMonth }: { month: number; isCurrentMonth:
     <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
       <span style={{
         fontSize: 12, fontWeight: 700,
-        color: isCurrentMonth ? '#1E4F9C' : '#7A7571',
+        color: isCurrentMonth ? '#14B8A6' : '#62627A',
         letterSpacing: '0.04em',
       }}>
         {MONTH_NAMES[month]}
@@ -206,13 +200,13 @@ function MonthHeader({ month, isCurrentMonth }: { month: number; isCurrentMonth:
       {isCurrentMonth && (
         <span style={{
           fontSize: 9, fontWeight: 700, padding: '1px 5px', borderRadius: 3,
-          background: 'rgba(30,79,156,0.09)', color: '#1E4F9C',
-          border: '1px solid rgba(30,79,156,0.22)', letterSpacing: '0.04em',
+          background: 'rgba(20,184,166,0.10)', color: '#14B8A6',
+          border: '1px solid rgba(20,184,166,0.25)', letterSpacing: '0.04em',
         }}>
           今月
         </span>
       )}
-      <div style={{ flex: 1, height: 1, background: '#DDD9D1' }} />
+      <div style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.08)' }} />
     </div>
   )
 }
@@ -222,7 +216,6 @@ export default function GradeCalendar({ today }: { today: string }) {
 
   const todayMonth = new Date(today + 'T12:00:00').getMonth()
 
-  // 月ごとにグループ化
   const byMonth: Record<number, GradeRace[]> = {}
   for (const race of GRADE_RACES_2026) {
     const m = new Date(race.date).getMonth()
@@ -236,64 +229,73 @@ export default function GradeCalendar({ today }: { today: string }) {
   )
 
   return (
-    <div style={{ marginTop: 48 }}>
-
-      {/* セクションラベル */}
+    <div style={{ marginTop: 24 }}>
       <p style={{
-        fontSize: 12, fontWeight: 600, color: '#7A7571',
-        letterSpacing: '0.04em', margin: '0 0 16px',
+        fontSize: 10, fontWeight: 700, letterSpacing: '0.10em',
+        color: '#62627A', textTransform: 'uppercase', margin: '0 0 12px',
       }}>
         2026 重賞カレンダー
       </p>
 
+      <div style={{
+        background: 'rgba(255,255,255,0.04)',
+        border: '1px solid rgba(255,255,255,0.08)',
+        borderRadius: 24,
+        padding: '20px',
+        overflow: 'hidden',
+      }}>
+        {currentMonthRaces.length > 0 && (
+          <div style={{ marginBottom: futureMonths.length > 0 ? 20 : 0 }}>
+            <MonthHeader month={todayMonth} isCurrentMonth />
+            <RaceRows races={currentMonthRaces} today={today} />
+          </div>
+        )}
 
-      {/* 今月：常に表示 */}
-      {currentMonthRaces.length > 0 && (
-        <div style={{ marginBottom: 24 }}>
-          <MonthHeader month={todayMonth} isCurrentMonth />
-          <RaceRows races={currentMonthRaces} today={today} />
-        </div>
-      )}
+        {futureMonths.length > 0 && (
+          <>
+            <motion.button
+              onClick={() => setFutureOpen((v) => !v)}
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.97 }}
+              transition={{ type: 'spring', stiffness: 400, damping: 25 }}
+              style={{
+                display: 'inline-flex', alignItems: 'center', gap: 6,
+                padding: '6px 14px', borderRadius: 10,
+                background: futureOpen ? 'rgba(20,184,166,0.12)' : 'rgba(255,255,255,0.04)',
+                border: '1px solid rgba(20,184,166,0.30)',
+                color: '#14B8A6', fontSize: 12, fontWeight: 600,
+                letterSpacing: '0.04em', cursor: 'pointer', fontFamily: 'inherit',
+              }}
+            >
+              翌月以降を見る
+              <span style={{ opacity: 0.6, fontWeight: 400, marginLeft: 2 }}>
+                {futureOpen ? '▲' : '▼'}
+              </span>
+            </motion.button>
 
-      {/* 翌月以降：トグル */}
-      {futureMonths.length > 0 && (
-        <>
-          <button
-            onClick={() => setFutureOpen((v) => !v)}
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: 6,
-              padding: '4px 10px',
-              borderRadius: 4,
-              background: futureOpen ? 'rgba(30,79,156,0.07)' : 'transparent',
-              border: '1px solid rgba(30,79,156,0.22)',
-              color: '#1E4F9C',
-              fontSize: 11,
-              fontWeight: 600,
-              letterSpacing: '0.06em',
-              cursor: 'pointer',
-              fontFamily: 'inherit',
-            }}
-          >
-            翌月以降を見る
-            <span style={{ opacity: 0.6, fontWeight: 400, marginLeft: 2 }}>
-              {futureOpen ? '▲' : '▼'}
-            </span>
-          </button>
-
-          {futureOpen && (
-            <div style={{ marginTop: 24, display: 'flex', flexDirection: 'column', gap: 28 }}>
-              {futureMonths.map((month) => (
-                <div key={month}>
-                  <MonthHeader month={month} isCurrentMonth={false} />
-                  <RaceRows races={byMonth[month]} today={today} />
-                </div>
-              ))}
-            </div>
-          )}
-        </>
-      )}
+            <AnimatePresence>
+              {futureOpen && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  exit={{ opacity: 0, height: 0 }}
+                  transition={{ type: 'spring', stiffness: 280, damping: 28 }}
+                  style={{ overflow: 'hidden' }}
+                >
+                  <div style={{ marginTop: 20, display: 'flex', flexDirection: 'column', gap: 24 }}>
+                    {futureMonths.map((month) => (
+                      <div key={month}>
+                        <MonthHeader month={month} isCurrentMonth={false} />
+                        <RaceRows races={byMonth[month]} today={today} />
+                      </div>
+                    ))}
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </>
+        )}
+      </div>
     </div>
   )
 }

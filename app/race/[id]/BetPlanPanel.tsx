@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { motion } from 'framer-motion'
 
 const HIMO_OPTIONS = [3, 4, 5]
 const AI_RECOMMENDED = 5
@@ -71,7 +72,7 @@ function NumBadge({ num, isAxis }: { num: number | null; isAxis: boolean }) {
         borderRadius: '50%',
         fontSize: 11,
         fontWeight: 700,
-        background: isAxis ? '#6366F1' : 'rgba(255,255,255,0.15)',
+        background: isAxis ? '#14B8A6' : 'rgba(255,255,255,0.15)',
         color: '#fff',
         flexShrink: 0,
       }}
@@ -113,8 +114,8 @@ export default function BetPlanPanel({
   return (
     <div
       style={{
-        background: '#141416',
-        padding: '20px 20px',
+        background: '#0E1118',
+        padding: '24px 20px',
         marginBottom: 10,
       }}
     >
@@ -123,73 +124,76 @@ export default function BetPlanPanel({
         fontWeight: 700,
         letterSpacing: '0.1em',
         textTransform: 'uppercase' as const,
-        color: '#7A7A84',
+        color: '#62627A',
         marginBottom: 14,
         paddingBottom: 10,
-        borderBottom: '1px solid rgba(255,255,255,0.06)',
+        borderBottom: '1px solid rgba(255,255,255,0.07)',
       }}>
         AI買い目プラン
       </p>
 
       {/* Bet type */}
       <div style={{ marginBottom: 18 }}>
-        <p style={{ color: '#7A7A84', fontSize: 11, marginBottom: 6 }}>買い方</p>
+        <p style={{ color: '#62627A', fontSize: 11, marginBottom: 6 }}>買い方</p>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <span
             style={{
               display: 'inline-block',
               padding: '4px 12px',
-              borderRadius: 6,
+              borderRadius: 8,
               fontSize: 13,
               fontWeight: 600,
-              background: 'rgba(99,102,241,0.12)',
-              color: '#818CF8',
-              border: '1px solid rgba(99,102,241,0.25)',
+              background: 'rgba(20,184,166,0.12)',
+              color: '#14B8A6',
+              border: '1px solid rgba(20,184,166,0.30)',
             }}
           >
             {betType}
           </span>
-          <button
+          <motion.button
             onClick={() => setShowBetInfo(true)}
+            whileTap={{ scale: 0.92 }}
             aria-label="三連複フォーメーションの説明を見る"
             style={{
               display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
               width: 22, height: 22, borderRadius: '50%',
               background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.14)',
-              color: '#7A7A84', fontSize: 11, fontWeight: 700, cursor: 'pointer',
+              color: '#62627A', fontSize: 11, fontWeight: 700, cursor: 'pointer',
               flexShrink: 0, lineHeight: 1,
             }}
           >
             i
-          </button>
+          </motion.button>
         </div>
       </div>
 
       {/* Himo count selector */}
       <div style={{ marginBottom: 14 }}>
-        <p style={{ color: '#7A7A84', fontSize: 11, marginBottom: 8 }}>軸馬に対する相手の頭数を選択</p>
+        <p style={{ color: '#62627A', fontSize: 11, marginBottom: 8 }}>軸馬に対する相手の頭数を選択</p>
         <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
           {HIMO_OPTIONS.map((n) => {
             const disabled = n > allHimoHorses.length
             const active = himoCount === n
             const isRecommended = n === AI_RECOMMENDED
             return (
-              <button
+              <motion.button
                 key={n}
                 onClick={() => !disabled && setHimoCount(n)}
                 disabled={disabled}
+                whileTap={disabled ? undefined : { scale: 0.95 }}
+                transition={{ type: 'spring', stiffness: 500, damping: 30 }}
                 style={{
                   display: 'flex',
                   alignItems: 'center',
                   gap: 5,
                   padding: '6px 13px',
-                  borderRadius: 6,
+                  borderRadius: 8,
                   fontSize: 13,
                   fontWeight: active ? 700 : 400,
                   cursor: disabled ? 'not-allowed' : 'pointer',
-                  border: active ? '1px solid rgba(99,102,241,0.5)' : '1px solid rgba(255,255,255,0.08)',
-                  background: active ? 'rgba(99,102,241,0.12)' : 'rgba(255,255,255,0.04)',
-                  color: disabled ? '#3C3C42' : active ? '#818CF8' : '#B0B0B8',
+                  border: active ? '1px solid rgba(20,184,166,0.50)' : '1px solid rgba(255,255,255,0.08)',
+                  background: active ? 'rgba(20,184,166,0.12)' : 'rgba(255,255,255,0.04)',
+                  color: disabled ? '#3C3C42' : active ? '#14B8A6' : '#9898B0',
                   transition: 'all 0.15s',
                   whiteSpace: 'nowrap',
                 }}
@@ -202,15 +206,15 @@ export default function BetPlanPanel({
                       fontWeight: 700,
                       padding: '1px 5px',
                       borderRadius: 9999,
-                      background: active ? 'rgba(99,102,241,0.25)' : 'rgba(99,102,241,0.1)',
-                      color: disabled ? '#3C3C42' : '#818CF8',
+                      background: active ? 'rgba(20,184,166,0.25)' : 'rgba(20,184,166,0.10)',
+                      color: disabled ? '#3C3C42' : '#14B8A6',
                       letterSpacing: '0.03em',
                     }}
                   >
                     AI
                   </span>
                 )}
-              </button>
+              </motion.button>
             )
           })}
         </div>
@@ -223,27 +227,27 @@ export default function BetPlanPanel({
           alignItems: 'center',
           justifyContent: 'space-between',
           background: 'rgba(255,255,255,0.04)',
-          borderRadius: 6,
+          borderRadius: 8,
           padding: '10px 14px',
           marginBottom: 14,
-          border: '1px solid rgba(255,255,255,0.06)',
+          border: '1px solid rgba(255,255,255,0.07)',
         }}
       >
-        <span style={{ color: '#7A7A84', fontSize: 13 }}>合計買い目点数</span>
-        <span style={{ color: '#E8E8EA', fontSize: 19, fontWeight: 800, fontVariantNumeric: 'tabular-nums' }}>
+        <span style={{ color: '#62627A', fontSize: 13 }}>合計買い目点数</span>
+        <span style={{ color: '#EEEEF5', fontSize: 19, fontWeight: 800, fontVariantNumeric: 'tabular-nums' }}>
           {combinations}
-          <span style={{ color: '#7A7A84', fontSize: 13, marginLeft: 4 }}>点</span>
+          <span style={{ color: '#62627A', fontSize: 13, marginLeft: 4 }}>点</span>
         </span>
       </div>
 
       {/* Formation summary */}
       <div style={{ marginBottom: 18 }}>
-        <p style={{ color: '#7A7A84', fontSize: 11, marginBottom: 8 }}>フォーメーション確認</p>
+        <p style={{ color: '#62627A', fontSize: 11, marginBottom: 8 }}>フォーメーション確認</p>
         <div
           style={{
             background: 'rgba(255,255,255,0.03)',
             border: '1px solid rgba(255,255,255,0.06)',
-            borderRadius: 6,
+            borderRadius: 8,
             padding: '12px 14px',
             display: 'flex',
             flexDirection: 'column',
@@ -252,7 +256,7 @@ export default function BetPlanPanel({
         >
           {formationRows.map(({ label, nums, numAxisItems }) => (
             <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <span style={{ color: '#7A7A84', fontSize: 10, width: 36, flexShrink: 0 }}>{label}</span>
+              <span style={{ color: '#62627A', fontSize: 10, width: 36, flexShrink: 0 }}>{label}</span>
               <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
                 {nums.map((num, i) => (
                   <NumBadge key={i} num={num} isAxis={i < numAxisItems} />
@@ -266,21 +270,21 @@ export default function BetPlanPanel({
       {/* ◎ 軸馬 */}
       <div
         style={{
-          background: 'rgba(99,102,241,0.06)',
-          borderRadius: 6,
+          background: 'rgba(20,184,166,0.06)',
+          borderRadius: 8,
           padding: '14px 16px',
-          border: '1px solid rgba(99,102,241,0.15)',
+          border: '1px solid rgba(20,184,166,0.15)',
           marginBottom: 10,
         }}
       >
-        <p style={{ color: '#818CF8', fontSize: 11, fontWeight: 700, marginBottom: 12 }}>◎ 軸</p>
+        <p style={{ color: '#14B8A6', fontSize: 11, fontWeight: 700, marginBottom: 12 }}>◎ 軸</p>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
           {axisDetails.map((detail, i) => (
             <div
               key={detail.name}
               style={{
                 paddingBottom: i < axisDetails.length - 1 ? 14 : 0,
-                borderBottom: i < axisDetails.length - 1 ? '1px solid rgba(99,102,241,0.12)' : 'none',
+                borderBottom: i < axisDetails.length - 1 ? '1px solid rgba(20,184,166,0.12)' : 'none',
               }}
             >
               {/* Horse number + name */}
@@ -296,7 +300,7 @@ export default function BetPlanPanel({
                       borderRadius: 9999,
                       fontSize: 11,
                       fontWeight: 800,
-                      background: '#6366F1',
+                      background: '#14B8A6',
                       color: '#fff',
                       flexShrink: 0,
                       padding: '0 6px',
@@ -305,13 +309,13 @@ export default function BetPlanPanel({
                     {detail.horseNumber}
                   </span>
                 )}
-                <span style={{ color: '#E8E8EA', fontSize: 15, fontWeight: 700 }}>{detail.name}</span>
+                <span style={{ color: '#EEEEF5', fontSize: 15, fontWeight: 700 }}>{detail.name}</span>
               </div>
 
               {/* AI eval stars + style */}
               <div style={{ display: 'flex', gap: 10, alignItems: 'center', marginBottom: 8, flexWrap: 'wrap' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-                  <span style={{ fontSize: 10, color: '#7A7A84' }}>AI評価</span>
+                  <span style={{ fontSize: 10, color: '#62627A' }}>AI評価</span>
                   <span style={{ fontSize: 14, color: '#FBBF24', letterSpacing: 1 }}>
                     {aiEvalToStars(detail.aiEval)}
                   </span>
@@ -334,7 +338,7 @@ export default function BetPlanPanel({
               </div>
 
               {/* Reason */}
-              <p style={{ fontSize: 11, color: '#B0B0B8', lineHeight: 1.6, margin: 0 }}>{detail.reason}</p>
+              <p style={{ fontSize: 11, color: '#9898B0', lineHeight: 1.6, margin: 0 }}>{detail.reason}</p>
             </div>
           ))}
         </div>
@@ -344,15 +348,15 @@ export default function BetPlanPanel({
       <div
         style={{
           background: 'rgba(255,255,255,0.03)',
-          borderRadius: 6,
+          borderRadius: 8,
           padding: '14px 16px',
           border: '1px solid rgba(255,255,255,0.06)',
           marginBottom: 18,
         }}
       >
-        <p style={{ color: '#B0B0B8', fontSize: 11, fontWeight: 700, marginBottom: 12 }}>
+        <p style={{ color: '#9898B0', fontSize: 11, fontWeight: 700, marginBottom: 12 }}>
           ○ 相手
-          <span style={{ color: '#7A7A84', fontSize: 10, fontWeight: 400, marginLeft: 6 }}>({selectedHimo.length}頭)</span>
+          <span style={{ color: '#62627A', fontSize: 10, fontWeight: 400, marginLeft: 6 }}>({selectedHimo.length}頭)</span>
         </p>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
           {selectedHimo.map((horse) => (
@@ -372,7 +376,7 @@ export default function BetPlanPanel({
                     fontSize: 11,
                     fontWeight: 800,
                     background: 'rgba(255,255,255,0.12)',
-                    color: '#E8E8EA',
+                    color: '#EEEEF5',
                     flexShrink: 0,
                     padding: '0 6px',
                   }}
@@ -382,7 +386,7 @@ export default function BetPlanPanel({
               )}
               <span
                 style={{
-                  color: '#B0B0B8',
+                  color: '#9898B0',
                   fontSize: 14,
                   flex: 1,
                   overflow: 'hidden',
@@ -401,7 +405,7 @@ export default function BetPlanPanel({
       </div>
 
       {/* AI comment */}
-      <p style={{ color: '#B0B0B8', fontSize: 12, lineHeight: 1.8 }}>{comment}</p>
+      <p style={{ color: '#9898B0', fontSize: 12, lineHeight: 1.8 }}>{comment}</p>
 
       {/* ── ネット馬券ガイド導線 ────────────────────────────────────── */}
       <a
@@ -414,8 +418,8 @@ export default function BetPlanPanel({
           padding: '9px 12px',
           background: 'rgba(255,255,255,0.02)',
           border: '1px solid rgba(255,255,255,0.07)',
-          borderRadius: 6,
-          color: '#7A7A84',
+          borderRadius: 8,
+          color: '#62627A',
           fontSize: 12,
           textDecoration: 'none',
         }}
@@ -429,7 +433,7 @@ export default function BetPlanPanel({
       {showBetInfo && (
         <div
           style={{
-            position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)',
+            position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.80)',
             zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center',
             padding: 20,
           }}
@@ -437,20 +441,20 @@ export default function BetPlanPanel({
         >
           <div
             style={{
-              background: '#1A1A1E', borderRadius: 12, padding: '24px 22px',
+              background: '#13141F', borderRadius: 20, padding: '24px 22px',
               maxWidth: 420, width: '100%',
-              border: '1px solid rgba(255,255,255,0.1)',
+              border: '1px solid rgba(255,255,255,0.10)',
             }}
             onClick={(e) => e.stopPropagation()}
           >
             {/* Header */}
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
-              <p style={{ fontSize: 15, fontWeight: 700, color: '#E8E8EA', margin: 0 }}>
+              <p style={{ fontSize: 15, fontWeight: 700, color: '#EEEEF5', margin: 0 }}>
                 三連複フォーメーションとは？
               </p>
               <button
                 onClick={() => setShowBetInfo(false)}
-                style={{ background: 'none', border: 'none', color: '#7A7A84', cursor: 'pointer', fontSize: 20, lineHeight: 1, padding: '2px 4px' }}
+                style={{ background: 'none', border: 'none', color: '#62627A', cursor: 'pointer', fontSize: 20, lineHeight: 1, padding: '2px 4px' }}
                 aria-label="閉じる"
               >
                 ×
@@ -458,8 +462,8 @@ export default function BetPlanPanel({
             </div>
 
             {/* Lead */}
-            <p style={{ color: '#B0B0B8', fontSize: 13, lineHeight: 1.8, marginBottom: 16 }}>
-              三連複は、1〜3着に入る3頭を<span style={{ color: '#E8E8EA', fontWeight: 600 }}>順不同</span>で当てる馬券です。
+            <p style={{ color: '#9898B0', fontSize: 13, lineHeight: 1.8, marginBottom: 16 }}>
+              三連複は、1〜3着に入る3頭を<span style={{ color: '#EEEEF5', fontWeight: 600 }}>順不同</span>で当てる馬券です。
               三連単のように着順まで当てる必要がないため、比較的当てやすい買い方です。
             </p>
 
@@ -470,15 +474,15 @@ export default function BetPlanPanel({
                 { label: '2頭目（相手候補）', desc: '上位に来る可能性がある馬。2〜4頭選びます。' },
                 { label: '3頭目（穴・相手候補）', desc: '3着以内に入ればよい相手候補。4〜8頭ほど入れます。' },
               ] as const).map(({ label, desc }) => (
-                <div key={label} style={{ background: 'rgba(255,255,255,0.04)', borderRadius: 8, padding: '10px 14px' }}>
-                  <p style={{ fontSize: 11, fontWeight: 700, color: '#818CF8', margin: '0 0 4px' }}>{label}</p>
-                  <p style={{ fontSize: 12, color: '#B0B0B8', lineHeight: 1.7, margin: 0 }}>{desc}</p>
+                <div key={label} style={{ background: 'rgba(255,255,255,0.04)', borderRadius: 10, padding: '10px 14px' }}>
+                  <p style={{ fontSize: 11, fontWeight: 700, color: '#14B8A6', margin: '0 0 4px' }}>{label}</p>
+                  <p style={{ fontSize: 12, color: '#9898B0', lineHeight: 1.7, margin: 0 }}>{desc}</p>
                 </div>
               ))}
             </div>
 
             {/* Footer note */}
-            <p style={{ fontSize: 12, color: '#7A7A84', lineHeight: 1.7, borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: 12, margin: 0 }}>
+            <p style={{ fontSize: 12, color: '#62627A', lineHeight: 1.7, borderTop: '1px solid rgba(255,255,255,0.07)', paddingTop: 12, margin: 0 }}>
               軸を決めて相手を広めに拾うことで、本命と穴のバランスを取りながら買えるのが特徴です。
             </p>
           </div>

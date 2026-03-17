@@ -1,5 +1,6 @@
-import DebugRaceList from './DebugRaceList'
+import RaceList from './RaceList'
 import GradeCalendar from './GradeCalendar'
+import DebugRaceList from './DebugRaceList'
 
 type Race = {
   id: string
@@ -44,173 +45,119 @@ export default async function Home() {
   const normalRaces = races.filter((r) => !r.is_test)
   const testRaces = races.filter((r) => r.is_test)
 
-  const gradeStyle = (grade: string) => {
-    if (grade === 'G1') return { color: '#92400E', border: '1px solid rgba(146,64,14,0.3)',  background: 'rgba(146,64,14,0.07)' }
-    if (grade === 'G2') return { color: '#374151', border: '1px solid rgba(55,65,81,0.25)',  background: 'rgba(55,65,81,0.07)'  }
-    if (grade === 'G3') return { color: '#1E4F9C', border: '1px solid rgba(30,79,156,0.25)', background: 'rgba(30,79,156,0.07)' }
-    return              { color: '#7A7571', border: '1px solid rgba(122,117,113,0.2)',        background: 'rgba(122,117,113,0.05)' }
-  }
-
-  const RaceRow = (race: Race, showTestBadge = false) => {
-    const hasResult = resultRaceIds.has(race.id)
-    const d = new Date(race.date + 'T12:00:00')
-    const dow = ['日','月','火','水','木','金','土'][d.getDay()]
-    const dowColor = d.getDay() === 0 ? '#DC2626' : d.getDay() === 6 ? '#2563EB' : '#A09C97'
-    return (
-      <a key={race.id} href={`/race/${race.id}`} className="race-link">
-        <span style={{ fontSize: 12, color: '#7A7571', flexShrink: 0, fontVariantNumeric: 'tabular-nums', width: 56 }}>
-          {d.getMonth() + 1}/{d.getDate()}<span style={{ color: dowColor }}>({dow})</span>
-        </span>
-        <span style={{ display: 'flex', alignItems: 'center', gap: 8, flex: 1, minWidth: 0 }}>
-          {hasResult ? (
-            <span style={{
-              fontSize: 10, fontWeight: 700, padding: '2px 7px', borderRadius: 4, flexShrink: 0,
-              background: 'rgba(22,101,52,0.08)', color: '#166534', border: '1px solid rgba(22,101,52,0.25)',
-            }}>
-              結果
-            </span>
-          ) : (
-            <span style={{
-              fontSize: 10, fontWeight: 700, padding: '2px 7px', borderRadius: 4, flexShrink: 0,
-              background: 'rgba(30,79,156,0.08)', color: '#1E4F9C', border: '1px solid rgba(30,79,156,0.22)',
-            }}>
-              予想中
-            </span>
-          )}
-          {race.grade && (
-            <span style={{
-              fontSize: 10, fontWeight: 700, padding: '2px 6px', borderRadius: 4, flexShrink: 0,
-              ...gradeStyle(race.grade),
-            }}>
-              {race.grade}
-            </span>
-          )}
-          {showTestBadge && (
-            <span style={{
-              fontSize: 10, fontWeight: 600, padding: '2px 6px', borderRadius: 4, flexShrink: 0,
-              background: 'rgba(146,64,14,0.07)', color: '#92400E', border: '1px solid rgba(146,64,14,0.22)',
-            }}>
-              検証用
-            </span>
-          )}
-          <span style={{ fontSize: 14, fontWeight: 500, color: '#1A1814' }}>
-            {race.race_name}
-          </span>
-        </span>
-      </a>
-    )
-  }
-
-  const SectionHeader = () => (
-    <div style={{
-      display: 'flex',
-      alignItems: 'center',
-      gap: 12,
-      padding: '0 16px 10px',
-      borderBottom: '1px solid #DDD9D1',
-    }}>
-      <span style={{ fontSize: 11, fontWeight: 600, color: '#A09C97', letterSpacing: '0.06em', textTransform: 'uppercase', width: 56, flexShrink: 0 }}>
-        Date
-      </span>
-      <span style={{ fontSize: 11, fontWeight: 600, color: '#A09C97', letterSpacing: '0.06em', textTransform: 'uppercase' }}>
-        Race
-      </span>
-    </div>
-  )
-
   return (
     <main style={{
       minHeight: '100vh',
-      background: '#F4F0E8',
+      background: '#0C0D14',
       fontFamily: 'var(--font-geist-sans), -apple-system, Inter, Arial, sans-serif',
     }}>
 
-      {/* ── Top bar ────────────────────────────────────────────────── */}
+      {/* ── Topbar ─────────────────────────────────────────────────────── */}
       <div style={{
-        background: '#1C1C1E',
+        background: 'rgba(255,255,255,0.03)',
+        borderBottom: '1px solid rgba(255,255,255,0.07)',
         padding: '0 24px',
         height: 52,
         display: 'flex',
         alignItems: 'center',
-        gap: 8,
+        gap: 10,
+        position: 'sticky',
+        top: 0,
+        zIndex: 50,
+        backdropFilter: 'blur(20px)',
+        WebkitBackdropFilter: 'blur(20px)',
       }}>
         <span style={{
-          width: 28,
-          height: 28,
-          borderRadius: 6,
-          background: 'linear-gradient(135deg, #1E4F9C 0%, #163D7A 100%)',
-          display: 'inline-flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          flexShrink: 0,
-          fontSize: 16,
-          lineHeight: 1,
-          color: '#F4F0E8',
+          width: 28, height: 28, borderRadius: 8,
+          background: 'linear-gradient(135deg, #14B8A6 0%, #0D9488 100%)',
+          display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+          flexShrink: 0, fontSize: 16, lineHeight: 1, color: '#fff',
         }}>♞</span>
-        <span style={{ fontSize: 14, fontWeight: 600, color: '#F4F0E8', letterSpacing: '-0.01em' }}>
+        <span style={{ fontSize: 14, fontWeight: 600, color: '#EEEEF5', letterSpacing: '-0.01em' }}>
           Keiba AI
         </span>
-        <span style={{
-          marginLeft: 4,
-          fontSize: 12,
-          color: '#7A7571',
-          letterSpacing: '0.01em',
-        }}>
+        <span style={{ marginLeft: 4, fontSize: 12, color: '#62627A', letterSpacing: '0.01em' }}>
           AI競馬フォーメーション予想
         </span>
       </div>
 
-      {/* ── Content ─────────────────────────────────────────────────── */}
-      <div style={{ maxWidth: 680, margin: '0 auto', padding: '48px 24px' }}>
+      {/* ── Content ──────────────────────────────────────────────────────── */}
+      <div style={{ maxWidth: 720, margin: '0 auto', padding: '48px 20px 80px' }}>
 
-        <p style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.1em', color: '#1E4F9C', textTransform: 'uppercase', margin: '0 0 10px' }}>
-          AI Horse Racing
-        </p>
-        <h1 style={{
-          fontSize: 24,
-          fontWeight: 700,
-          color: '#1A1814',
-          margin: '0 0 10px',
-          letterSpacing: '-0.02em',
-          lineHeight: 1.4,
-        }}>
-          脚質・展開・騎手から<br />フォーメーションを自動生成
-        </h1>
-        <p style={{ fontSize: 13, color: '#5A5651', lineHeight: 1.9, margin: '0 0 32px' }}>
-          各レースの出走馬データをAIが分析し、軸馬・ヒモ馬のフォーメーション予想を提示します。
-        </p>
-        <p style={{ fontSize: 12, fontWeight: 600, color: '#7A7571', letterSpacing: '0.04em', margin: '0 0 12px' }}>
-          レース一覧
-        </p>
+        {/* Hero */}
+        <div style={{ marginBottom: 48 }}>
+          <p style={{
+            fontSize: 11, fontWeight: 700, letterSpacing: '0.12em',
+            color: '#14B8A6', textTransform: 'uppercase', margin: '0 0 12px',
+          }}>
+            AI Horse Racing
+          </p>
+          <h1 style={{
+            fontSize: 28, fontWeight: 800, color: '#EEEEF5',
+            margin: '0 0 14px', letterSpacing: '-0.03em', lineHeight: 1.3,
+          }}>
+            脚質・展開・騎手から<br />フォーメーションを自動生成
+          </h1>
+          <p style={{ fontSize: 14, color: '#9898B0', lineHeight: 1.85, margin: 0 }}>
+            各レースの出走馬データをAIが分析し、軸馬・ヒモ馬のフォーメーション予想を提示します。
+          </p>
+        </div>
 
         {errorMessage && (
           <div style={{
-            background: 'rgba(185,28,28,0.06)',
-            border: '1px solid rgba(185,28,28,0.18)',
-            borderRadius: 6,
-            padding: '10px 14px',
-            color: '#B91C1C',
-            fontSize: 13,
-            marginBottom: 20,
+            background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.20)',
+            borderRadius: 16, padding: '12px 16px', color: '#F87171',
+            fontSize: 13, marginBottom: 24,
           }}>
             {errorMessage}
           </div>
         )}
 
-        <SectionHeader />
-        <div style={{ display: 'flex', flexDirection: 'column' }}>
-          {normalRaces.map((race) => RaceRow(race, false))}
-        </div>
-        {normalRaces.length === 0 && !errorMessage && (
-          <p style={{ color: '#A09C97', fontSize: 13, textAlign: 'center', padding: '32px 0' }}>
-            レースデータがありません
+        {/* ── Race list card ───────────────────────────────────────────── */}
+        <div style={{ marginBottom: 24 }}>
+          <p style={{
+            fontSize: 10, fontWeight: 700, letterSpacing: '0.10em',
+            color: '#62627A', textTransform: 'uppercase', margin: '0 0 12px',
+          }}>
+            レース一覧
           </p>
-        )}
+          <div style={{
+            background: 'rgba(255,255,255,0.04)',
+            border: '1px solid rgba(255,255,255,0.08)',
+            borderRadius: 24,
+            overflow: 'hidden',
+          }}>
+            {/* Column header */}
+            <div style={{
+              display: 'flex', alignItems: 'center', gap: 12,
+              padding: '11px 20px',
+              borderBottom: '1px solid rgba(255,255,255,0.07)',
+            }}>
+              <span style={{
+                fontSize: 10, fontWeight: 700, color: '#62627A',
+                letterSpacing: '0.08em', textTransform: 'uppercase',
+                width: 52, flexShrink: 0,
+              }}>Date</span>
+              <span style={{
+                fontSize: 10, fontWeight: 700, color: '#62627A',
+                letterSpacing: '0.08em', textTransform: 'uppercase',
+              }}>Race</span>
+            </div>
 
-        {/* ── 重賞カレンダー ───────────────────────────────────────────── */}
+            <RaceList races={normalRaces} resultRaceIds={[...resultRaceIds]} />
+
+            {normalRaces.length === 0 && !errorMessage && (
+              <p style={{ color: '#62627A', fontSize: 13, textAlign: 'center', padding: '32px 0' }}>
+                レースデータがありません
+              </p>
+            )}
+          </div>
+        </div>
+
+        {/* ── 重賞カレンダー ──────────────────────────────────────────────── */}
         <GradeCalendar today={new Date().toISOString().slice(0, 10)} />
 
-        {/* ── 検証レース（DEBUG トグル） ──────────────────────────────── */}
+        {/* ── 検証レース（DEBUG トグル） ───────────────────────────────── */}
         {testRaces.length > 0 && (
           <DebugRaceList
             races={testRaces}
