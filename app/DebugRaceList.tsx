@@ -71,7 +71,11 @@ export default function DebugRaceList({ races, resultRaceIds }: Props) {
             <span style={{ fontSize: 11, fontWeight: 600, color: '#9D9DA3', letterSpacing: '0.06em', textTransform: 'uppercase', textAlign: 'right' }}>Date</span>
           </div>
           <div style={{ display: 'flex', flexDirection: 'column' }}>
-            {races.map((race) => (
+            {races.map((race) => {
+              const d = new Date(race.date + 'T12:00:00')
+              const dow = ['日','月','火','水','木','金','土'][d.getDay()]
+              const dowColor = d.getDay() === 0 ? '#F87171' : d.getDay() === 6 ? '#60A5FA' : '#9D9DA3'
+              return (
               <a key={race.id} href={`/race/${race.id}`} className="race-link">
                 <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                   <span style={{
@@ -101,10 +105,11 @@ export default function DebugRaceList({ races, resultRaceIds }: Props) {
                   </span>
                 </span>
                 <span style={{ fontSize: 12, color: '#9D9DA3', flexShrink: 0, fontVariantNumeric: 'tabular-nums' }}>
-                  {race.date.replace(/-/g, '/')}
+                  {d.getMonth() + 1}/{d.getDate()}<span style={{ color: dowColor }}>({dow})</span>
                 </span>
               </a>
-            ))}
+              )
+            })}
           </div>
         </div>
       )}

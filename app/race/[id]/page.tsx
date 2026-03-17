@@ -2085,6 +2085,14 @@ export default async function RaceDetailPage({
   const raceDayOfWeek = race
     ? DAY_NAMES[new Date(race.date + 'T12:00:00').getDay()] + '曜日'
     : null
+  const raceDateFmt = race
+    ? (() => {
+        const d = new Date(race.date + 'T12:00:00')
+        const dow = DAY_NAMES[d.getDay()]
+        const dowColor = d.getDay() === 0 ? '#F87171' : d.getDay() === 6 ? '#60A5FA' : '#9D9DA3'
+        return { label: `${d.getMonth() + 1}/${d.getDate()}`, dow, dowColor }
+      })()
+    : null
   const raceGradeColor = !race?.grade ? null
     : race.grade === 'G1' ? '#FBBF24'
     : race.grade === 'G2' ? '#C0C8D0'
@@ -2156,7 +2164,7 @@ export default async function RaceDetailPage({
             {race.race_name}
           </h1>
           <p style={{ color: '#7A7A84', marginTop: 6, marginBottom: 14, fontSize: 12, fontVariantNumeric: 'tabular-nums' }}>
-            {race.date.replace(/-/g, '/')}
+            {raceDateFmt?.label}<span style={{ color: raceDateFmt?.dowColor }}>({raceDateFmt?.dow})</span>
           </p>
 
           {/* ── Race info chips ─────────────────────────────────────── */}

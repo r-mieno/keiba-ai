@@ -119,18 +119,29 @@ const gradeColor: Record<string, { color: string; border: string; background: st
 }
 
 function RaceRows({ races, todayMs }: { races: GradeRace[]; todayMs: number }) {
+  // 同日レースをグループ化
+  const groups: GradeRace[][] = []
+  const dateMap = new Map<string, GradeRace[]>()
+  for (const r of races) {
+    if (!dateMap.has(r.date)) {
+      const group: GradeRace[] = []
+      dateMap.set(r.date, group)
+      groups.push(group)
+    }
+    dateMap.get(r.date)!.push(r)
+  }
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-      {races.map((race, i) => {
-        const isPast = new Date(race.date).getTime() < todayMs
-        const g = gradeColor[race.grade]
-        const d = new Date(race.date)
+      {groups.map((group, gi) => {
+        const d = new Date(group[0].date + 'T12:00:00')
+        const isPast = d.getTime() < todayMs
         const dayStr = `${d.getMonth() + 1}/${d.getDate()}`
         const DOW = ['日','月','火','水','木','金','土'][d.getDay()]
         const dowColor = d.getDay() === 0 ? '#F87171' : d.getDay() === 6 ? '#60A5FA' : '#9D9DA3'
         return (
           <div
-            key={i}
+            key={gi}
             style={{
               display: 'flex',
               alignItems: 'center',
@@ -141,28 +152,40 @@ function RaceRows({ races, todayMs }: { races: GradeRace[]; todayMs: number }) {
               opacity: isPast ? 0.35 : 1,
             }}
           >
+            {/* 日付 */}
             <span style={{
-              fontSize: 12,
-              color: '#9D9DA3',
-              fontVariantNumeric: 'tabular-nums',
-              width: 52,
-              flexShrink: 0,
+              fontSize: 12, color: '#9D9DA3', fontVariantNumeric: 'tabular-nums',
+              width: 52, flexShrink: 0,
             }}>
-              {dayStr}
-              <span style={{ color: dowColor, marginLeft: 3, fontSize: 11 }}>({DOW})</span>
+              {dayStr}<span style={{ color: dowColor, marginLeft: 3, fontSize: 11 }}>({DOW})</span>
             </span>
-            <span style={{
-              fontSize: 10, fontWeight: 700, padding: '2px 6px', borderRadius: 4,
-              flexShrink: 0, ...g,
+            {/* レース（同日2レースは横並び） */}
+            <div style={{
+              flex: 1,
+              display: 'grid',
+              gridTemplateColumns: group.length >= 2 ? '1fr 1fr' : '1fr',
+              gap: 8,
             }}>
-              {race.grade}
-            </span>
-            <span style={{ fontSize: 13, fontWeight: 500, color: '#E8E8EA', flex: 1 }}>
-              {race.name}
-            </span>
-            <span style={{ fontSize: 11, color: '#5C5C63', flexShrink: 0 }}>
-              {race.venue}
-            </span>
+              {group.map((race, ri) => (
+                <div key={ri} style={{ display: 'flex', alignItems: 'center', gap: 6, minWidth: 0 }}>
+                  <span style={{
+                    fontSize: 10, fontWeight: 700, padding: '2px 6px', borderRadius: 4,
+                    flexShrink: 0, ...gradeColor[race.grade],
+                  }}>
+                    {race.grade}
+                  </span>
+                  <span style={{
+                    fontSize: 13, fontWeight: 500, color: '#E8E8EA',
+                    flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                  }}>
+                    {race.name}
+                  </span>
+                  <span style={{ fontSize: 11, color: '#5C5C63', flexShrink: 0 }}>
+                    {race.venue}
+                  </span>
+                </div>
+              ))}
+            </div>
           </div>
         )
       })}

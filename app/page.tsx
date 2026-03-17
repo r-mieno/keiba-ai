@@ -53,6 +53,9 @@ export default async function Home() {
 
   const RaceRow = (race: Race, showTestBadge = false) => {
     const hasResult = resultRaceIds.has(race.id)
+    const d = new Date(race.date + 'T12:00:00')
+    const dow = ['日','月','火','水','木','金','土'][d.getDay()]
+    const dowColor = d.getDay() === 0 ? '#F87171' : d.getDay() === 6 ? '#60A5FA' : '#9D9DA3'
     return (
       <a key={race.id} href={`/race/${race.id}`} className="race-link">
         <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -92,7 +95,7 @@ export default async function Home() {
           </span>
         </span>
         <span style={{ fontSize: 12, color: '#9D9DA3', flexShrink: 0, fontVariantNumeric: 'tabular-nums' }}>
-          {race.date.replace(/-/g, '/')}
+          {d.getMonth() + 1}/{d.getDate()}<span style={{ color: dowColor }}>({dow})</span>
         </span>
       </a>
     )
