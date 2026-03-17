@@ -7,11 +7,19 @@ type Race = {
   race_name: string
   date: string
   is_test: boolean
+  grade?: string | null
 }
 
 type Props = {
   races: Race[]
   resultRaceIds: string[]
+}
+
+const gradeStyle = (grade: string) => {
+  if (grade === 'G1') return { color: '#FBBF24', border: '1px solid rgba(251,191,36,0.35)', background: 'rgba(251,191,36,0.08)' }
+  if (grade === 'G2') return { color: '#C0C8D0', border: '1px solid rgba(192,200,208,0.35)', background: 'rgba(192,200,208,0.08)' }
+  if (grade === 'G3') return { color: '#CD8B5A', border: '1px solid rgba(205,139,90,0.35)', background: 'rgba(205,139,90,0.08)' }
+  return { color: '#9D9DA3', border: '1px solid rgba(157,157,163,0.25)', background: 'rgba(157,157,163,0.06)' }
 }
 
 export default function DebugRaceList({ races, resultRaceIds }: Props) {
@@ -74,6 +82,14 @@ export default function DebugRaceList({ races, resultRaceIds }: Props) {
                   }}>
                     {resultSet.has(race.id) ? '結果' : '予想中'}
                   </span>
+                  {race.grade && (
+                    <span style={{
+                      fontSize: 10, fontWeight: 700, padding: '2px 6px', borderRadius: 4, flexShrink: 0,
+                      ...gradeStyle(race.grade),
+                    }}>
+                      {race.grade}
+                    </span>
+                  )}
                   <span style={{
                     fontSize: 10, fontWeight: 600, padding: '2px 6px', borderRadius: 4, flexShrink: 0,
                     background: 'rgba(251,191,36,0.08)', color: '#FBBF24', border: '1px solid rgba(251,191,36,0.2)',

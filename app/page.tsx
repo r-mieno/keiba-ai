@@ -5,6 +5,7 @@ type Race = {
   race_name: string
   date: string
   is_test: boolean
+  grade?: string | null
 }
 
 export default async function Home() {
@@ -18,7 +19,7 @@ export default async function Home() {
     const headers = { apikey: key, Authorization: `Bearer ${key}` }
 
     const [racesRes, resultsRes] = await Promise.all([
-      fetch(`${base}/rest/v1/races?select=id,race_name,date,is_test&order=date.desc`, {
+      fetch(`${base}/rest/v1/races?select=id,race_name,date,is_test,grade&order=date.desc`, {
         headers, cache: 'no-store',
       }),
       fetch(`${base}/rest/v1/race_results?select=race_id`, {
@@ -42,6 +43,13 @@ export default async function Home() {
   const normalRaces = races.filter((r) => !r.is_test)
   const testRaces = races.filter((r) => r.is_test)
 
+  const gradeStyle = (grade: string) => {
+    if (grade === 'G1') return { color: '#FBBF24', border: '1px solid rgba(251,191,36,0.35)', background: 'rgba(251,191,36,0.08)' }
+    if (grade === 'G2') return { color: '#C0C8D0', border: '1px solid rgba(192,200,208,0.35)', background: 'rgba(192,200,208,0.08)' }
+    if (grade === 'G3') return { color: '#CD8B5A', border: '1px solid rgba(205,139,90,0.35)', background: 'rgba(205,139,90,0.08)' }
+    return { color: '#9D9DA3', border: '1px solid rgba(157,157,163,0.25)', background: 'rgba(157,157,163,0.06)' }
+  }
+
   const RaceRow = (race: Race, showTestBadge = false) => {
     const hasResult = resultRaceIds.has(race.id)
     return (
@@ -60,6 +68,14 @@ export default async function Home() {
               background: 'rgba(99,102,241,0.1)', color: '#818CF8', border: '1px solid rgba(99,102,241,0.25)',
             }}>
               予想中
+            </span>
+          )}
+          {race.grade && (
+            <span style={{
+              fontSize: 10, fontWeight: 700, padding: '2px 6px', borderRadius: 4, flexShrink: 0,
+              ...gradeStyle(race.grade),
+            }}>
+              {race.grade}
             </span>
           )}
           {showTestBadge && (
@@ -114,13 +130,17 @@ export default async function Home() {
         gap: 8,
       }}>
         <span style={{
-          width: 20,
-          height: 20,
-          borderRadius: 5,
-          background: '#6366F1',
-          display: 'inline-block',
+          width: 28,
+          height: 28,
+          borderRadius: 6,
+          background: 'linear-gradient(135deg, #6366F1 0%, #4F46E5 100%)',
+          display: 'inline-flex',
+          alignItems: 'center',
+          justifyContent: 'center',
           flexShrink: 0,
-        }} />
+          fontSize: 16,
+          lineHeight: 1,
+        }}>♞</span>
         <span style={{ fontSize: 14, fontWeight: 600, color: '#E8E8EA', letterSpacing: '-0.01em' }}>
           Keiba AI
         </span>
@@ -170,10 +190,6 @@ export default async function Home() {
           </div>
         )}
 
-        {/* ── 通常レース ─────────────────────────────────────────────── */}
-        <h2 style={{ fontSize: 13, fontWeight: 600, color: '#9D9DA3', margin: '0 0 12px', letterSpacing: '0.02em' }}>
-          通常レース
-        </h2>
         <SectionHeader />
         <div style={{ display: 'flex', flexDirection: 'column' }}>
           {normalRaces.map((race) => RaceRow(race, false))}
