@@ -113,9 +113,9 @@ const GRADE_RACES_2026: GradeRace[] = [
 const MONTH_NAMES = ['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月']
 
 const gradeColor: Record<string, { color: string; border: string; background: string }> = {
-  G1: { color: '#FBBF24', border: '1px solid rgba(251,191,36,0.35)', background: 'rgba(251,191,36,0.08)' },
-  G2: { color: '#C0C8D0', border: '1px solid rgba(192,200,208,0.35)', background: 'rgba(192,200,208,0.08)' },
-  G3: { color: '#CD8B5A', border: '1px solid rgba(205,139,90,0.35)', background: 'rgba(205,139,90,0.08)' },
+  G1: { color: '#92400E', border: '1px solid rgba(146,64,14,0.30)',  background: 'rgba(146,64,14,0.07)'  },
+  G2: { color: '#374151', border: '1px solid rgba(55,65,81,0.25)',   background: 'rgba(55,65,81,0.07)'   },
+  G3: { color: '#1E4F9C', border: '1px solid rgba(30,79,156,0.25)',  background: 'rgba(30,79,156,0.07)'  },
 }
 
 function RaceRows({ races, today }: { races: GradeRace[]; today: string }) {
@@ -138,7 +138,7 @@ function RaceRows({ races, today }: { races: GradeRace[]; today: string }) {
         const isPast = group[0].date < today  // 文字列比較: timezone非依存
         const dayStr = `${d.getMonth() + 1}/${d.getDate()}`
         const DOW = ['日','月','火','水','木','金','土'][d.getDay()]
-        const dowColor = d.getDay() === 0 ? '#F87171' : d.getDay() === 6 ? '#60A5FA' : '#9D9DA3'
+        const dowColor = d.getDay() === 0 ? '#DC2626' : d.getDay() === 6 ? '#2563EB' : '#A09C97'
         return (
           <div
             key={gi}
@@ -148,13 +148,13 @@ function RaceRows({ races, today }: { races: GradeRace[]; today: string }) {
               gap: 10,
               padding: '7px 12px',
               borderRadius: 6,
-              background: 'rgba(255,255,255,0.02)',
-              opacity: isPast ? 0.35 : 1,
+              background: 'rgba(0,0,0,0.02)',
+              opacity: isPast ? 0.38 : 1,
             }}
           >
             {/* 日付 */}
             <span style={{
-              fontSize: 12, color: '#9D9DA3', fontVariantNumeric: 'tabular-nums',
+              fontSize: 12, color: '#7A7571', fontVariantNumeric: 'tabular-nums',
               width: 52, flexShrink: 0,
             }}>
               {dayStr}<span style={{ color: dowColor, marginLeft: 3, fontSize: 11 }}>({DOW})</span>
@@ -175,12 +175,12 @@ function RaceRows({ races, today }: { races: GradeRace[]; today: string }) {
                     {race.grade}
                   </span>
                   <span style={{
-                    fontSize: 13, fontWeight: 500, color: '#E8E8EA',
+                    fontSize: 13, fontWeight: 500, color: '#1A1814',
                     flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
                   }}>
                     {race.name}
                   </span>
-                  <span style={{ fontSize: 11, color: '#5C5C63', flexShrink: 0 }}>
+                  <span style={{ fontSize: 11, color: '#A09C97', flexShrink: 0 }}>
                     {race.venue}
                   </span>
                 </div>
@@ -198,7 +198,7 @@ function MonthHeader({ month, isCurrentMonth }: { month: number; isCurrentMonth:
     <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
       <span style={{
         fontSize: 12, fontWeight: 700,
-        color: isCurrentMonth ? '#818CF8' : '#9D9DA3',
+        color: isCurrentMonth ? '#1E4F9C' : '#7A7571',
         letterSpacing: '0.04em',
       }}>
         {MONTH_NAMES[month]}
@@ -206,13 +206,13 @@ function MonthHeader({ month, isCurrentMonth }: { month: number; isCurrentMonth:
       {isCurrentMonth && (
         <span style={{
           fontSize: 9, fontWeight: 700, padding: '1px 5px', borderRadius: 3,
-          background: 'rgba(99,102,241,0.12)', color: '#818CF8',
-          border: '1px solid rgba(99,102,241,0.25)', letterSpacing: '0.04em',
+          background: 'rgba(30,79,156,0.09)', color: '#1E4F9C',
+          border: '1px solid rgba(30,79,156,0.22)', letterSpacing: '0.04em',
         }}>
           今月
         </span>
       )}
-      <div style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.07)' }} />
+      <div style={{ flex: 1, height: 1, background: '#DDD9D1' }} />
     </div>
   )
 }
@@ -240,7 +240,7 @@ export default function GradeCalendar({ today }: { today: string }) {
 
       {/* セクションラベル */}
       <p style={{
-        fontSize: 12, fontWeight: 600, color: '#9D9DA3',
+        fontSize: 12, fontWeight: 600, color: '#7A7571',
         letterSpacing: '0.04em', margin: '0 0 16px',
       }}>
         2026 重賞カレンダー
@@ -266,9 +266,9 @@ export default function GradeCalendar({ today }: { today: string }) {
               gap: 6,
               padding: '4px 10px',
               borderRadius: 4,
-              background: futureOpen ? 'rgba(99,102,241,0.08)' : 'transparent',
-              border: '1px solid rgba(99,102,241,0.2)',
-              color: '#818CF8',
+              background: futureOpen ? 'rgba(30,79,156,0.07)' : 'transparent',
+              border: '1px solid rgba(30,79,156,0.22)',
+              color: '#1E4F9C',
               fontSize: 11,
               fontWeight: 600,
               letterSpacing: '0.06em',

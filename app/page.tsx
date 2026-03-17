@@ -45,34 +45,34 @@ export default async function Home() {
   const testRaces = races.filter((r) => r.is_test)
 
   const gradeStyle = (grade: string) => {
-    if (grade === 'G1') return { color: '#FBBF24', border: '1px solid rgba(251,191,36,0.35)', background: 'rgba(251,191,36,0.08)' }
-    if (grade === 'G2') return { color: '#C0C8D0', border: '1px solid rgba(192,200,208,0.35)', background: 'rgba(192,200,208,0.08)' }
-    if (grade === 'G3') return { color: '#CD8B5A', border: '1px solid rgba(205,139,90,0.35)', background: 'rgba(205,139,90,0.08)' }
-    return { color: '#9D9DA3', border: '1px solid rgba(157,157,163,0.25)', background: 'rgba(157,157,163,0.06)' }
+    if (grade === 'G1') return { color: '#92400E', border: '1px solid rgba(146,64,14,0.3)',  background: 'rgba(146,64,14,0.07)' }
+    if (grade === 'G2') return { color: '#374151', border: '1px solid rgba(55,65,81,0.25)',  background: 'rgba(55,65,81,0.07)'  }
+    if (grade === 'G3') return { color: '#1E4F9C', border: '1px solid rgba(30,79,156,0.25)', background: 'rgba(30,79,156,0.07)' }
+    return              { color: '#7A7571', border: '1px solid rgba(122,117,113,0.2)',        background: 'rgba(122,117,113,0.05)' }
   }
 
   const RaceRow = (race: Race, showTestBadge = false) => {
     const hasResult = resultRaceIds.has(race.id)
     const d = new Date(race.date + 'T12:00:00')
     const dow = ['日','月','火','水','木','金','土'][d.getDay()]
-    const dowColor = d.getDay() === 0 ? '#F87171' : d.getDay() === 6 ? '#60A5FA' : '#9D9DA3'
+    const dowColor = d.getDay() === 0 ? '#DC2626' : d.getDay() === 6 ? '#2563EB' : '#A09C97'
     return (
       <a key={race.id} href={`/race/${race.id}`} className="race-link">
-        <span style={{ fontSize: 12, color: '#9D9DA3', flexShrink: 0, fontVariantNumeric: 'tabular-nums', width: 56 }}>
+        <span style={{ fontSize: 12, color: '#7A7571', flexShrink: 0, fontVariantNumeric: 'tabular-nums', width: 56 }}>
           {d.getMonth() + 1}/{d.getDate()}<span style={{ color: dowColor }}>({dow})</span>
         </span>
         <span style={{ display: 'flex', alignItems: 'center', gap: 8, flex: 1, minWidth: 0 }}>
           {hasResult ? (
             <span style={{
               fontSize: 10, fontWeight: 700, padding: '2px 7px', borderRadius: 4, flexShrink: 0,
-              background: 'rgba(52,211,153,0.1)', color: '#34D399', border: '1px solid rgba(52,211,153,0.25)',
+              background: 'rgba(22,101,52,0.08)', color: '#166534', border: '1px solid rgba(22,101,52,0.25)',
             }}>
               結果
             </span>
           ) : (
             <span style={{
               fontSize: 10, fontWeight: 700, padding: '2px 7px', borderRadius: 4, flexShrink: 0,
-              background: 'rgba(99,102,241,0.1)', color: '#818CF8', border: '1px solid rgba(99,102,241,0.25)',
+              background: 'rgba(30,79,156,0.08)', color: '#1E4F9C', border: '1px solid rgba(30,79,156,0.22)',
             }}>
               予想中
             </span>
@@ -88,12 +88,12 @@ export default async function Home() {
           {showTestBadge && (
             <span style={{
               fontSize: 10, fontWeight: 600, padding: '2px 6px', borderRadius: 4, flexShrink: 0,
-              background: 'rgba(251,191,36,0.08)', color: '#FBBF24', border: '1px solid rgba(251,191,36,0.2)',
+              background: 'rgba(146,64,14,0.07)', color: '#92400E', border: '1px solid rgba(146,64,14,0.22)',
             }}>
               検証用
             </span>
           )}
-          <span style={{ fontSize: 14, fontWeight: 500, color: '#E8E8EA' }}>
+          <span style={{ fontSize: 14, fontWeight: 500, color: '#1A1814' }}>
             {race.race_name}
           </span>
         </span>
@@ -107,12 +107,12 @@ export default async function Home() {
       alignItems: 'center',
       gap: 12,
       padding: '0 16px 10px',
-      borderBottom: '1px solid rgba(255,255,255,0.1)',
+      borderBottom: '1px solid #DDD9D1',
     }}>
-      <span style={{ fontSize: 11, fontWeight: 600, color: '#9D9DA3', letterSpacing: '0.06em', textTransform: 'uppercase', width: 56, flexShrink: 0 }}>
+      <span style={{ fontSize: 11, fontWeight: 600, color: '#A09C97', letterSpacing: '0.06em', textTransform: 'uppercase', width: 56, flexShrink: 0 }}>
         Date
       </span>
-      <span style={{ fontSize: 11, fontWeight: 600, color: '#9D9DA3', letterSpacing: '0.06em', textTransform: 'uppercase' }}>
+      <span style={{ fontSize: 11, fontWeight: 600, color: '#A09C97', letterSpacing: '0.06em', textTransform: 'uppercase' }}>
         Race
       </span>
     </div>
@@ -121,13 +121,13 @@ export default async function Home() {
   return (
     <main style={{
       minHeight: '100vh',
-      background: '#0C0C0E',
+      background: '#F4F0E8',
       fontFamily: 'var(--font-geist-sans), -apple-system, Inter, Arial, sans-serif',
     }}>
 
       {/* ── Top bar ────────────────────────────────────────────────── */}
       <div style={{
-        borderBottom: '1px solid rgba(255,255,255,0.07)',
+        background: '#1C1C1E',
         padding: '0 24px',
         height: 52,
         display: 'flex',
@@ -138,21 +138,22 @@ export default async function Home() {
           width: 28,
           height: 28,
           borderRadius: 6,
-          background: 'linear-gradient(135deg, #6366F1 0%, #4F46E5 100%)',
+          background: 'linear-gradient(135deg, #1E4F9C 0%, #163D7A 100%)',
           display: 'inline-flex',
           alignItems: 'center',
           justifyContent: 'center',
           flexShrink: 0,
           fontSize: 16,
           lineHeight: 1,
+          color: '#F4F0E8',
         }}>♞</span>
-        <span style={{ fontSize: 14, fontWeight: 600, color: '#E8E8EA', letterSpacing: '-0.01em' }}>
+        <span style={{ fontSize: 14, fontWeight: 600, color: '#F4F0E8', letterSpacing: '-0.01em' }}>
           Keiba AI
         </span>
         <span style={{
           marginLeft: 4,
           fontSize: 12,
-          color: '#5C5C63',
+          color: '#7A7571',
           letterSpacing: '0.01em',
         }}>
           AI競馬フォーメーション予想
@@ -162,32 +163,33 @@ export default async function Home() {
       {/* ── Content ─────────────────────────────────────────────────── */}
       <div style={{ maxWidth: 680, margin: '0 auto', padding: '48px 24px' }}>
 
-        <p style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.1em', color: '#6366F1', textTransform: 'uppercase', margin: '0 0 10px' }}>
+        <p style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.1em', color: '#1E4F9C', textTransform: 'uppercase', margin: '0 0 10px' }}>
           AI Horse Racing
         </p>
         <h1 style={{
           fontSize: 24,
           fontWeight: 700,
-          color: '#E8E8EA',
+          color: '#1A1814',
           margin: '0 0 10px',
           letterSpacing: '-0.02em',
+          lineHeight: 1.4,
         }}>
           脚質・展開・騎手から<br />フォーメーションを自動生成
         </h1>
-        <p style={{ fontSize: 13, color: '#7A7A84', lineHeight: 1.8, margin: '0 0 32px' }}>
+        <p style={{ fontSize: 13, color: '#5A5651', lineHeight: 1.9, margin: '0 0 32px' }}>
           各レースの出走馬データをAIが分析し、軸馬・ヒモ馬のフォーメーション予想を提示します。
         </p>
-        <p style={{ fontSize: 12, fontWeight: 600, color: '#9D9DA3', letterSpacing: '0.04em', margin: '0 0 12px' }}>
+        <p style={{ fontSize: 12, fontWeight: 600, color: '#7A7571', letterSpacing: '0.04em', margin: '0 0 12px' }}>
           レース一覧
         </p>
 
         {errorMessage && (
           <div style={{
-            background: 'rgba(248,113,113,0.08)',
-            border: '1px solid rgba(248,113,113,0.2)',
+            background: 'rgba(185,28,28,0.06)',
+            border: '1px solid rgba(185,28,28,0.18)',
             borderRadius: 6,
             padding: '10px 14px',
-            color: '#F87171',
+            color: '#B91C1C',
             fontSize: 13,
             marginBottom: 20,
           }}>
@@ -200,7 +202,7 @@ export default async function Home() {
           {normalRaces.map((race) => RaceRow(race, false))}
         </div>
         {normalRaces.length === 0 && !errorMessage && (
-          <p style={{ color: '#5C5C63', fontSize: 13, textAlign: 'center', padding: '32px 0' }}>
+          <p style={{ color: '#A09C97', fontSize: 13, textAlign: 'center', padding: '32px 0' }}>
             レースデータがありません
           </p>
         )}
