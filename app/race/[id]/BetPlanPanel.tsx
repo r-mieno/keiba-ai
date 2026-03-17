@@ -419,33 +419,31 @@ export default function BetPlanPanel({
       <p style={{ color: '#9898B0', fontSize: 12, lineHeight: 1.8 }}>{comment}</p>
 
       {/* ── ネット馬券ガイド導線 ────────────────────────────────────── */}
-      <a
+      <motion.a
         href="/how-to-buy"
+        whileHover={{ backgroundColor: 'rgba(255,255,255,0.04)', x: 3 }}
+        transition={{ type: 'spring', stiffness: 500, damping: 35 }}
         style={{
           display: 'flex',
           alignItems: 'center',
-          gap: 10,
+          gap: 12,
           marginTop: 14,
-          padding: '11px 14px',
-          background: 'rgba(20,184,166,0.06)',
-          border: '1px solid rgba(20,184,166,0.20)',
-          borderRadius: 10,
-          color: '#14B8A6',
+          padding: '13px 0',
+          borderTop: '1px solid rgba(255,255,255,0.06)',
+          color: '#9898B0',
           fontSize: 13,
-          fontWeight: 500,
           textDecoration: 'none',
-          transition: 'background 0.15s',
         }}
       >
         <span style={{
           display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
           width: 18, height: 18, borderRadius: '50%', flexShrink: 0,
-          background: 'rgba(20,184,166,0.20)', color: '#14B8A6',
+          background: 'rgba(255,255,255,0.08)', color: '#9898B0',
           fontSize: 11, fontWeight: 800, lineHeight: 1,
         }}>i</span>
-        <span>はじめての方：ネット馬券の買い方を見る</span>
-        <span style={{ marginLeft: 'auto', fontSize: 14, opacity: 0.7 }}>›</span>
-      </a>
+        <span>ネット馬券の買い方をみる</span>
+        <span style={{ marginLeft: 'auto', fontSize: 14, opacity: 0.4 }}>›</span>
+      </motion.a>
 
       {/* ── 三連複フォーメーション説明モーダル ─────────────────────── */}
       {showBetInfo && (
