@@ -118,7 +118,7 @@ const gradeColor: Record<string, { color: string; border: string; background: st
   G3: { color: '#CD8B5A', border: '1px solid rgba(205,139,90,0.35)', background: 'rgba(205,139,90,0.08)' },
 }
 
-function RaceRows({ races, todayMs }: { races: GradeRace[]; todayMs: number }) {
+function RaceRows({ races, today }: { races: GradeRace[]; today: string }) {
   // 同日レースをグループ化
   const groups: GradeRace[][] = []
   const dateMap = new Map<string, GradeRace[]>()
@@ -135,7 +135,7 @@ function RaceRows({ races, todayMs }: { races: GradeRace[]; todayMs: number }) {
     <div style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
       {groups.map((group, gi) => {
         const d = new Date(group[0].date + 'T12:00:00')
-        const isPast = d.getTime() < todayMs
+        const isPast = group[0].date < today  // 文字列比較: timezone非依存
         const dayStr = `${d.getMonth() + 1}/${d.getDate()}`
         const DOW = ['日','月','火','水','木','金','土'][d.getDay()]
         const dowColor = d.getDay() === 0 ? '#F87171' : d.getDay() === 6 ? '#60A5FA' : '#9D9DA3'
@@ -220,8 +220,7 @@ function MonthHeader({ month, isCurrentMonth }: { month: number; isCurrentMonth:
 export default function GradeCalendar({ today }: { today: string }) {
   const [futureOpen, setFutureOpen] = useState(false)
 
-  const todayMs = new Date(today).getTime()
-  const todayMonth = new Date(today).getMonth()
+  const todayMonth = new Date(today + 'T12:00:00').getMonth()
 
   // 月ごとにグループ化
   const byMonth: Record<number, GradeRace[]> = {}
@@ -252,7 +251,7 @@ export default function GradeCalendar({ today }: { today: string }) {
       {currentMonthRaces.length > 0 && (
         <div style={{ marginBottom: 24 }}>
           <MonthHeader month={todayMonth} isCurrentMonth />
-          <RaceRows races={currentMonthRaces} todayMs={todayMs} />
+          <RaceRows races={currentMonthRaces} today={today} />
         </div>
       )}
 
@@ -288,7 +287,7 @@ export default function GradeCalendar({ today }: { today: string }) {
               {futureMonths.map((month) => (
                 <div key={month}>
                   <MonthHeader month={month} isCurrentMonth={false} />
-                  <RaceRows races={byMonth[month]} todayMs={todayMs} />
+                  <RaceRows races={byMonth[month]} today={today} />
                 </div>
               ))}
             </div>

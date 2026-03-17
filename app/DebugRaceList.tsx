@@ -62,13 +62,14 @@ export default function DebugRaceList({ races, resultRaceIds }: Props) {
       {open && (
         <div style={{ marginTop: 14 }}>
           <div style={{
-            display: 'grid',
-            gridTemplateColumns: '1fr 100px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 12,
             padding: '0 16px 10px',
             borderBottom: '1px solid rgba(255,255,255,0.1)',
           }}>
+            <span style={{ fontSize: 11, fontWeight: 600, color: '#9D9DA3', letterSpacing: '0.06em', textTransform: 'uppercase', width: 56, flexShrink: 0 }}>Date</span>
             <span style={{ fontSize: 11, fontWeight: 600, color: '#9D9DA3', letterSpacing: '0.06em', textTransform: 'uppercase' }}>Race</span>
-            <span style={{ fontSize: 11, fontWeight: 600, color: '#9D9DA3', letterSpacing: '0.06em', textTransform: 'uppercase', textAlign: 'right' }}>Date</span>
           </div>
           <div style={{ display: 'flex', flexDirection: 'column' }}>
             {races.map((race) => {
@@ -77,7 +78,10 @@ export default function DebugRaceList({ races, resultRaceIds }: Props) {
               const dowColor = d.getDay() === 0 ? '#F87171' : d.getDay() === 6 ? '#60A5FA' : '#9D9DA3'
               return (
               <a key={race.id} href={`/race/${race.id}`} className="race-link">
-                <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <span style={{ fontSize: 12, color: '#9D9DA3', flexShrink: 0, fontVariantNumeric: 'tabular-nums', width: 56 }}>
+                  {d.getMonth() + 1}/{d.getDate()}<span style={{ color: dowColor }}>({dow})</span>
+                </span>
+                <span style={{ display: 'flex', alignItems: 'center', gap: 8, flex: 1, minWidth: 0 }}>
                   <span style={{
                     fontSize: 10, fontWeight: 700, padding: '2px 7px', borderRadius: 4, flexShrink: 0,
                     background: resultSet.has(race.id) ? 'rgba(52,211,153,0.1)' : 'rgba(99,102,241,0.1)',
@@ -103,9 +107,6 @@ export default function DebugRaceList({ races, resultRaceIds }: Props) {
                   <span style={{ fontSize: 14, fontWeight: 500, color: '#E8E8EA' }}>
                     {race.race_name}
                   </span>
-                </span>
-                <span style={{ fontSize: 12, color: '#9D9DA3', flexShrink: 0, fontVariantNumeric: 'tabular-nums' }}>
-                  {d.getMonth() + 1}/{d.getDate()}<span style={{ color: dowColor }}>({dow})</span>
                 </span>
               </a>
               )
