@@ -2115,21 +2115,21 @@ export default async function RaceDetailPage({
       {/* ── Hero header ───────────────────────────────────────────────── */}
       {/* ── Top bar ────────────────────────────────────────────────── */}
       <div style={{
-        borderBottom: '1px solid rgba(0,0,0,0.08)',
+        background: '#1C1C1E',
         padding: '0 20px',
         height: 52,
         display: 'flex',
         alignItems: 'center',
         gap: 16,
       }}>
-        <a href="/" className="back-link">
+        <a href="/" className="back-link" style={{ color: '#9A9591' }}>
           <ChevronLeft size={14} strokeWidth={2} />
           レース一覧
         </a>
         {race && (
           <>
-            <span style={{ color: 'rgba(0,0,0,0.12)', fontSize: 14 }}>/</span>
-            <span style={{ fontSize: 13, color: '#4A4643', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            <span style={{ color: 'rgba(255,255,255,0.18)', fontSize: 14 }}>/</span>
+            <span style={{ fontSize: 13, color: '#C8C4C0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
               {race.race_name}
             </span>
           </>
@@ -2245,7 +2245,7 @@ export default async function RaceDetailPage({
                   {CHAPTER_ICONS[label]}
                 </span>
               )}
-              <span style={{ fontSize: 16, fontWeight: 700, color: '#F0F0F2', letterSpacing: '-0.02em' }}>
+              <span style={{ fontSize: 16, fontWeight: 700, color: '#1A1814', letterSpacing: '-0.02em' }}>
                 {label}
               </span>
               <div style={{ flex: 1, height: 1, background: 'rgba(0,0,0,0.08)' }} />
@@ -2302,14 +2302,16 @@ export default async function RaceDetailPage({
               {/* ── Chapter 1: AI予想 ────────────────────────────────────── */}
               {chapterHeader('AI予想')}
 
-              <BetPlanPanel
-                betType={betType}
-                allHimoHorses={himoHorses}
-                axisCount={formation.axis_count}
-                stabilityScore={raceStabilityScore}
-                pace={pace}
-                axisDetails={axisDetails}
-              />
+              <div style={{ margin: '32px -20px', width: 'calc(100% + 40px)' }}>
+                <BetPlanPanel
+                  betType={betType}
+                  allHimoHorses={himoHorses}
+                  axisCount={formation.axis_count}
+                  stabilityScore={raceStabilityScore}
+                  pace={pace}
+                  axisDetails={axisDetails}
+                />
+              </div>
 
               {/* ── v2 デバッグパネル（検証レースのみ表示） ─────────────── */}
               {formationV2Debug && (() => {

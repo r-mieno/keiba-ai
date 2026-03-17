@@ -114,9 +114,7 @@ export default function BetPlanPanel({
     <div
       style={{
         background: '#141416',
-        borderRadius: 8,
         padding: '20px 20px',
-        border: '1px solid rgba(255,255,255,0.07)',
         marginBottom: 10,
       }}
     >
