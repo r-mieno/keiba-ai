@@ -484,20 +484,40 @@ function computeRaceStabilityScore(
   )
 }
 
+type ValueHorseCandidate = {
+  horseName: string
+  reason: string
+  aiRank: number
+  popularityRank: number | null
+}
+
+type NextBestCandidate = {
+  horseName: string
+  aiRank: number
+  popularityRank: number
+  valueIndex: number
+}
+
+type ValueOpportunityResult = {
+  candidate: ValueHorseCandidate | null
+  // 穴条件は満たさないが、formation内でvalueIndexが最も高い次点候補
+  nextBest: NextBestCandidate | null
+}
+
 function getValueOpportunity(
   formation: FormationResponse,
   horses: Horse[],
   pace: PaceType,
   allRankedHorses: { id: string }[],
   entries: Entry[],
-): { horseName: string; reason: string; aiRank: number; popularityRank: number | null } | null {
+): ValueOpportunityResult {
   const totalHorses = allRankedHorses.length
-  if (totalHorses === 0) return null
+  if (totalHorses === 0) return { candidate: null, nextBest: null }
 
   // AI上位40%のカットライン
   const aiTopCutoff = Math.ceil(totalHorses * 0.4)
 
-  // ヒモ馬 + 軸馬 全候補からフィルタリング
+  // ヒモ馬 + 軸馬 全候補を評価
   const allCandidateIds = [...formation.himo_horses, ...formation.axis_horses]
 
   type Scored = {
@@ -505,34 +525,52 @@ function getValueOpportunity(
     aiRank: number
     popularityRank: number
     valueIndex: number
+    qualifies: boolean // 穴馬条件（4番人気以下 かつ AI上位40%以内）を満たすか
   }
 
-  const scored: Scored[] = []
+  const allScored: Scored[] = []
 
   for (const id of allCandidateIds) {
     const aiRankIndex = allRankedHorses.findIndex((h) => h.id === id)
     const aiRank = aiRankIndex >= 0 ? aiRankIndex + 1 : totalHorses + 1
     const popularityRank = entries.find((e) => e.horse_id === id)?.popularity_rank ?? null
+    if (popularityRank == null) continue
 
-    // 条件: 4番人気以下 かつ AI上位40%以内
-    if (popularityRank == null || popularityRank < 4) continue
-    if (aiRank > aiTopCutoff) continue
-
-    // valueIndex: 人気順位 / AI順位 が高いほどAIが市場より高く評価している
+    // valueIndex: 高いほどAIが市場より高く評価している
     const valueIndex = popularityRank / aiRank
-    scored.push({ id, aiRank, popularityRank, valueIndex })
+    const qualifies = popularityRank >= 4 && aiRank <= aiTopCutoff
+    allScored.push({ id, aiRank, popularityRank, valueIndex, qualifies })
   }
 
-  if (scored.length === 0) return null
+  allScored.sort((a, b) => b.valueIndex - a.valueIndex)
 
-  // valueIndexが最も高い馬を選ぶ
-  scored.sort((a, b) => b.valueIndex - a.valueIndex)
-  const best = scored[0]
+  // 穴馬条件を満たす候補
+  const qualified = allScored.filter((s) => s.qualifies)
+  let candidate: ValueHorseCandidate | null = null
+  if (qualified.length > 0) {
+    const best = qualified[0]
+    const h = horses.find((h) => h.id === best.id)
+    candidate = {
+      horseName: h?.name ?? best.id,
+      reason: buildValueHorseReason(h?.style ?? null, pace, best.aiRank, best.popularityRank),
+      aiRank: best.aiRank,
+      popularityRank: best.popularityRank,
+    }
+  }
 
-  const candidateHorse = horses.find((h) => h.id === best.id)
-  const horseName = candidateHorse?.name ?? best.id
-  const reason = buildValueHorseReason(candidateHorse?.style ?? null, pace, best.aiRank, best.popularityRank)
-  return { horseName, reason, aiRank: best.aiRank, popularityRank: best.popularityRank }
+  // 次点候補: 穴条件は満たさないが、valueIndexが最も高い馬（candidateと重複しない）
+  const candidateId = qualified[0]?.id ?? null
+  const nextBestRaw = allScored.find((s) => !s.qualifies && s.id !== candidateId && s.popularityRank >= 2)
+  const nextBest: NextBestCandidate | null = nextBestRaw
+    ? {
+        horseName: horses.find((h) => h.id === nextBestRaw.id)?.name ?? nextBestRaw.id,
+        aiRank: nextBestRaw.aiRank,
+        popularityRank: nextBestRaw.popularityRank,
+        valueIndex: nextBestRaw.valueIndex,
+      }
+    : null
+
+  return { candidate, nextBest }
 }
 
 // ─── AI summary builder ───────────────────────────────────────────────────────
@@ -2316,7 +2354,7 @@ export default async function RaceDetailPage({
           })
 
           const advantageHorses = getPaceAdvantageHorses(raceHorseIds, horses, pace)
-          const valueHorse = getValueOpportunity(formation, horses, pace, allRankedHorses, entries)
+          const { candidate: valueHorse, nextBest: valueNextBest } = getValueOpportunity(formation, horses, pace, allRankedHorses, entries)
           const aiSummaryLines = buildAiSummary(raceStabilityScore, pace, advantageHorses, valueHorse)
           const strategy = getStrategy(raceStabilityScore)
 
@@ -3476,26 +3514,52 @@ export default async function RaceDetailPage({
               {/* ── Chapter 3: 期待値分析 ──────────────────────────────── */}
               {chapterHeader('期待値分析')}
 
-              {/* AI注目の穴馬 */}
-              {valueHorse && (
-                <div style={card}>
-                  <p style={sectionLabel}>AI注目の穴馬</p>
-                  <p style={{ color: '#EEEEF5', fontSize: 16, fontWeight: 700, marginBottom: 8 }}>
-                    {valueHorse.horseName}
-                  </p>
-                  <div style={{ display: 'flex', gap: 6, marginBottom: 12 }}>
-                    <span style={{ fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 6, background: 'rgba(20,184,166,0.12)', color: '#14B8A6', border: '1px solid rgba(20,184,166,0.3)' }}>
-                      AI順位 {valueHorse.aiRank}位
-                    </span>
-                    {valueHorse.popularityRank != null && (
-                      <span style={{ fontSize: 11, fontWeight: 600, padding: '2px 8px', borderRadius: 6, background: 'rgba(255,255,255,0.05)', color: '#9898B0', border: '1px solid rgba(255,255,255,0.10)' }}>
-                        {valueHorse.popularityRank}番人気
+              {/* AI注目の穴馬 — 候補がいない場合も空状態として常に表示 */}
+              <div style={card}>
+                <p style={sectionLabel}>AI注目の穴馬</p>
+                {valueHorse ? (
+                  <>
+                    <p style={{ color: '#EEEEF5', fontSize: 16, fontWeight: 700, marginBottom: 8 }}>
+                      {valueHorse.horseName}
+                    </p>
+                    <div style={{ display: 'flex', gap: 6, marginBottom: 12 }}>
+                      <span style={{ fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 6, background: 'rgba(20,184,166,0.12)', color: '#14B8A6', border: '1px solid rgba(20,184,166,0.3)' }}>
+                        AI順位 {valueHorse.aiRank}位
                       </span>
+                      {valueHorse.popularityRank != null && (
+                        <span style={{ fontSize: 11, fontWeight: 600, padding: '2px 8px', borderRadius: 6, background: 'rgba(255,255,255,0.05)', color: '#9898B0', border: '1px solid rgba(255,255,255,0.10)' }}>
+                          {valueHorse.popularityRank}番人気
+                        </span>
+                      )}
+                    </div>
+                    <p style={{ color: '#9898B0', fontSize: 12, lineHeight: 1.7 }}>{valueHorse.reason}</p>
+                  </>
+                ) : (
+                  /* 空状態: 穴馬条件を満たす候補なし */
+                  <div>
+                    <p style={{ fontSize: 13, fontWeight: 600, color: '#62627A', margin: '0 0 6px' }}>
+                      今回は該当なし
+                    </p>
+                    <p style={{ fontSize: 12, color: '#62627A', lineHeight: 1.7, margin: '0 0 12px' }}>
+                      AI評価と人気のバランスが近く、回収率の観点で妙味のある穴馬は見つかりませんでした。
+                    </p>
+                    {/* 次点候補: 穴条件は満たさないが formation内でvalueIndexが最も高い馬 */}
+                    {valueNextBest && (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, paddingTop: 10, borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+                        <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 7px', borderRadius: 5, background: 'rgba(255,255,255,0.05)', color: '#62627A', border: '1px solid rgba(255,255,255,0.08)' }}>
+                          比較的妙味あり
+                        </span>
+                        <span style={{ fontSize: 13, fontWeight: 600, color: '#9898B0' }}>
+                          {valueNextBest.horseName}
+                        </span>
+                        <span style={{ fontSize: 11, color: '#62627A' }}>
+                          {valueNextBest.popularityRank}番人気 / AI {valueNextBest.aiRank}位
+                        </span>
+                      </div>
                     )}
                   </div>
-                  <p style={{ color: '#9898B0', fontSize: 12, lineHeight: 1.7 }}>{valueHorse.reason}</p>
-                </div>
-              )}
+                )}
+              </div>
 
               {/* TODO: 買いチャンス — race_structure_score が実データになったら復活させる
                   betScore = computeBetScore(pct, edge), betLevel = getBetLevel(betScore) */}
