@@ -9,93 +9,105 @@ type GradeRace = {
   venue: string
 }
 
-// 2026年 JRA 重賞スケジュール（暫定・参考）
+// 2026年 JRA 重賞スケジュール（公式データ）
 const GRADE_RACES_2026: GradeRace[] = [
   // ── 1月 ──
-  { date: '2026-01-11', name: 'シンザン記念',        grade: 'G3', venue: '京都' },
+  { date: '2026-01-04', name: '中山金杯',             grade: 'G3', venue: '中山' },
+  { date: '2026-01-04', name: '京都金杯',             grade: 'G3', venue: '京都' },
   { date: '2026-01-11', name: 'フェアリーS',          grade: 'G3', venue: '中山' },
-  { date: '2026-01-18', name: '日経新春杯',           grade: 'G2', venue: '中京' },
+  { date: '2026-01-12', name: 'シンザン記念',         grade: 'G3', venue: '京都' },
   { date: '2026-01-18', name: '京成杯',               grade: 'G3', venue: '中山' },
-  { date: '2026-01-25', name: 'AJCC',                grade: 'G2', venue: '中山' },
-  { date: '2026-01-25', name: '東海S',                grade: 'G2', venue: '中京' },
+  { date: '2026-01-18', name: '日経新春杯',           grade: 'G2', venue: '京都' },
+  { date: '2026-01-25', name: 'アメリカJCC',          grade: 'G2', venue: '中山' },
+  { date: '2026-01-25', name: 'プロキオンS',          grade: 'G2', venue: '京都' },
   // ── 2月 ──
-  { date: '2026-02-01', name: 'きさらぎ賞',           grade: 'G3', venue: '京都' },
-  { date: '2026-02-08', name: '共同通信杯',           grade: 'G3', venue: '東京' },
-  { date: '2026-02-08', name: 'クイーンC',            grade: 'G3', venue: '東京' },
+  { date: '2026-02-01', name: '根岸S',                grade: 'G3', venue: '東京' },
+  { date: '2026-02-01', name: 'シルクロードS',        grade: 'G3', venue: '京都' },
+  { date: '2026-02-10', name: 'きさらぎ賞',           grade: 'G3', venue: '京都' },
+  { date: '2026-02-10', name: '東京新聞杯',           grade: 'G3', venue: '東京' },
+  { date: '2026-02-15', name: '共同通信杯',           grade: 'G3', venue: '東京' },
   { date: '2026-02-15', name: '京都記念',             grade: 'G2', venue: '京都' },
-  { date: '2026-02-15', name: '小倉大賞典',           grade: 'G3', venue: '小倉' },
   { date: '2026-02-22', name: 'フェブラリーS',        grade: 'G1', venue: '東京' },
+  { date: '2026-02-22', name: '小倉大賞典',           grade: 'G3', venue: '小倉' },
   // ── 3月 ──
+  { date: '2026-03-01', name: '中山記念',             grade: 'G2', venue: '中山' },
   { date: '2026-03-01', name: 'チューリップ賞',       grade: 'G2', venue: '阪神' },
-  { date: '2026-03-08', name: '弥生賞ディープ記念',   grade: 'G2', venue: '中山' },
-  { date: '2026-03-08', name: 'フィリーズレビュー',   grade: 'G2', venue: '阪神' },
+  { date: '2026-03-08', name: '弥生賞',               grade: 'G2', venue: '中山' },
+  { date: '2026-03-15', name: 'スプリングS',          grade: 'G2', venue: '中山' },
   { date: '2026-03-15', name: '金鯱賞',               grade: 'G2', venue: '中京' },
-  { date: '2026-03-22', name: 'スプリングS',          grade: 'G2', venue: '中山' },
   { date: '2026-03-22', name: '阪神大賞典',           grade: 'G2', venue: '阪神' },
+  { date: '2026-03-22', name: '愛知杯',               grade: 'G3', venue: '中京' },
+  { date: '2026-03-29', name: 'マーチS',              grade: 'G3', venue: '中山' },
   { date: '2026-03-29', name: '高松宮記念',           grade: 'G1', venue: '中京' },
   // ── 4月 ──
   { date: '2026-04-05', name: '大阪杯',               grade: 'G1', venue: '阪神' },
-  { date: '2026-04-05', name: 'ニュージーランドT',    grade: 'G2', venue: '中山' },
   { date: '2026-04-12', name: '桜花賞',               grade: 'G1', venue: '阪神' },
-  { date: '2026-04-12', name: 'アーリントンC',        grade: 'G3', venue: '阪神' },
   { date: '2026-04-19', name: '皐月賞',               grade: 'G1', venue: '中山' },
-  { date: '2026-04-19', name: 'フローラS',            grade: 'G2', venue: '東京' },
-  { date: '2026-04-26', name: '天皇賞（春）',         grade: 'G1', venue: '京都' },
+  { date: '2026-04-19', name: '福島牝馬S',            grade: 'G3', venue: '福島' },
+  { date: '2026-04-26', name: 'フローラS',            grade: 'G2', venue: '東京' },
   { date: '2026-04-26', name: 'マイラーズC',          grade: 'G2', venue: '京都' },
   // ── 5月 ──
-  { date: '2026-05-03', name: 'NHKマイルC',           grade: 'G1', venue: '東京' },
-  { date: '2026-05-10', name: 'ヴィクトリアM',        grade: 'G1', venue: '東京' },
-  { date: '2026-05-17', name: 'オークス',             grade: 'G1', venue: '東京' },
-  { date: '2026-05-24', name: '日本ダービー',         grade: 'G1', venue: '東京' },
-  { date: '2026-05-24', name: '目黒記念',             grade: 'G2', venue: '東京' },
+  { date: '2026-05-03', name: '天皇賞（春）',         grade: 'G1', venue: '京都' },
+  { date: '2026-05-10', name: 'NHKマイルC',           grade: 'G1', venue: '東京' },
+  { date: '2026-05-17', name: 'ヴィクトリアマイル',   grade: 'G1', venue: '東京' },
+  { date: '2026-05-24', name: 'オークス',             grade: 'G1', venue: '東京' },
+  { date: '2026-05-31', name: '日本ダービー',         grade: 'G1', venue: '東京' },
+  { date: '2026-05-31', name: '目黒記念',             grade: 'G2', venue: '東京' },
   // ── 6月 ──
   { date: '2026-06-07', name: '安田記念',             grade: 'G1', venue: '東京' },
-  { date: '2026-06-14', name: 'エプソムC',            grade: 'G3', venue: '東京' },
-  { date: '2026-06-21', name: 'マーメイドS',          grade: 'G3', venue: '阪神' },
-  { date: '2026-06-28', name: '宝塚記念',             grade: 'G1', venue: '阪神' },
+  { date: '2026-06-14', name: '宝塚記念',             grade: 'G1', venue: '阪神' },
+  { date: '2026-06-21', name: '府中牝馬S',            grade: 'G3', venue: '東京' },
+  { date: '2026-06-21', name: 'しらさぎS',            grade: 'G3', venue: '阪神' },
+  { date: '2026-06-28', name: 'ラジオNIKKEI賞',       grade: 'G3', venue: '福島' },
+  { date: '2026-06-28', name: '函館記念',             grade: 'G3', venue: '函館' },
   // ── 7月 ──
-  { date: '2026-07-05', name: '函館スプリントS',      grade: 'G3', venue: '函館' },
-  { date: '2026-07-12', name: 'プロキオンS',          grade: 'G3', venue: '中京' },
-  { date: '2026-07-12', name: 'CBC賞',                grade: 'G3', venue: '中京' },
+  { date: '2026-07-05', name: '北九州記念',           grade: 'G3', venue: '小倉' },
+  { date: '2026-07-12', name: '七夕賞',               grade: 'G3', venue: '福島' },
+  { date: '2026-07-19', name: '小倉記念',             grade: 'G3', venue: '小倉' },
   { date: '2026-07-19', name: '函館2歳S',             grade: 'G3', venue: '函館' },
-  { date: '2026-07-19', name: '七夕賞',               grade: 'G3', venue: '福島' },
+  { date: '2026-07-26', name: '関屋記念',             grade: 'G3', venue: '新潟' },
+  { date: '2026-07-26', name: '東海S',                grade: 'G3', venue: '中京' },
   // ── 8月 ──
+  { date: '2026-08-02', name: 'アイビスサマーダッシュ', grade: 'G3', venue: '新潟' },
   { date: '2026-08-02', name: 'クイーンS',            grade: 'G3', venue: '札幌' },
-  { date: '2026-08-09', name: 'エルムS',              grade: 'G3', venue: '札幌' },
+  { date: '2026-08-09', name: 'レパードS',            grade: 'G3', venue: '新潟' },
+  { date: '2026-08-09', name: 'CBC賞',                grade: 'G3', venue: '中京' },
+  { date: '2026-08-16', name: '中京記念',             grade: 'G3', venue: '中京' },
   { date: '2026-08-16', name: '札幌記念',             grade: 'G2', venue: '札幌' },
-  { date: '2026-08-23', name: 'キーンランドC',        grade: 'G3', venue: '札幌' },
   { date: '2026-08-23', name: '新潟2歳S',             grade: 'G3', venue: '新潟' },
-  { date: '2026-08-30', name: '札幌2歳S',             grade: 'G3', venue: '札幌' },
+  { date: '2026-08-23', name: 'キーンランドC',        grade: 'G3', venue: '札幌' },
+  { date: '2026-08-30', name: '新潟記念',             grade: 'G3', venue: '新潟' },
+  { date: '2026-08-30', name: '中京2歳S',             grade: 'G3', venue: '中京' },
   // ── 9月 ──
+  { date: '2026-09-06', name: '紫苑S',                grade: 'G2', venue: '中山' },
   { date: '2026-09-06', name: 'セントウルS',          grade: 'G2', venue: '阪神' },
-  { date: '2026-09-13', name: 'ローズS',              grade: 'G2', venue: '阪神' },
   { date: '2026-09-13', name: 'セントライト記念',     grade: 'G2', venue: '中山' },
-  { date: '2026-09-20', name: '神戸新聞杯',           grade: 'G2', venue: '阪神' },
+  { date: '2026-09-13', name: 'ローズS',              grade: 'G2', venue: '阪神' },
   { date: '2026-09-20', name: 'オールカマー',         grade: 'G2', venue: '中山' },
+  { date: '2026-09-21', name: '神戸新聞杯',           grade: 'G2', venue: '阪神' },
   { date: '2026-09-27', name: 'スプリンターズS',      grade: 'G1', venue: '中山' },
   // ── 10月 ──
-  { date: '2026-10-04', name: 'シリウスS',            grade: 'G3', venue: '中京' },
-  { date: '2026-10-11', name: '毎日王冠',             grade: 'G2', venue: '東京' },
-  { date: '2026-10-11', name: '府中牝馬S',            grade: 'G2', venue: '東京' },
+  { date: '2026-10-04', name: '毎日王冠',             grade: 'G2', venue: '東京' },
+  { date: '2026-10-04', name: '京都大賞典',           grade: 'G2', venue: '京都' },
+  { date: '2026-10-11', name: 'アイルランドT',        grade: 'G2', venue: '東京' },
+  { date: '2026-10-12', name: 'スワンS',              grade: 'G2', venue: '京都' },
   { date: '2026-10-18', name: '秋華賞',               grade: 'G1', venue: '京都' },
   { date: '2026-10-25', name: '菊花賞',               grade: 'G1', venue: '京都' },
-  { date: '2026-10-25', name: '富士S',                grade: 'G2', venue: '東京' },
-  { date: '2026-11-01', name: 'スワンS',              grade: 'G2', venue: '京都' },
-  { date: '2026-11-01', name: '天皇賞（秋）',         grade: 'G1', venue: '東京' },
   // ── 11月 ──
+  { date: '2026-11-01', name: '天皇賞（秋）',         grade: 'G1', venue: '東京' },
   { date: '2026-11-08', name: 'アルゼンチン共和国杯', grade: 'G2', venue: '東京' },
-  { date: '2026-11-08', name: '武蔵野S',              grade: 'G3', venue: '東京' },
+  { date: '2026-11-08', name: 'みやこS',              grade: 'G3', venue: '京都' },
   { date: '2026-11-15', name: 'エリザベス女王杯',     grade: 'G1', venue: '京都' },
-  { date: '2026-11-22', name: 'マイルCS',             grade: 'G1', venue: '京都' },
-  { date: '2026-11-22', name: '東京スポーツ杯2歳S',  grade: 'G2', venue: '東京' },
+  { date: '2026-11-22', name: 'マイルチャンピオンシップ', grade: 'G1', venue: '京都' },
+  { date: '2026-11-23', name: '東スポ杯2歳S',         grade: 'G2', venue: '東京' },
   { date: '2026-11-29', name: 'ジャパンC',            grade: 'G1', venue: '東京' },
+  { date: '2026-11-29', name: '京阪杯',               grade: 'G3', venue: '京都' },
   // ── 12月 ──
   { date: '2026-12-06', name: 'チャンピオンズC',      grade: 'G1', venue: '中京' },
-  { date: '2026-12-06', name: 'ステイヤーズS',        grade: 'G2', venue: '中山' },
-  { date: '2026-12-13', name: '阪神JF',               grade: 'G1', venue: '阪神' },
-  { date: '2026-12-20', name: '朝日杯FS',             grade: 'G1', venue: '阪神' },
+  { date: '2026-12-13', name: 'カペラS',              grade: 'G3', venue: '中山' },
+  { date: '2026-12-13', name: '阪神ジュベナイルF',    grade: 'G1', venue: '阪神' },
+  { date: '2026-12-20', name: '朝日杯フューチュリティS', grade: 'G1', venue: '阪神' },
   { date: '2026-12-27', name: '有馬記念',             grade: 'G1', venue: '中山' },
-  { date: '2026-12-27', name: 'ホープフルS',          grade: 'G1', venue: '中山' },
 ]
 
 const MONTH_NAMES = ['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月']
@@ -212,9 +224,6 @@ export default function GradeCalendar({ today }: { today: string }) {
         2026 重賞カレンダー
       </p>
 
-      <p style={{ margin: '0 0 16px', fontSize: 11, color: '#5C5C63' }}>
-        ※ 日程は暫定です。変更になる場合があります。
-      </p>
 
       {/* 今月：常に表示 */}
       {currentMonthRaces.length > 0 && (
