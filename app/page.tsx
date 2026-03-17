@@ -124,22 +124,36 @@ export default async function Home() {
         <span style={{ fontSize: 14, fontWeight: 600, color: '#E8E8EA', letterSpacing: '-0.01em' }}>
           Keiba AI
         </span>
+        <span style={{
+          marginLeft: 4,
+          fontSize: 12,
+          color: '#5C5C63',
+          letterSpacing: '0.01em',
+        }}>
+          AI競馬フォーメーション予想
+        </span>
       </div>
 
       {/* ── Content ─────────────────────────────────────────────────── */}
       <div style={{ maxWidth: 680, margin: '0 auto', padding: '48px 24px' }}>
 
+        <p style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.1em', color: '#6366F1', textTransform: 'uppercase', margin: '0 0 10px' }}>
+          AI Horse Racing
+        </p>
         <h1 style={{
           fontSize: 24,
           fontWeight: 700,
           color: '#E8E8EA',
-          margin: '0 0 4px',
+          margin: '0 0 10px',
           letterSpacing: '-0.02em',
         }}>
-          レース一覧
+          脚質・展開・騎手から<br />フォーメーションを自動生成
         </h1>
-        <p style={{ fontSize: 13, color: '#5C5C63', marginBottom: 32 }}>
-          AIによるレース分析・フォーメーション予想
+        <p style={{ fontSize: 13, color: '#7A7A84', lineHeight: 1.8, margin: '0 0 32px' }}>
+          各レースの出走馬データをAIが分析し、軸馬・ヒモ馬のフォーメーション予想を提示します。
+        </p>
+        <p style={{ fontSize: 12, fontWeight: 600, color: '#9D9DA3', letterSpacing: '0.04em', margin: '0 0 12px' }}>
+          レース一覧
         </p>
 
         {errorMessage && (
