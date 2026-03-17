@@ -1,4 +1,5 @@
 import DebugRaceList from './DebugRaceList'
+import GradeCalendar from './GradeCalendar'
 
 type Race = {
   id: string
@@ -199,6 +200,9 @@ export default async function Home() {
             レースデータがありません
           </p>
         )}
+
+        {/* ── 重賞カレンダー ───────────────────────────────────────────── */}
+        <GradeCalendar today={new Date().toISOString().slice(0, 10)} />
 
         {/* ── 検証レース（DEBUG トグル） ──────────────────────────────── */}
         {testRaces.length > 0 && (
