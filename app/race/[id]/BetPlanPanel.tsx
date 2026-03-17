@@ -92,6 +92,15 @@ export default function BetPlanPanel({
   const [himoCount, setHimoCount] = useState(Math.min(AI_RECOMMENDED, allHimoHorses.length))
   const [showBetInfo, setShowBetInfo] = useState(false)
 
+  const openModal = () => {
+    document.body.style.overflow = 'hidden'
+    setShowBetInfo(true)
+  }
+  const closeModal = () => {
+    document.body.style.overflow = ''
+    setShowBetInfo(false)
+  }
+
   const selectedHimo = allHimoHorses.slice(0, himoCount)
   const combinations = computeCombinations(axisCount, himoCount)
   const comment = buildComment(axisCount, himoCount, stabilityScore)
@@ -151,7 +160,7 @@ export default function BetPlanPanel({
             {betType}
           </span>
           <motion.button
-            onClick={() => setShowBetInfo(true)}
+            onClick={openModal}
             whileTap={{ scale: 0.92 }}
             aria-label="三連複フォーメーションの説明を見る"
             style={{
@@ -437,7 +446,7 @@ export default function BetPlanPanel({
             zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center',
             padding: 20,
           }}
-          onClick={() => setShowBetInfo(false)}
+          onClick={closeModal}
         >
           <div
             style={{
@@ -453,7 +462,7 @@ export default function BetPlanPanel({
                 三連複フォーメーションとは？
               </p>
               <button
-                onClick={() => setShowBetInfo(false)}
+                onClick={closeModal}
                 style={{ background: 'none', border: 'none', color: '#62627A', cursor: 'pointer', fontSize: 20, lineHeight: 1, padding: '2px 4px' }}
                 aria-label="閉じる"
               >

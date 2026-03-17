@@ -92,14 +92,8 @@ export default async function Home() {
           }}>
             AI Horse Racing
           </p>
-          <h1 style={{
-            fontSize: 28, fontWeight: 800, color: '#EEEEF5',
-            margin: '0 0 14px', letterSpacing: '-0.03em', lineHeight: 1.3,
-          }}>
-            脚質・展開・騎手から<br />フォーメーションを自動生成
-          </h1>
           <p style={{ fontSize: 14, color: '#9898B0', lineHeight: 1.85, margin: 0 }}>
-            各レースの出走馬データをAIが分析し、軸馬・ヒモ馬のフォーメーション予想を提示します。
+            脚質・展開・ペース・騎手・出走頭数・コース適性などをAIが総合分析し、軸馬・ヒモ馬のフォーメーション予想を自動生成します。
           </p>
         </div>
 

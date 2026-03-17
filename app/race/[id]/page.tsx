@@ -2082,9 +2082,6 @@ export default async function RaceDetailPage({
 
   // Race info chip helpers
   const DAY_NAMES = ['日', '月', '火', '水', '木', '金', '土']
-  const raceDayOfWeek = race
-    ? DAY_NAMES[new Date(race.date + 'T12:00:00').getDay()] + '曜日'
-    : null
   const raceDateFmt = race
     ? (() => {
         const d = new Date(race.date + 'T12:00:00')
@@ -2204,11 +2201,6 @@ export default async function RaceDetailPage({
             {race.start_time && (
               <span style={{ padding: '3px 10px', borderRadius: 9999, fontSize: 11, fontWeight: 600, background: 'rgba(255,255,255,0.05)', color: '#9898B0', border: '1px solid rgba(255,255,255,0.10)' }}>
                 {race.start_time.slice(0, 5)}発走
-              </span>
-            )}
-            {raceDayOfWeek && (
-              <span style={{ padding: '3px 10px', borderRadius: 9999, fontSize: 11, fontWeight: 600, background: 'rgba(255,255,255,0.05)', color: '#9898B0', border: '1px solid rgba(255,255,255,0.10)' }}>
-                {raceDayOfWeek}
               </span>
             )}
           </div>
@@ -3548,8 +3540,6 @@ export default async function RaceDetailPage({
                   hint = { label: 'AI上位', color: '#166534', bg: 'rgba(22,101,52,0.08)' }
                 } else if (finish_pos <= 3 && (aiRank === 0 || aiRank > 3)) {
                   hint = { label: '想定外', color: '#DC2626', bg: 'rgba(248,113,113,0.1)' }
-                } else if (aiRank > 0 && Math.abs(aiRank - finish_pos) <= 1) {
-                  hint = { label: '惜しい', color: '#FB923C', bg: 'rgba(251,146,60,0.1)' }
                 }
 
                 const isTop3 = finish_pos <= 3
