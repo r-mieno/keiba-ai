@@ -123,9 +123,9 @@ export default function BetPlanPanel({
   return (
     <div
       style={{
-        background: 'rgba(255,255,255,0.04)',
+        background: '#13141F',
         border: '1px solid rgba(255,255,255,0.08)',
-        borderRadius: 16,
+        borderRadius: 12,
         padding: '20px',
         marginBottom: 10,
       }}
@@ -135,10 +135,10 @@ export default function BetPlanPanel({
         fontWeight: 700,
         letterSpacing: '0.1em',
         textTransform: 'uppercase' as const,
-        color: '#62627A',
+        color: '#9898B0',
         marginBottom: 14,
         paddingBottom: 10,
-        borderBottom: '1px solid rgba(255,255,255,0.07)',
+        borderBottom: '1px solid rgba(255,255,255,0.05)',
       }}>
         AI買い目プラン
       </p>
@@ -424,20 +424,27 @@ export default function BetPlanPanel({
         style={{
           display: 'flex',
           alignItems: 'center',
-          gap: 8,
+          gap: 10,
           marginTop: 14,
-          padding: '9px 12px',
-          background: 'rgba(255,255,255,0.02)',
-          border: '1px solid rgba(255,255,255,0.07)',
-          borderRadius: 8,
-          color: '#62627A',
-          fontSize: 12,
+          padding: '11px 14px',
+          background: 'rgba(20,184,166,0.06)',
+          border: '1px solid rgba(20,184,166,0.20)',
+          borderRadius: 10,
+          color: '#14B8A6',
+          fontSize: 13,
+          fontWeight: 500,
           textDecoration: 'none',
+          transition: 'background 0.15s',
         }}
       >
-        <span style={{ fontSize: 13, flexShrink: 0, opacity: 0.6 }}>ℹ</span>
+        <span style={{
+          display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+          width: 18, height: 18, borderRadius: '50%', flexShrink: 0,
+          background: 'rgba(20,184,166,0.20)', color: '#14B8A6',
+          fontSize: 11, fontWeight: 800, lineHeight: 1,
+        }}>i</span>
         <span>はじめての方：ネット馬券の買い方を見る</span>
-        <span style={{ marginLeft: 'auto', fontSize: 11, opacity: 0.4 }}>→</span>
+        <span style={{ marginLeft: 'auto', fontSize: 14, opacity: 0.7 }}>›</span>
       </a>
 
       {/* ── 三連複フォーメーション説明モーダル ─────────────────────── */}
