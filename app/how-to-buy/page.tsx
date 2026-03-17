@@ -32,9 +32,9 @@ export default function HowToBuyPage() {
   return (
     <main style={{
       minHeight: '100vh',
-      background: '#0C0C0E',
+      background: '#0C0D14',
       fontFamily: 'var(--font-geist-sans), -apple-system, Inter, Arial, sans-serif',
-      color: '#E8E8EA',
+      color: '#EEEEF5',
     }}>
 
       {/* ── Top bar ──────────────────────────────────────────────── */}
@@ -57,27 +57,27 @@ export default function HowToBuyPage() {
           レース一覧
         </a>
         <span style={{ color: 'rgba(255,255,255,0.15)', fontSize: 14 }}>/</span>
-        <span style={{ fontSize: 13, color: '#B0B0B8' }}>ネット馬券の買い方</span>
+        <span style={{ fontSize: 13, color: '#9898B0' }}>ネット馬券の買い方</span>
       </div>
 
       {/* ── Content ──────────────────────────────────────────────── */}
       <div style={{ maxWidth: 600, margin: '0 auto', padding: '40px 20px 64px' }}>
 
         {/* Header */}
-        <p style={{ fontSize: 10, fontWeight: 600, letterSpacing: '0.1em', color: '#6366F1', textTransform: 'uppercase', marginBottom: 10 }}>
+        <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.12em', color: '#14B8A6', textTransform: 'uppercase', marginBottom: 10 }}>
           Guide
         </p>
-        <h1 style={{ fontSize: 22, fontWeight: 700, color: '#E8E8EA', margin: '0 0 8px', letterSpacing: '-0.02em' }}>
+        <h1 style={{ fontSize: 22, fontWeight: 700, color: '#EEEEF5', margin: '0 0 8px', letterSpacing: '-0.02em' }}>
           ネット馬券の買い方
         </h1>
-        <p style={{ fontSize: 13, color: '#7A7A84', lineHeight: 1.8, margin: '0 0 36px' }}>
+        <p style={{ fontSize: 13, color: '#62627A', lineHeight: 1.8, margin: '0 0 36px' }}>
           競馬場やWINSに行かなくても、スマホ・PCからネットで馬券を購入できます。
           このページは「どうやって買うのか」を簡単に知るための案内です。購入を強く勧めるものではありません。
         </p>
 
         {/* Steps */}
         <section style={{ marginBottom: 40 }}>
-          <h2 style={{ fontSize: 12, fontWeight: 600, color: '#9D9DA3', letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: 16 }}>
+          <h2 style={{ fontSize: 10, fontWeight: 700, color: '#62627A', letterSpacing: '0.10em', textTransform: 'uppercase', marginBottom: 16 }}>
             購入までの流れ
           </h2>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
@@ -88,14 +88,14 @@ export default function HowToBuyPage() {
                   display: 'flex',
                   gap: 14,
                   padding: '14px 16px',
-                  background: 'rgba(255,255,255,0.03)',
-                  borderRadius: 8,
-                  border: '1px solid rgba(255,255,255,0.06)',
+                  background: '#13141F',
+                  borderRadius: 12,
+                  border: '1px solid rgba(255,255,255,0.07)',
                 }}
               >
                 <span style={{
-                  width: 26, height: 26, borderRadius: 6,
-                  background: 'rgba(99,102,241,0.15)', color: '#818CF8',
+                  width: 26, height: 26, borderRadius: 8,
+                  background: 'rgba(20,184,166,0.12)', color: '#14B8A6',
                   fontSize: 12, fontWeight: 800,
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                   flexShrink: 0, marginTop: 1,
@@ -103,8 +103,8 @@ export default function HowToBuyPage() {
                   {step.num}
                 </span>
                 <div>
-                  <p style={{ fontSize: 14, fontWeight: 600, color: '#E8E8EA', margin: '0 0 4px' }}>{step.title}</p>
-                  <p style={{ fontSize: 12, color: '#B0B0B8', lineHeight: 1.7, margin: 0 }}>{step.body}</p>
+                  <p style={{ fontSize: 14, fontWeight: 600, color: '#EEEEF5', margin: '0 0 4px' }}>{step.title}</p>
+                  <p style={{ fontSize: 12, color: '#9898B0', lineHeight: 1.7, margin: 0 }}>{step.body}</p>
                 </div>
               </div>
             ))}
@@ -113,7 +113,7 @@ export default function HowToBuyPage() {
 
         {/* Banks */}
         <section style={{ marginBottom: 40 }}>
-          <h2 style={{ fontSize: 12, fontWeight: 600, color: '#9D9DA3', letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: 12 }}>
+          <h2 style={{ fontSize: 10, fontWeight: 700, color: '#62627A', letterSpacing: '0.10em', textTransform: 'uppercase', marginBottom: 12 }}>
             対応銀行の例
           </h2>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
@@ -121,25 +121,25 @@ export default function HowToBuyPage() {
               <span
                 key={bank}
                 style={{
-                  fontSize: 12, color: '#B0B0B8',
+                  fontSize: 12, color: '#9898B0',
                   padding: '4px 10px',
                   background: 'rgba(255,255,255,0.04)',
                   border: '1px solid rgba(255,255,255,0.08)',
-                  borderRadius: 4,
+                  borderRadius: 6,
                 }}
               >
                 {bank}
               </span>
             ))}
           </div>
-          <p style={{ fontSize: 11, color: '#5C5C63', marginTop: 10 }}>
+          <p style={{ fontSize: 11, color: '#62627A', marginTop: 10 }}>
             ※ 対応状況は変わる場合があります。最新情報はJRA公式サイトでご確認ください。
           </p>
         </section>
 
         {/* Official links */}
         <section style={{ marginBottom: 40 }}>
-          <h2 style={{ fontSize: 12, fontWeight: 600, color: '#9D9DA3', letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: 12 }}>
+          <h2 style={{ fontSize: 10, fontWeight: 700, color: '#62627A', letterSpacing: '0.10em', textTransform: 'uppercase', marginBottom: 12 }}>
             公式サイト
           </h2>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -150,10 +150,10 @@ export default function HowToBuyPage() {
               style={{
                 display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                 padding: '12px 14px',
-                background: 'rgba(255,255,255,0.03)',
-                border: '1px solid rgba(255,255,255,0.08)',
-                borderRadius: 8,
-                color: '#B0B0B8',
+                background: '#13141F',
+                border: '1px solid rgba(255,255,255,0.07)',
+                borderRadius: 10,
+                color: '#9898B0',
                 fontSize: 13,
                 transition: 'background 0.12s',
               }}
@@ -168,10 +168,10 @@ export default function HowToBuyPage() {
               style={{
                 display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                 padding: '12px 14px',
-                background: 'rgba(255,255,255,0.03)',
-                border: '1px solid rgba(255,255,255,0.08)',
-                borderRadius: 8,
-                color: '#B0B0B8',
+                background: '#13141F',
+                border: '1px solid rgba(255,255,255,0.07)',
+                borderRadius: 10,
+                color: '#9898B0',
                 fontSize: 13,
                 transition: 'background 0.12s',
               }}
@@ -184,10 +184,10 @@ export default function HowToBuyPage() {
 
         {/* Disclaimer */}
         <div style={{
-          borderTop: '1px solid rgba(255,255,255,0.06)',
+          borderTop: '1px solid rgba(255,255,255,0.07)',
           paddingTop: 20,
         }}>
-          <p style={{ fontSize: 11, color: '#5C5C63', lineHeight: 1.9, margin: 0 }}>
+          <p style={{ fontSize: 11, color: '#62627A', lineHeight: 1.9, margin: 0 }}>
             馬券の購入は自己判断・自己責任のもとで行ってください。
             20歳未満の方は馬券を購入できません。
             のめり込みに注意し、余裕のある範囲で楽しんでください。
