@@ -1,3 +1,5 @@
+import DebugRaceList from './DebugRaceList'
+
 type Race = {
   id: string
   race_name: string
@@ -168,17 +170,12 @@ export default async function Home() {
           </p>
         )}
 
-        {/* ── 検証レース ─────────────────────────────────────────────── */}
+        {/* ── 検証レース（DEBUG トグル） ──────────────────────────────── */}
         {testRaces.length > 0 && (
-          <div style={{ marginTop: 56 }}>
-            <h2 style={{ fontSize: 13, fontWeight: 600, color: '#9D9DA3', margin: '0 0 12px', letterSpacing: '0.02em' }}>
-              検証レース
-            </h2>
-            <SectionHeader />
-            <div style={{ display: 'flex', flexDirection: 'column' }}>
-              {testRaces.map((race) => RaceRow(race, true))}
-            </div>
-          </div>
+          <DebugRaceList
+            races={testRaces}
+            resultRaceIds={[...resultRaceIds]}
+          />
         )}
       </div>
     </main>
