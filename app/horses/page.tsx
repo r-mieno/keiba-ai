@@ -253,15 +253,10 @@ export default async function HorsesPage() {
                   <LineBadge line={horse.father_line} />
                 </div>
 
-                {/* 母 / 母父 */}
+                {/* 母父 */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-                  {horse.dam_name && (
-                    <span style={{ fontSize: 12, color: '#9898B0' }}>{horse.dam_name}</span>
-                  )}
-                  <span style={{ fontSize: 12, color: '#62627A' }}>
-                    {horse.damsire_name
-                      ? `母父: ${horse.damsire_name}`
-                      : horse.dam_name ? '' : <span>—</span>}
+                  <span style={{ fontSize: 12, color: '#9898B0' }}>
+                    {horse.damsire_name ?? <span style={{ color: '#62627A' }}>—</span>}
                   </span>
                   <LineBadge line={horse.damsire_line} />
                 </div>
