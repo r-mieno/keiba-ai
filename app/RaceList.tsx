@@ -39,7 +39,9 @@ export default function RaceList({ races, resultRaceIds }: Props) {
             href={`/race/${race.id}`}
             className="race-link"
             whileHover={{ backgroundColor: 'rgba(255,255,255,0.04)', x: 3 }}
+            whileTap={{ scale: 0.97, backgroundColor: 'rgba(255,255,255,0.07)' }}
             transition={{ type: 'spring', stiffness: 500, damping: 35 }}
+            style={{ WebkitTapHighlightColor: 'transparent' }}
           >
             <span style={{
               fontSize: 12, color: '#62627A', flexShrink: 0,
