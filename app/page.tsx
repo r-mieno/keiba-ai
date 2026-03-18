@@ -151,8 +151,45 @@ export default async function Home() {
         {/* ── 重賞カレンダー ──────────────────────────────────────────────── */}
         <GradeCalendar today={new Date().toISOString().slice(0, 10)} />
 
-        {/* ── 競馬用語集リンク ─────────────────────────────────────────── */}
+        {/* ── 馬マスタ一覧リンク ───────────────────────────────────────── */}
         <div style={{ marginTop: 24 }}>
+          <a
+            href="/horses"
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              padding: '14px 18px',
+              background: 'rgba(255,255,255,0.03)',
+              border: '1px solid rgba(255,255,255,0.07)',
+              borderRadius: 14,
+              color: '#9898B0',
+              textDecoration: 'none',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              <span style={{
+                width: 30, height: 30, borderRadius: 8, flexShrink: 0,
+                background: 'rgba(251,191,36,0.10)',
+                border: '1px solid rgba(251,191,36,0.20)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: 15,
+              }}>🐴</span>
+              <div>
+                <p style={{ fontSize: 13, fontWeight: 600, color: '#EEEEF5', margin: '0 0 2px' }}>
+                  馬マスタ一覧
+                </p>
+                <p style={{ fontSize: 11, color: '#62627A', margin: 0 }}>
+                  出走馬の脚質・父・母父・血統系統を確認
+                </p>
+              </div>
+            </div>
+            <span style={{ fontSize: 16, color: '#62627A', flexShrink: 0 }}>›</span>
+          </a>
+        </div>
+
+        {/* ── 競馬用語集リンク ─────────────────────────────────────────── */}
+        <div style={{ marginTop: 12 }}>
           <a
             href="/glossary"
             style={{
