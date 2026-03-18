@@ -2071,6 +2071,9 @@ export default async function RaceDetailPage({
   const getHorseName = (horseId: string) =>
     horses.find((h) => h.id === horseId)?.name ?? horseId
 
+  // 枠順（馬番）が1頭以上確定していれば確定済みとみなす
+  const isDrawComplete = entries.some((e) => e.horse_number !== null)
+
   // Full race field: use all entered horses for pace calculation.
   // Fall back to formation horses only when entries haven't loaded.
   const raceHorseIds = entries.length > 0
@@ -2381,6 +2384,7 @@ export default async function RaceDetailPage({
                 axisDetails={axisDetails}
                 axisHorseIds={formation.axis_horses}
                 top3HorseIds={top3HorseIds}
+                isDrawComplete={isDrawComplete}
               />
 
               {/* ── v2 デバッグパネル（検証レースのみ表示） ─────────────── */}

@@ -60,7 +60,8 @@ type Props = {
   pace: string
   axisDetails: AxisDetail[]
   axisHorseIds: string[]
-  top3HorseIds: string[]  // 空配列 = 結果未投入
+  top3HorseIds: string[]    // 空配列 = 結果未投入
+  isDrawComplete: boolean   // false = 馬番未確定（枠順確定前の暫定予想）
 }
 
 // 三連複フォーメーションの的中チェック
@@ -124,6 +125,7 @@ export default function BetPlanPanel({
   axisDetails,
   axisHorseIds,
   top3HorseIds,
+  isDrawComplete,
 }: Props) {
   const [himoCount, setHimoCount] = useState(Math.min(AI_RECOMMENDED, allHimoHorses.length))
   const [showBetInfo, setShowBetInfo] = useState(false)
@@ -207,6 +209,30 @@ export default function BetPlanPanel({
           </span>
         )}
       </div>
+
+      {/* 枠順未確定バナー */}
+      {!isDrawComplete && (
+        <div style={{
+          display: 'flex',
+          alignItems: 'flex-start',
+          gap: 8,
+          padding: '10px 12px',
+          marginBottom: 16,
+          background: 'rgba(251,191,36,0.06)',
+          border: '1px solid rgba(251,191,36,0.20)',
+          borderRadius: 8,
+        }}>
+          <span style={{ fontSize: 13, lineHeight: 1, marginTop: 1, flexShrink: 0 }}>⚠</span>
+          <div>
+            <p style={{ fontSize: 11, fontWeight: 700, color: '#FBBF24', margin: '0 0 3px', letterSpacing: '0.04em' }}>
+              枠順確定前の暫定予想
+            </p>
+            <p style={{ fontSize: 11, color: '#9898B0', margin: 0, lineHeight: 1.6 }}>
+              馬番がまだ確定していません。枠順確定後にページを再読み込みすると予想が更新されます。
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Bet type */}
       <div style={{ marginBottom: 18 }}>
