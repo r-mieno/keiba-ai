@@ -2336,10 +2336,17 @@ export default async function RaceDetailPage({
 
           const { betType } = getBetPlanInfo(formation, horses, pct)
           const himoHorses = formation.himo_horses.map((hid, i) => ({
+            id: hid,
             name: horses.find((h) => h.id === hid)?.name ?? hid,
             number: entries.find((e) => e.horse_id === hid)?.horse_number ?? null,
             aiEval: Math.max(10, Math.round(22 - i * 2)),
           }))
+          const top3HorseIds = raceResults.length > 0
+            ? raceResults
+                .filter((r) => r.finish_pos >= 1 && r.finish_pos <= 3)
+                .sort((a, b) => a.finish_pos - b.finish_pos)
+                .map((r) => r.horse_id)
+            : []
           const axisDetails = formation.axis_horses.map((id, i) => {
             const horse = horses.find((h) => h.id === id)
             const style = horse?.style ?? null
@@ -2372,6 +2379,8 @@ export default async function RaceDetailPage({
                 stabilityScore={raceStabilityScore}
                 pace={pace}
                 axisDetails={axisDetails}
+                axisHorseIds={formation.axis_horses}
+                top3HorseIds={top3HorseIds}
               />
 
               {/* ── v2 デバッグパネル（検証レースのみ表示） ─────────────── */}

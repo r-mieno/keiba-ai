@@ -46,6 +46,7 @@ type AxisDetail = {
 }
 
 type HimoHorse = {
+  id: string
   name: string
   number: number | null
   aiEval: number
@@ -58,6 +59,39 @@ type Props = {
   stabilityScore: number
   pace: string
   axisDetails: AxisDetail[]
+  axisHorseIds: string[]
+  top3HorseIds: string[]  // 空配列 = 結果未投入
+}
+
+// 三連複フォーメーションの的中チェック
+// 1軸: 軸1頭がtop3に含まれ、残り2頭が選択ヒモに含まれる
+// 2軸: 両軸がtop3に含まれ、残り1頭が選択ヒモに含まれる
+function checkFormationHit(
+  top3: string[],
+  axisIds: string[],
+  selectedHimoIds: string[],
+  axisCount: number,
+): boolean {
+  if (top3.length < 3) return false
+  const top3Set = new Set(top3)
+  const himoSet = new Set(selectedHimoIds)
+  const axisSet = new Set(axisIds)
+  const axisInTop3 = axisIds.filter((id) => top3Set.has(id))
+
+  if (axisCount === 1) {
+    if (axisInTop3.length < 1) return false
+    // 軸以外の上位2頭がヒモにすべて含まれているか
+    const nonAxis = top3.filter((id) => !axisSet.has(id))
+    return nonAxis.every((id) => himoSet.has(id))
+  }
+  if (axisCount === 2) {
+    if (axisInTop3.length < Math.min(2, axisIds.length)) return false
+    // 軸以外の上位1頭がヒモに含まれているか
+    const nonAxis = top3.filter((id) => !axisSet.has(id))
+    return nonAxis.every((id) => himoSet.has(id))
+  }
+  // axisCount >= 3: 全馬軸扱い、top3が全て軸なら的中
+  return top3.every((id) => axisSet.has(id))
 }
 
 function NumBadge({ num, isAxis }: { num: number | null; isAxis: boolean }) {
@@ -88,6 +122,8 @@ export default function BetPlanPanel({
   axisCount,
   stabilityScore,
   axisDetails,
+  axisHorseIds,
+  top3HorseIds,
 }: Props) {
   const [himoCount, setHimoCount] = useState(Math.min(AI_RECOMMENDED, allHimoHorses.length))
   const [showBetInfo, setShowBetInfo] = useState(false)
@@ -102,6 +138,14 @@ export default function BetPlanPanel({
   }
 
   const selectedHimo = allHimoHorses.slice(0, himoCount)
+
+  const hasResult = top3HorseIds.length === 3
+  const isHit = hasResult && checkFormationHit(
+    top3HorseIds,
+    axisHorseIds,
+    selectedHimo.map((h) => h.id),
+    axisCount,
+  )
   const combinations = computeCombinations(axisCount, himoCount)
   const comment = buildComment(axisCount, himoCount, stabilityScore)
 
@@ -130,18 +174,39 @@ export default function BetPlanPanel({
         marginBottom: 10,
       }}
     >
-      <p style={{
-        fontSize: 10,
-        fontWeight: 700,
-        letterSpacing: '0.1em',
-        textTransform: 'uppercase' as const,
-        color: '#9898B0',
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: 8,
         marginBottom: 14,
         paddingBottom: 10,
         borderBottom: '1px solid rgba(255,255,255,0.05)',
       }}>
-        AI買い目プラン
-      </p>
+        <p style={{
+          fontSize: 10,
+          fontWeight: 700,
+          letterSpacing: '0.1em',
+          textTransform: 'uppercase' as const,
+          color: '#9898B0',
+          margin: 0,
+        }}>
+          AI買い目プラン
+        </p>
+        {isHit && (
+          <span style={{
+            fontSize: 10,
+            fontWeight: 700,
+            padding: '2px 8px',
+            borderRadius: 5,
+            background: 'rgba(52,211,153,0.12)',
+            color: '#34D399',
+            border: '1px solid rgba(52,211,153,0.30)',
+            letterSpacing: '0.06em',
+          }}>
+            的中
+          </span>
+        )}
+      </div>
 
       {/* Bet type */}
       <div style={{ marginBottom: 18 }}>
