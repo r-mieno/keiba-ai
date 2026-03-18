@@ -381,18 +381,52 @@ const BET_LEVELS_MAP = BET_LEVELS
 
 // ─── Axis horse reason builder ────────────────────────────────────────────────
 
-function buildAxisReason(style: RunningStyle | null, pace: PaceType, stabilityScore: number, rank: number): string {
-  const adj = getPaceAdjustment(style, pace)
-  const rankText = rank === 0 ? '総合評価トップ' : '総合評価上位'
-  const stabilityText = stabilityScore >= 61 ? '安定したレースで' : stabilityScore >= 41 ? 'バランス型のレースで' : '波乱含みのレースだが'
-  if (style !== null && adj > 0) {
-    const paceComment = PACE_ADV_COMMENTS[pace]?.[style] ?? 'この展開で恩恵を受けやすい'
-    return `${paceComment}。${rankText}のため信頼できる軸馬。`
-  } else if (style !== null && adj < 0) {
-    return `展開面では若干不利だが、${rankText}のため軸に選定。`
-  } else {
-    return `${stabilityText}展開を問わない安定感があり、${rankText}の軸馬。`
+function buildAxisReason(
+  style: RunningStyle | null,
+  pace: PaceType,
+  _stabilityScore: number,
+  _rank: number,
+  distanceFitScore: number,
+  axisConfidenceLevel: AxisType,
+): string {
+  const paceAdj = style ? getPaceAdjustment(style, pace) : 0
+
+  const STYLE_DESC: Partial<Record<RunningStyle, string>> = {
+    front:       '自らハナを奪ってペースを支配できる逃げタイプ',
+    stalker:     '好位から直線で力強く抜け出す先行タイプ',
+    closer:      '末脚を温存して直線で一気に突き抜ける差しタイプ',
+    deep_closer: '後方から豪快な末脚を炸裂させる追込タイプ',
   }
+
+  const parts: string[] = []
+
+  if (style && STYLE_DESC[style]) {
+    parts.push(`${STYLE_DESC[style]}。`)
+  }
+
+  if (style && paceAdj > 0) {
+    parts.push(`${PACE_ADV_COMMENTS[pace]?.[style] ?? 'この展開で強みが最大限に活きる'}。`)
+  } else if (style && paceAdj < 0) {
+    parts.push('展開面での不利を覆すだけの総合力を持つ。')
+  }
+
+  const distPart = distanceFitScore >= 0.70
+    ? '距離適性も抜群で、'
+    : distanceFitScore >= 0.55
+    ? '距離への適性も高く、'
+    : distanceFitScore < 0.45
+    ? 'スタミナが問われる舞台だが、'
+    : ''
+
+  const confPart = axisConfidenceLevel === '軸強い'
+    ? 'AI評価で2位以下に差をつけた断然の軸馬。'
+    : axisConfidenceLevel === '標準'
+    ? 'AI総合評価トップの軸馬。'
+    : '混戦の中でもAI最高評価を獲得した軸候補。'
+
+  parts.push(`${distPart}${confPart}`)
+
+  return parts.join('')
 }
 
 function buildValueHorseReason(
@@ -2350,16 +2384,36 @@ export default async function RaceDetailPage({
                 .sort((a, b) => a.finish_pos - b.finish_pos)
                 .map((r) => r.horse_id)
             : []
+          // axis_confidence を軸説明文に使うため簡易計算
+          const allAxisIds = allRankedHorses.map((h) => h.id)
+          const computeV5ForReason = (id: string): number => {
+            const h = horses.find((hh) => hh.id === id)
+            const s = h?.style ?? null
+            const rawAdj = getPaceAdjustment(s, pace)
+            const paceFit = (rawAdj + 0.08) / 0.18
+            const distFit = getDistanceFitScore(s, race?.distance_m ?? null)
+            const stabilityComp = 1 - raceStabilityScore / 100
+            return paceFit * 0.50 + distFit * 0.35 + stabilityComp * 0.15
+          }
+          const top1Score = allAxisIds[0] ? computeV5ForReason(allAxisIds[0]) : 0
+          const top2Score = allAxisIds[1] ? computeV5ForReason(allAxisIds[1]) : 0
+          const top4Score = allAxisIds[3] ? computeV5ForReason(allAxisIds[3]) : null
+          const axisConf = top4Score !== null
+            ? (top1Score - top2Score) * 0.7 + (top1Score - top4Score) * 0.3
+            : top1Score - top2Score
+          const axisConfLevel: AxisType = axisConf >= 0.08 ? '軸強い' : axisConf >= 0.04 ? '標準' : '混戦'
+
           const axisDetails = formation.axis_horses.map((id, i) => {
             const horse = horses.find((h) => h.id === id)
             const style = horse?.style ?? null
+            const distanceFitScore = getDistanceFitScore(style, race?.distance_m ?? null)
             return {
               name: horse?.name ?? id,
               horseNumber: entries.find((e) => e.horse_id === id)?.horse_number ?? null,
               styleLabel: style ? STYLE_LABELS[style] : null,
               styleColor: style ? STYLE_COLORS[style] : null,
               aiEval: Math.max(15, Math.round(25 + pct * 0.15 - i * 3)),
-              reason: buildAxisReason(style, pace, raceStabilityScore, i),
+              reason: buildAxisReason(style, pace, raceStabilityScore, i, distanceFitScore, axisConfLevel),
             }
           })
 
