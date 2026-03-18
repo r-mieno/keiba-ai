@@ -177,7 +177,6 @@ export default function BetPlanPanel({
       <div style={{
         display: 'flex',
         alignItems: 'center',
-        gap: 8,
         marginBottom: 14,
         paddingBottom: 10,
         borderBottom: '1px solid rgba(255,255,255,0.05)',
@@ -194,13 +193,14 @@ export default function BetPlanPanel({
         </p>
         {isHit && (
           <span style={{
+            marginLeft: 'auto',
             fontSize: 10,
             fontWeight: 700,
             padding: '2px 8px',
             borderRadius: 5,
-            background: 'rgba(52,211,153,0.12)',
-            color: '#34D399',
-            border: '1px solid rgba(52,211,153,0.30)',
+            background: 'rgba(239,68,68,0.12)',
+            color: '#F87171',
+            border: '1px solid rgba(239,68,68,0.30)',
             letterSpacing: '0.06em',
           }}>
             的中
