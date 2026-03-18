@@ -3,8 +3,9 @@ import { ChevronLeft } from 'lucide-react'
 type Horse = {
   id: string
   name: string
-  father_name: string | null
-  damsire_name: string | null
+  sire_name: string | null    // 父名（実データはここ）
+  dam_name: string | null     // 母名
+  damsire_name: string | null // 母父名
   father_line: string | null
   damsire_line: string | null
 }
@@ -93,7 +94,7 @@ export default async function HorsesPage() {
 
   try {
     const [horsesRes, stylesRes] = await Promise.all([
-      fetch(`${base}/rest/v1/horses?select=id,name,father_name,damsire_name,father_line,damsire_line&order=name.asc`, {
+      fetch(`${base}/rest/v1/horses?select=id,name,sire_name,dam_name,damsire_name,father_line,damsire_line&order=name.asc`, {
         headers, cache: 'no-store',
       }),
       fetch(`${base}/rest/v1/horse_style_profiles?select=horse_id,style`, {
@@ -209,7 +210,7 @@ export default async function HorsesPage() {
             borderBottom: '1px solid rgba(255,255,255,0.07)',
             background: 'rgba(255,255,255,0.02)',
           }}>
-            {['馬名', '脚質', '父 / 父系統', '母父 / 母父系統'].map((col) => (
+            {['馬名', '脚質', '父 / 父系統', '母 / 母父'].map((col) => (
               <span key={col} style={{
                 fontSize: 10, fontWeight: 700, color: '#62627A',
                 letterSpacing: '0.08em', textTransform: 'uppercase',
@@ -251,15 +252,20 @@ export default async function HorsesPage() {
                 {/* 父 / 父系統 */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
                   <span style={{ fontSize: 12, color: '#9898B0' }}>
-                    {horse.father_name ?? <span style={{ color: '#62627A' }}>—</span>}
+                    {horse.sire_name ?? <span style={{ color: '#62627A' }}>—</span>}
                   </span>
                   <LineBadge line={horse.father_line} />
                 </div>
 
-                {/* 母父 / 母父系統 */}
+                {/* 母 / 母父 */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-                  <span style={{ fontSize: 12, color: '#9898B0' }}>
-                    {horse.damsire_name ?? <span style={{ color: '#62627A' }}>—</span>}
+                  {horse.dam_name && (
+                    <span style={{ fontSize: 12, color: '#9898B0' }}>{horse.dam_name}</span>
+                  )}
+                  <span style={{ fontSize: 12, color: '#62627A' }}>
+                    {horse.damsire_name
+                      ? `母父: ${horse.damsire_name}`
+                      : horse.dam_name ? '' : <span>—</span>}
                   </span>
                   <LineBadge line={horse.damsire_line} />
                 </div>
