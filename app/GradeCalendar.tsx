@@ -116,7 +116,7 @@ const MONTH_NAMES = ['1月','2月','3月','4月','5月','6月','7月','8月','9�
 const gradeColor: Record<string, { color: string; border: string; background: string }> = {
   G1: { color: '#FBBF24', border: '1px solid rgba(251,191,36,0.40)',  background: 'rgba(251,191,36,0.10)' },
   G2: { color: '#C0C8D0', border: '1px solid rgba(192,200,208,0.35)', background: 'rgba(192,200,208,0.08)' },
-  G3: { color: '#14B8A6', border: '1px solid rgba(20,184,166,0.35)',  background: 'rgba(20,184,166,0.08)' },
+  G3: { color: '#CD853F', border: '1px solid rgba(205,133,63,0.35)',  background: 'rgba(205,133,63,0.08)' },
 }
 
 function RaceRows({ races, today }: { races: GradeRace[]; today: string }) {
@@ -173,9 +173,6 @@ function RaceRows({ races, today }: { races: GradeRace[]; today: string }) {
                     flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
                   }}>
                     {race.name}
-                  </span>
-                  <span style={{ fontSize: 11, color: '#62627A', flexShrink: 0 }}>
-                    {race.venue}
                   </span>
                 </div>
               ))}
