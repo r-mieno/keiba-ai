@@ -29,18 +29,14 @@ const STYLE_COLORS: Record<string, { color: string; bg: string; border: string }
   deep_closer: { color: '#A78BFA', bg: 'rgba(167,139,250,0.10)', border: 'rgba(167,139,250,0.30)' },
 }
 
-// 血統系統の表示名とカラー
+// 血統系統の表示名とカラー（DBのbloodline_type enumに対応）
 const LINE_META: Record<string, { label: string; color: string; bg: string; border: string }> = {
-  sunday:          { label: 'サンデー系',    color: '#60A5FA', bg: 'rgba(96,165,250,0.10)',  border: 'rgba(96,165,250,0.25)'  },
-  mrprospector:    { label: 'ミスプロ系',    color: '#34D399', bg: 'rgba(52,211,153,0.10)',  border: 'rgba(52,211,153,0.25)'  },
-  northern_dancer: { label: 'ノーザンダンサー系', color: '#C084FC', bg: 'rgba(192,132,252,0.10)', border: 'rgba(192,132,252,0.25)' },
-  native_dancer:   { label: 'ネイティブダンサー系', color: '#F472B6', bg: 'rgba(244,114,182,0.10)', border: 'rgba(244,114,182,0.25)' },
-  roberto:         { label: 'ロベルト系',    color: '#F87171', bg: 'rgba(248,113,113,0.10)', border: 'rgba(248,113,113,0.25)' },
-  halo:            { label: 'ヘイロー系',    color: '#FBBF24', bg: 'rgba(251,191,36,0.10)',  border: 'rgba(251,191,36,0.25)'  },
-  storm_cat:       { label: 'ストームキャット系', color: '#2DD4BF', bg: 'rgba(45,212,191,0.10)', border: 'rgba(45,212,191,0.25)' },
-  nasrullah:       { label: 'ナスルーラ系',  color: '#FB923C', bg: 'rgba(251,146,60,0.10)',  border: 'rgba(251,146,60,0.25)'  },
-  kingmambo:       { label: 'キングマンボ系', color: '#4ADE80', bg: 'rgba(74,222,128,0.10)', border: 'rgba(74,222,128,0.25)'  },
-  sadlers_wells:   { label: 'サドラーズウェルズ系', color: '#818CF8', bg: 'rgba(129,140,248,0.10)', border: 'rgba(129,140,248,0.25)' },
+  sunday:         { label: 'サンデー系',        color: '#60A5FA', bg: 'rgba(96,165,250,0.10)',  border: 'rgba(96,165,250,0.25)'  },
+  mrprospector:   { label: 'ミスプロ系',        color: '#34D399', bg: 'rgba(52,211,153,0.10)',  border: 'rgba(52,211,153,0.25)'  },
+  northerndancer: { label: 'ノーザンダンサー系', color: '#C084FC', bg: 'rgba(192,132,252,0.10)', border: 'rgba(192,132,252,0.25)' },
+  roberto:        { label: 'ロベルト系',        color: '#F87171', bg: 'rgba(248,113,113,0.10)', border: 'rgba(248,113,113,0.25)' },
+  nasrullah:      { label: 'ナスルーラ系',      color: '#FBBF24', bg: 'rgba(251,191,36,0.10)',  border: 'rgba(251,191,36,0.25)'  },
+  other:          { label: 'その他',            color: '#9898B0', bg: 'rgba(152,152,176,0.10)', border: 'rgba(152,152,176,0.25)' },
 }
 
 function LineBadge({ line }: { line: string | null }) {
