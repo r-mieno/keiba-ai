@@ -493,7 +493,7 @@ export default function BetPlanPanel({
           alignItems: 'center',
           gap: 12,
           marginTop: 14,
-          padding: '13px 0',
+          padding: '13px 4px',
           borderTop: '1px solid rgba(255,255,255,0.06)',
           color: '#9898B0',
           fontSize: 13,
