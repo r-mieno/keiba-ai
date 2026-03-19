@@ -2077,10 +2077,14 @@ function computeFormationV9_1(
 
 export default async function RaceDetailPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>
+  searchParams: Promise<{ debug?: string }>
 }) {
   const { id } = await params
+  const { debug } = await searchParams
+  const showDebug = debug === '1'
 
   const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
   const baseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
@@ -2515,8 +2519,8 @@ export default async function RaceDetailPage({
                 isDrawComplete={isDrawComplete}
               />
 
-              {/* ── v2 デバッグパネル（検証レースのみ表示） ─────────────── */}
-              {formationV2Debug && (() => {
+              {/* ── DEBUGパネル（?debug=1 で表示） ──────────────────────── */}
+              {showDebug && formationV2Debug && (() => {
                 const ROLE_COLOR: Record<string, string> = {
                   '軸':           '#14B8A6',
                   '実力ヒモ':     '#166534',
@@ -2587,7 +2591,7 @@ export default async function RaceDetailPage({
               })()}
 
               {/* ── v3 デバッグパネル（検証レースのみ表示） ─────────────── */}
-              {formationV3Debug && (() => {
+              {showDebug && formationV3Debug && (() => {
                 return (
                   <div style={{
                     marginTop: 8,
@@ -2647,7 +2651,7 @@ export default async function RaceDetailPage({
               })()}
 
               {/* ── v4 デバッグパネル（検証レースのみ表示） ─────────────── */}
-              {formationV4Debug && (() => {
+              {showDebug && formationV4Debug && (() => {
                 const ROLE_COLOR: Record<FormationV4DebugRow['role'], string> = {
                   '軸':             '#14B8A6',
                   '実力ヒモ':       '#166534',
@@ -2792,7 +2796,7 @@ export default async function RaceDetailPage({
               })()}
 
               {/* ── 検証パネル v5 ─────────────────────────────────────── */}
-              {formationV5Debug && (() => {
+              {showDebug && formationV5Debug && (() => {
                 return (
                   <div style={{
                     marginTop: 8,
@@ -2856,7 +2860,7 @@ export default async function RaceDetailPage({
               })()}
 
               {/* ── 検証パネル v6: axis_confidence ────────────────────── */}
-              {formationV6Debug && (() => {
+              {showDebug && formationV6Debug && (() => {
                 const AXIS_TYPE_COLOR: Record<string, string> = {
                   '軸強い': '#166534',
                   '標準':   '#92400E',
@@ -2964,7 +2968,7 @@ export default async function RaceDetailPage({
               })()}
 
               {/* ── 検証パネル v7: axis_confidence 改善版 ─────────────── */}
-              {formationV7Debug && (() => {
+              {showDebug && formationV7Debug && (() => {
                 const AXIS_TYPE_COLOR: Record<string, string> = {
                   '軸強い': '#166534',
                   '標準':   '#92400E',
@@ -3094,7 +3098,7 @@ export default async function RaceDetailPage({
               })()}
 
               {/* ── 検証パネル v8: 騎手スコア追加 ────────────────────────── */}
-              {formationV8Debug && (() => {
+              {showDebug && formationV8Debug && (() => {
                 const AXIS_TYPE_COLOR: Record<string, string> = {
                   '軸強い': '#166534', '標準': '#92400E', '混戦': '#DC2626',
                 }
@@ -3207,7 +3211,7 @@ export default async function RaceDetailPage({
               })()}
 
               {/* ── 検証パネル v9: レースタイプ別騎手重み ─────────────── */}
-              {formationV9Debug && (() => {
+              {showDebug && formationV9Debug && (() => {
                 const AXIS_TYPE_COLOR: Record<string, string> = {
                   '軸強い': '#166534', '標準': '#92400E', '混戦': '#DC2626',
                 }
@@ -3321,7 +3325,7 @@ export default async function RaceDetailPage({
               })()}
 
               {/* ── 検証パネル v9.1: jockey重み圧縮 ──────────────────────── */}
-              {formationV9_1Debug && (() => {
+              {showDebug && formationV9_1Debug && (() => {
                 const AXIS_TYPE_COLOR: Record<string, string> = {
                   '軸強い': '#166534', '標準': '#92400E', '混戦': '#DC2626',
                 }

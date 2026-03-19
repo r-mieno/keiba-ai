@@ -18,7 +18,7 @@ type Props = {
 const gradeStyle = (grade: string) => {
   if (grade === 'G1') return { color: '#FBBF24', border: '1px solid rgba(251,191,36,0.35)',  background: 'rgba(251,191,36,0.10)'  }
   if (grade === 'G2') return { color: '#C0C8D0', border: '1px solid rgba(192,200,208,0.35)', background: 'rgba(192,200,208,0.08)' }
-  if (grade === 'G3') return { color: '#14B8A6', border: '1px solid rgba(20,184,166,0.35)',  background: 'rgba(20,184,166,0.08)'  }
+  if (grade === 'G3') return { color: '#CD853F', border: '1px solid rgba(205,133,63,0.35)',  background: 'rgba(205,133,63,0.08)'  }
   return              { color: '#62627A', border: '1px solid rgba(98,98,122,0.25)',            background: 'rgba(98,98,122,0.06)'   }
 }
 
@@ -63,8 +63,8 @@ export default function RaceList({ races, resultRaceIds }: Props) {
               ) : (
                 <span style={{
                   fontSize: 9, fontWeight: 700, padding: '2px 7px', borderRadius: 4, flexShrink: 0,
-                  background: 'rgba(20,184,166,0.10)', color: '#14B8A6',
-                  border: '1px solid rgba(20,184,166,0.25)',
+                  background: 'rgba(244,114,182,0.10)', color: '#F472B6',
+                  border: '1px solid rgba(244,114,182,0.25)',
                 }}>
                   予想中
                 </span>
