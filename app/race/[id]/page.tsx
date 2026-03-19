@@ -3867,7 +3867,19 @@ export default async function RaceDetailPage({
           raceId={id}
           userId={currentUserId}
           userEmail={currentUserEmail}
-          horses={horses.filter((h) => entries.some((e) => e.horse_id === h.id)).map((h) => ({ id: h.id, name: h.name }))}
+          raceDate={race?.date ?? ''}
+          horses={horses
+            .filter((h) => entries.some((e) => e.horse_id === h.id))
+            .map((h) => {
+              const entry = entries.find((e) => e.horse_id === h.id)
+              return { id: h.id, name: h.name, number: entry?.horse_number ?? null }
+            })
+            .sort((a, b) => {
+              if (a.number != null && b.number != null) return a.number - b.number
+              if (a.number != null) return -1
+              if (b.number != null) return 1
+              return 0
+            })}
           initialPicks={racePicks}
         />
       </div>

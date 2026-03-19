@@ -3,7 +3,7 @@
 import { createClient } from '@/lib/supabase-browser'
 import { useState } from 'react'
 
-type Horse = { id: string; name: string }
+type Horse = { id: string; name: string; number?: number | null }
 
 type Pick = {
   id: string
@@ -15,11 +15,12 @@ type Props = {
   raceId: string
   userId: string
   userEmail: string
+  raceDate: string   // 'YYYY-MM-DD'
   horses: Horse[]
   initialPicks: Pick[]
 }
 
-export default function PicksPanel({ raceId, userId, userEmail, horses, initialPicks }: Props) {
+export default function PicksPanel({ raceId, userId, userEmail, raceDate, horses, initialPicks }: Props) {
   const supabase = createClient()
   const [picks, setPicks] = useState<Pick[]>(initialPicks)
   const [loading, setLoading] = useState(false)
@@ -27,17 +28,27 @@ export default function PicksPanel({ raceId, userId, userEmail, horses, initialP
   const myPick = picks.find((p) => p.user_email === userEmail) ?? null
   const [selected, setSelected] = useState<string[]>(myPick?.horse_ids ?? [])
 
+  // 当日14:00で締め切り
+  const deadline = new Date(raceDate + 'T14:00:00')
+  const isClosed = new Date() >= deadline
+
   const displayName = (email: string) => email.split('@')[0]
 
+  const horseName = (id: string) => {
+    const h = horses.find((h) => h.id === id)
+    if (!h) return id
+    return h.number != null ? `${h.number}番 ${h.name}` : h.name
+  }
+
   const toggleHorse = (id: string) => {
-    if (myPick) return // 投稿済みは変更不可
+    if (myPick || isClosed) return
     setSelected((prev) =>
       prev.includes(id) ? prev.filter((h) => h !== id) : prev.length < 3 ? [...prev, id] : prev
     )
   }
 
   const submit = async () => {
-    if (selected.length !== 3 || loading) return
+    if (selected.length !== 3 || loading || isClosed) return
     setLoading(true)
     const { data, error } = await supabase
       .from('race_picks')
@@ -51,7 +62,7 @@ export default function PicksPanel({ raceId, userId, userEmail, horses, initialP
   }
 
   const deletePick = async () => {
-    if (!myPick || loading) return
+    if (!myPick || loading || isClosed) return
     setLoading(true)
     await supabase.from('race_picks').delete().eq('id', myPick.id)
     setPicks((prev) => prev.filter((p) => p.id !== myPick.id))
@@ -73,13 +84,25 @@ export default function PicksPanel({ raceId, userId, userEmail, horses, initialP
       marginTop: 8,
       scrollMarginTop: 64,
     }}>
-      <p style={sectionLabel}>みんなの予想</p>
-      <p style={{ fontSize: 12, color: '#62627A', margin: '0 0 16px', lineHeight: 1.6 }}>
-        3着以内に入ると思う馬を3頭選んでください（順不同）
-      </p>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
+        <p style={{ ...sectionLabel, margin: 0 }}>みんなの予想</p>
+        {isClosed && (
+          <span style={{
+            fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 4,
+            background: 'rgba(98,98,122,0.15)', color: '#62627A',
+            border: '1px solid rgba(98,98,122,0.25)',
+          }}>締め切り済み</span>
+        )}
+      </div>
 
-      {/* 馬選択 */}
-      {!myPick && (
+      {!isClosed && (
+        <p style={{ fontSize: 12, color: '#62627A', margin: '0 0 16px', lineHeight: 1.6 }}>
+          3着以内に入ると思う馬を3頭選んでください（順不同）
+        </p>
+      )}
+
+      {/* 馬選択 — 投票前かつ締め切り前のみ */}
+      {!myPick && !isClosed && (
         <>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 14 }}>
             {horses.map((horse) => {
@@ -107,6 +130,11 @@ export default function PicksPanel({ raceId, userId, userEmail, horses, initialP
                     transition: 'all 0.15s',
                   }}
                 >
+                  {horse.number != null && (
+                    <span style={{ fontSize: 11, color: isSelected ? '#F472B6' : '#62627A', marginRight: 4 }}>
+                      {horse.number}
+                    </span>
+                  )}
                   {horse.name}
                 </button>
               )
@@ -125,9 +153,7 @@ export default function PicksPanel({ raceId, userId, userEmail, horses, initialP
               cursor: selected.length !== 3 || loading ? 'not-allowed' : 'pointer',
               fontFamily: 'inherit',
               border: 'none',
-              background: selected.length === 3
-                ? 'rgba(244,114,182,0.15)'
-                : 'rgba(255,255,255,0.04)',
+              background: selected.length === 3 ? 'rgba(244,114,182,0.15)' : 'rgba(255,255,255,0.04)',
               color: selected.length === 3 ? '#F472B6' : '#3A3A50',
               transition: 'all 0.15s',
             }}
@@ -151,19 +177,21 @@ export default function PicksPanel({ raceId, userId, userEmail, horses, initialP
           gap: 8,
         }}>
           <span style={{ fontSize: 13, color: '#F472B6', fontWeight: 600 }}>
-            あなたの予想：{myPick.horse_ids.map((id) => horses.find((h) => h.id === id)?.name ?? id).join('・')}
+            あなたの予想：{myPick.horse_ids.map((id) => horseName(id)).join('・')}
           </span>
-          <button
-            onClick={deletePick}
-            disabled={loading}
-            style={{
-              fontSize: 11, color: '#62627A', background: 'transparent',
-              border: '1px solid rgba(255,255,255,0.08)', borderRadius: 6,
-              padding: '3px 8px', cursor: 'pointer', fontFamily: 'inherit', flexShrink: 0,
-            }}
-          >
-            取消
-          </button>
+          {!isClosed && (
+            <button
+              onClick={deletePick}
+              disabled={loading}
+              style={{
+                fontSize: 11, color: '#62627A', background: 'transparent',
+                border: '1px solid rgba(255,255,255,0.08)', borderRadius: 6,
+                padding: '3px 8px', cursor: 'pointer', fontFamily: 'inherit', flexShrink: 0,
+              }}
+            >
+              取消
+            </button>
+          )}
         </div>
       )}
 
@@ -194,7 +222,7 @@ export default function PicksPanel({ raceId, userId, userEmail, horses, initialP
                   {displayName(pick.user_email)}
                 </span>
                 <span style={{ fontSize: 13, color: isMe ? '#EEEEF5' : '#9898B0' }}>
-                  {pick.horse_ids.map((id) => horses.find((h) => h.id === id)?.name ?? id).join('・')}
+                  {pick.horse_ids.map((id) => horseName(id)).join('・')}
                 </span>
               </div>
             )
