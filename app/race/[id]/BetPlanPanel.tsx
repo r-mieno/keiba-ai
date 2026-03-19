@@ -509,6 +509,31 @@ export default function BetPlanPanel({
       {/* AI comment */}
       <p style={{ color: '#9898B0', fontSize: 12, lineHeight: 1.8 }}>{comment}</p>
 
+      {/* ── みんなの予想へのアンカー ────────────────────────────────── */}
+      <a
+        href="#picks"
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 12,
+          marginTop: 14,
+          padding: '11px 4px',
+          borderTop: '1px solid rgba(255,255,255,0.06)',
+          color: '#9898B0',
+          fontSize: 13,
+          textDecoration: 'none',
+        }}
+      >
+        <span style={{
+          display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+          width: 18, height: 18, borderRadius: '50%', flexShrink: 0,
+          background: 'rgba(244,114,182,0.12)', color: '#F472B6',
+          fontSize: 11, fontWeight: 800, lineHeight: 1,
+        }}>♟</span>
+        <span>みんなの予想をみる・投稿する</span>
+        <span style={{ marginLeft: 'auto', fontSize: 14, opacity: 0.4 }}>↓</span>
+      </a>
+
       {/* ── ネット馬券ガイド導線 ────────────────────────────────────── */}
       <motion.a
         href="/how-to-buy"

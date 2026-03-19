@@ -1,4 +1,6 @@
 import BetPlanPanel from './BetPlanPanel'
+import PicksPanel from './PicksPanel'
+import { createClient } from '@/lib/supabase-server'
 import { Brain, TrendingUp, Gem, ChevronLeft } from 'lucide-react'
 
 type FormationResponse = {
@@ -2086,6 +2088,11 @@ export default async function RaceDetailPage({
   const { debug } = await searchParams
   const showDebug = debug === '1'
 
+  const supabaseAuth = await createClient()
+  const { data: { user } } = await supabaseAuth.auth.getUser()
+  const currentUserId = user?.id ?? ''
+  const currentUserEmail = user?.email ?? ''
+
   const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
   const baseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
 
@@ -2236,6 +2243,17 @@ export default async function RaceDetailPage({
     const v9_1Result = computeFormationV9_1(formation, horses, entries, pace, earlyStabilityScore, race.distance_m ?? null, race.race_name ?? null, race.venue ?? null)
     formation = v9_1Result.formation
   }
+
+  // みんなの予想ピックを取得
+  type RacePick = { id: string; user_email: string; horse_ids: string[] }
+  let racePicks: RacePick[] = []
+  try {
+    const picksRes = await fetch(
+      `${baseUrl}/rest/v1/race_picks?race_id=eq.${id}&select=id,user_email,horse_ids`,
+      { headers: { apikey: key, Authorization: `Bearer ${key}` }, cache: 'no-store' }
+    )
+    if (picksRes.ok) racePicks = await picksRes.json()
+  } catch {}
 
   // ヒモは v9.1 のヒモスコア順（選出順）をそのまま使う
   // ※ 旧: getPaceAdjustment で再ソートしていたが、pace が既にスコアに織り込み済みのため不要
@@ -3843,6 +3861,15 @@ export default async function RaceDetailPage({
             </div>
           )
         })()}
+
+        {/* ── みんなの予想 ──────────────────────────────────────────── */}
+        <PicksPanel
+          raceId={id}
+          userId={currentUserId}
+          userEmail={currentUserEmail}
+          horses={horses.map((h) => ({ id: h.id, name: h.name }))}
+          initialPicks={racePicks}
+        />
       </div>
     </main>
   )
