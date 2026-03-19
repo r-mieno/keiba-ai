@@ -20,6 +20,7 @@ type Race = {
   distance_m?: number | null
   start_time?: string | null
   is_test?: boolean | null
+  pace_override?: string | null
 }
 
 type RunningStyle = 'front' | 'stalker' | 'closer' | 'deep_closer'
@@ -260,6 +261,7 @@ const PACE_INFO: Record<PaceType, { label: string; color: string; explanation: s
 function computePaceOutlook(
   raceHorseIds: string[],
   horses: Horse[],
+  distanceM: number | null = null,
 ): { pace: PaceType; frontCount: number; stalkerCount: number; closerCount: number; deepCloserCount: number } {
   const raceHorses = raceHorseIds.map((hid) => horses.find((h) => h.id === hid)).filter(Boolean) as Horse[]
   const frontCount = raceHorses.filter((h) => h.style === 'front').length
@@ -267,12 +269,23 @@ function computePaceOutlook(
   const closerCount = raceHorses.filter((h) => h.style === 'closer').length
   const deepCloserCount = raceHorses.filter((h) => h.style === 'deep_closer').length
   let pace: PaceType
-  if (frontCount >= 2) {
-    pace = 'fast'
-  } else if (frontCount === 1 && stalkerCount <= 2) {
-    pace = 'slow'
+  const d = distanceM ?? 0
+  if (d <= 1400) {
+    // スプリント〜短距離：逃げ2頭でfast（従来通り）
+    if (frontCount >= 2) pace = 'fast'
+    else if (frontCount === 1 && stalkerCount <= 2) pace = 'slow'
+    else pace = 'balanced'
+  } else if (d <= 1999) {
+    // マイル〜中距離前半（1401〜1999m）：逃げ3頭以上でfast、2頭はbalanced
+    if (frontCount >= 3) pace = 'fast'
+    else if (frontCount >= 2) pace = 'balanced'
+    else if (frontCount === 1 && stalkerCount <= 2) pace = 'slow'
+    else pace = 'balanced'
   } else {
-    pace = 'balanced'
+    // 長距離（2000m〜）：逃げが多くてもbalancedまで、1頭以下はslow
+    if (frontCount >= 2) pace = 'balanced'
+    else if (frontCount === 1 && stalkerCount <= 2) pace = 'slow'
+    else pace = 'slow'
   }
   return { pace, frontCount, stalkerCount, closerCount, deepCloserCount }
 }
@@ -2093,7 +2106,7 @@ export default async function RaceDetailPage({
     if (race) {
       try {
         const extRes = await fetch(
-          `${baseUrl}/rest/v1/races?id=eq.${id}&select=venue,grade,surface,distance_m,start_time,is_test`,
+          `${baseUrl}/rest/v1/races?id=eq.${id}&select=venue,grade,surface,distance_m,start_time,is_test,pace_override`,
           { headers: { apikey: key, Authorization: `Bearer ${key}` }, cache: 'no-store' }
         )
         if (extRes.ok) {
@@ -2172,8 +2185,9 @@ export default async function RaceDetailPage({
     : [...(formation?.axis_horses ?? []), ...(formation?.himo_horses ?? [])]
 
   // Compute pace and stability once so they can be shared across ranking, v2 logic, etc.
-  const paceInfo = computePaceOutlook(raceHorseIds, horses)
-  const pace: PaceType = formation ? paceInfo.pace : 'balanced'
+  const paceInfo = computePaceOutlook(raceHorseIds, horses, race?.distance_m ?? null)
+  const computedPace: PaceType = formation ? paceInfo.pace : 'balanced'
+  const pace: PaceType = (race?.pace_override as PaceType | null) ?? computedPace
   const earlyStabilityScore = computeRaceStabilityScore(
     paceInfo.frontCount, paceInfo.stalkerCount, paceInfo.closerCount, paceInfo.deepCloserCount, raceHorseIds.length,
   )
@@ -2413,7 +2427,7 @@ export default async function RaceDetailPage({
           )
 
           // ── Pre-computed shared values ──────────────────────────────────────
-          const paceInfo = computePaceOutlook(raceHorseIds, horses)
+          const paceInfo = computePaceOutlook(raceHorseIds, horses, race?.distance_m ?? null)
           const paceMeta = PACE_INFO[paceInfo.pace]
           const paceCounts: { label: string; count: number; style: RunningStyle }[] = [
             { label: '逃げ', count: paceInfo.frontCount,      style: 'front' },
