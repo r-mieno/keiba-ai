@@ -1,6 +1,5 @@
 import RaceList from './RaceList'
 import GradeCalendar from './GradeCalendar'
-import DebugRaceList from './DebugRaceList'
 
 type Race = {
   id: string
@@ -43,7 +42,6 @@ export default async function Home() {
   }
 
   const normalRaces = races.filter((r) => !r.is_test)
-  const testRaces = races.filter((r) => r.is_test)
 
   return (
     <main style={{
@@ -225,13 +223,13 @@ export default async function Home() {
           </a>
         </div>
 
-        {/* ── 検証レース（DEBUG トグル） ───────────────────────────────── */}
-        {testRaces.length > 0 && (
+        {/* ── 検証レース（DEBUG トグル） ── 非表示中 ─────────────────────── */}
+        {/* {testRaces.length > 0 && (
           <DebugRaceList
             races={testRaces}
             resultRaceIds={[...resultRaceIds]}
           />
-        )}
+        )} */}
       </div>
     </main>
   )
