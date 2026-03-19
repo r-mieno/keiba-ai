@@ -1,5 +1,7 @@
 import RaceList from './RaceList'
 import GradeCalendar from './GradeCalendar'
+import LogoutButton from './LogoutButton'
+import { createClient } from '@/lib/supabase-server'
 
 type Race = {
   id: string
@@ -10,6 +12,10 @@ type Race = {
 }
 
 export default async function Home() {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  const email = user?.email ?? ''
+
   let races: Race[] = []
   let resultRaceIds = new Set<string>()
   let errorMessage = ''
@@ -77,6 +83,7 @@ export default async function Home() {
         <span style={{ marginLeft: 4, fontSize: 12, color: '#62627A', letterSpacing: '0.01em' }}>
           AI競馬フォーメーション予想
         </span>
+        <LogoutButton email={email} />
       </div>
 
       {/* ── Content ──────────────────────────────────────────────────────── */}
