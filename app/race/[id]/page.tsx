@@ -1940,36 +1940,27 @@ function computeFormationV9_1(
 ): FormationV9_1Result {
   const resolveName = (id: string) => horses.find((h) => h.id === id)?.name ?? id
   const raceType = classifyRaceType(raceName)
-
-  const allByAiRank: string[] = formation.axis_horses.length > 0
-    ? [...formation.axis_horses, ...formation.himo_horses]
-    : formation.himo_horses
-  const aiRankIndexMap = new Map(allByAiRank.map((id, i) => [id, i]))
-
-  const axisId  = allByAiRank[0] ?? null
-  const rank2Id = allByAiRank[1] ?? null
-  const rank4Id = allByAiRank[3] ?? null
-  const axisV9_1 = axisId ? [axisId] : formation.axis_horses
-
-  const getAxisGap = (id: string): number => {
-    const idx = aiRankIndexMap.get(id)
-    if (idx === undefined) return 1.0
-    if (idx === 0) return 0.0
-    return Math.abs(1 / (idx + 1) - 1.0)
-  }
-
   const stabilityComp = 1 - stabilityScore / 100
 
-  const computeV5Score = (id: string): number => {
+  // v9.1 では RPC の軸順に依存せず、独自スコアで全馬をランキングして軸を決定
+  const computeAxisScore = (id: string): number => {
     const style = horses.find((h) => h.id === id)?.style ?? null
     const rawAdj = getPaceAdjustment(style, pace)
     const paceFit = (rawAdj + 0.08) / 0.18
     const distanceFit = getDistanceFitScore(style, distanceM)
-    return paceFit * 0.50 + distanceFit * 0.35 + stabilityComp * 0.15
+    const venueAdj = getVenueStyleAdjustment(venue, style, distanceM)
+    return paceFit * 0.50 + distanceFit * 0.35 + venueAdj + stabilityComp * 0.15
   }
-  const top1Score = axisId  ? computeV5Score(axisId)  : 0
-  const top2Score = rank2Id ? computeV5Score(rank2Id) : 0
-  const top4Score = rank4Id ? computeV5Score(rank4Id) : null
+
+  const allSorted = entries
+    .map((e) => ({ id: e.horse_id, score: computeAxisScore(e.horse_id) }))
+    .sort((a, b) => b.score - a.score)
+
+  const axisId    = allSorted[0]?.id ?? null
+  const top1Score = allSorted[0]?.score ?? 0
+  const top2Score = allSorted[1]?.score ?? 0
+  const top4Score = allSorted[3]?.score ?? null
+
   const axisConfidenceV7 = top4Score !== null
     ? (top1Score - top2Score) * 0.7 + (top1Score - top4Score) * 0.3
     : top1Score - top2Score
@@ -1977,12 +1968,10 @@ function computeFormationV9_1(
     axisConfidenceV7 >= 0.08 ? '軸強い' : axisConfidenceV7 >= 0.04 ? '標準' : '混戦'
   const himoCount = axisTypeV7 === '軸強い' ? 4 : axisTypeV7 === '標準' ? 5 : 6
 
-  const nonAxisIds = entries.map((e) => e.horse_id).filter((id) => id !== axisId)
-  const candidatePool = nonAxisIds
-    .map((id) => ({ id, axisGap: getAxisGap(id) }))
-    .sort((a, b) => a.axisGap - b.axisGap)
-    .slice(0, 6)
-    .map((c) => c.id)
+  const axisV9_1 = axisId ? [axisId] : formation.axis_horses
+
+  // ヒモ候補 = 軸以外の全馬（RPC の axis_gap フィルタ不要）
+  const candidatePool = entries.map((e) => e.horse_id).filter((id) => id !== axisId)
 
   // v9 の重み（比較スコア算出用）
   const Wv9 = raceType === '3歳戦'
