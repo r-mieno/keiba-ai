@@ -2191,13 +2191,9 @@ export default async function RaceDetailPage({
     formation = v9_1Result.formation
   }
 
-  // Axis horses stay in their original AI-determined order.
-  // Himo horses are re-sorted by pace adjustment: most favored by current pace comes first.
-  const paceAdjustedHimo = [...(formation?.himo_horses ?? [])].sort((a, b) => {
-    const styleA = horses.find((h) => h.id === a)?.style ?? null
-    const styleB = horses.find((h) => h.id === b)?.style ?? null
-    return getPaceAdjustment(styleB, pace) - getPaceAdjustment(styleA, pace)
-  })
+  // ヒモは v9.1 のヒモスコア順（選出順）をそのまま使う
+  // ※ 旧: getPaceAdjustment で再ソートしていたが、pace が既にスコアに織り込み済みのため不要
+  const paceAdjustedHimo = formation?.himo_horses ?? []
 
   const formationHorseIds = new Set([
     ...(formation?.axis_horses ?? []),
