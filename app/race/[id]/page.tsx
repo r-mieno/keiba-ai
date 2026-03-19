@@ -40,6 +40,9 @@ type Entry = {
   horse_number: number | null
   popularity_rank: number | null
   jockey_name: string | null
+  last3f_1: number | null
+  last3f_2: number | null
+  last3f_3: number | null
 }
 
 // ─── 騎手スコアマスタ（複勝圏能力の初期仮説値 0〜1）──────────────────────────
@@ -406,6 +409,27 @@ function getVenueStyleAdjustment(venue: string | null | undefined, style: Runnin
     if (style === 'front')       return -0.02
   }
   return 0
+}
+
+// 直近3走の上がり3ハロンから末脚スコアを算出（1走前を重視した加重平均）
+// 33.0 = 1.0（最高）、36.5 = 0.0（最低）、データなし = 0.5（中立）
+function getClosingSpeedScore(
+  last3f_1: number | null,
+  last3f_2: number | null,
+  last3f_3: number | null,
+): number {
+  const BEST = 33.0
+  const WORST = 36.5
+  const vals: [number | null, number][] = [
+    [last3f_1, 0.5],
+    [last3f_2, 0.3],
+    [last3f_3, 0.2],
+  ]
+  const available = vals.filter(([v]) => v !== null) as [number, number][]
+  if (available.length === 0) return 0.5
+  const totalWeight = available.reduce((sum, [, w]) => sum + w, 0)
+  const weightedAvg = available.reduce((sum, [v, w]) => sum + v * w, 0) / totalWeight
+  return Math.max(0, Math.min(1, (WORST - weightedAvg) / (WORST - BEST)))
 }
 
 const STRATEGIES_MAP = STRATEGIES
@@ -1909,6 +1933,7 @@ type FormationV9_1DebugRow = {
   paceFit: number
   distanceFit: number
   jockeyScore: number
+  closingScore: number
   stabilityComponent: number
   himoScoreV9: number    // 比較用
   himoScoreV9_1: number
@@ -1955,7 +1980,8 @@ function computeFormationV9_1(
     const rawJockeyName = entry?.jockey_name ?? ''
     const aliasKey   = rawJockeyName ? (JOCKEY_ALIAS[rawJockeyName] ?? rawJockeyName) : ''
     const jockeyScore = aliasKey ? (JOCKEY_PLACE_SCORE[aliasKey] ?? JOCKEY_DEFAULT_SCORE) : JOCKEY_DEFAULT_SCORE
-    return paceFit * 0.40 + distanceFit * 0.40 + jockeyScore * 0.10 + venueAdj + stabilityComp * 0.10
+    const closingScore = getClosingSpeedScore(entry?.last3f_1 ?? null, entry?.last3f_2 ?? null, entry?.last3f_3 ?? null)
+    return paceFit * 0.35 + distanceFit * 0.35 + jockeyScore * 0.10 + closingScore * 0.10 + venueAdj + stabilityComp * 0.10
   }
 
   const allSorted = entries
@@ -1984,10 +2010,10 @@ function computeFormationV9_1(
     ? { pace: 0.40, dist: 0.25, jockey: 0.25, stability: 0.10 }
     : { pace: 0.45, dist: 0.35, jockey: 0.10, stability: 0.10 }
 
-  // v9.1 の重み（圧縮後）
+  // v9.1 の重み（closing speed 追加・再配分後）
   const W = raceType === '3歳戦'
-    ? { pace: 0.40, dist: 0.28, jockey: 0.22, stability: 0.10 }
-    : { pace: 0.43, dist: 0.32, jockey: 0.15, stability: 0.10 }
+    ? { pace: 0.35, dist: 0.25, jockey: 0.20, closing: 0.10, stability: 0.10 }
+    : { pace: 0.38, dist: 0.29, jockey: 0.13, closing: 0.10, stability: 0.10 }
 
   const scored = candidatePool.map((id) => {
     const style = horses.find((h) => h.id === id)?.style ?? null
@@ -1998,12 +2024,13 @@ function computeFormationV9_1(
     const rawJockeyName = entry?.jockey_name ?? ''
     const aliasKey  = rawJockeyName ? (JOCKEY_ALIAS[rawJockeyName] ?? rawJockeyName) : ''
     const jockeyScore = aliasKey ? (JOCKEY_PLACE_SCORE[aliasKey] ?? JOCKEY_DEFAULT_SCORE) : JOCKEY_DEFAULT_SCORE
+    const closingScore = getClosingSpeedScore(entry?.last3f_1 ?? null, entry?.last3f_2 ?? null, entry?.last3f_3 ?? null)
 
     const himoScoreV9   = paceFit * Wv9.pace + distanceFit * Wv9.dist + jockeyScore * Wv9.jockey + stabilityComp * Wv9.stability
     const venueAdj = getVenueStyleAdjustment(venue, style, distanceM)
-    const himoScoreV9_1 = paceFit * W.pace   + distanceFit * W.dist   + jockeyScore * W.jockey   + stabilityComp * W.stability + venueAdj
+    const himoScoreV9_1 = paceFit * W.pace + distanceFit * W.dist + jockeyScore * W.jockey + closingScore * W.closing + stabilityComp * W.stability + venueAdj
 
-    return { id, paceFit, distanceFit, jockeyScore, himoScoreV9, himoScoreV9_1 }
+    return { id, paceFit, distanceFit, jockeyScore, closingScore, himoScoreV9, himoScoreV9_1 }
   })
 
   // v9 でのヒモ集合（比較用）
@@ -2019,6 +2046,7 @@ function computeFormationV9_1(
     paceFit: s.paceFit,
     distanceFit: s.distanceFit,
     jockeyScore: s.jockeyScore,
+    closingScore: s.closingScore,
     stabilityComponent: stabilityComp,
     himoScoreV9: s.himoScoreV9,
     himoScoreV9_1: s.himoScoreV9_1,
@@ -2107,7 +2135,7 @@ export default async function RaceDetailPage({
       fetch(`${baseUrl}/rest/v1/race_results?race_id=eq.${id}&select=horse_id,finish_pos`, {
         headers: { apikey: key, Authorization: `Bearer ${key}` }, cache: 'no-store',
       }),
-      fetch(`${baseUrl}/rest/v1/entries?race_id=eq.${id}&select=horse_id,horse_number,popularity_rank,jockey_name`, {
+      fetch(`${baseUrl}/rest/v1/entries?race_id=eq.${id}&select=horse_id,horse_number,popularity_rank,jockey_name,last3f_1,last3f_2,last3f_3`, {
         headers: { apikey: key, Authorization: `Bearer ${key}` }, cache: 'no-store',
       }),
     ])
