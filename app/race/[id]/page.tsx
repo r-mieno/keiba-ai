@@ -3867,7 +3867,7 @@ export default async function RaceDetailPage({
           raceId={id}
           userId={currentUserId}
           userEmail={currentUserEmail}
-          horses={horses.map((h) => ({ id: h.id, name: h.name }))}
+          horses={horses.filter((h) => entries.some((e) => e.horse_id === h.id)).map((h) => ({ id: h.id, name: h.name }))}
           initialPicks={racePicks}
         />
       </div>
