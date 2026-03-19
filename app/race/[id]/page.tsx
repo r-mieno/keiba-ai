@@ -1943,13 +1943,19 @@ function computeFormationV9_1(
   const stabilityComp = 1 - stabilityScore / 100
 
   // v9.1 では RPC の軸順に依存せず、独自スコアで全馬をランキングして軸を決定
+  // paceFit は 0.5 + rawAdj*2 で正規化（deep_closer が fast で 1.0 固定になるのを防ぐ）
+  // 騎手は小さい重みで補助的に加味（同脚質内の優劣をつけるため）
   const computeAxisScore = (id: string): number => {
     const style = horses.find((h) => h.id === id)?.style ?? null
     const rawAdj = getPaceAdjustment(style, pace)
-    const paceFit = (rawAdj + 0.08) / 0.18
+    const paceFit = 0.5 + rawAdj * 2                          // 0.34〜0.70 の範囲に圧縮
     const distanceFit = getDistanceFitScore(style, distanceM)
     const venueAdj = getVenueStyleAdjustment(venue, style, distanceM)
-    return paceFit * 0.50 + distanceFit * 0.35 + venueAdj + stabilityComp * 0.15
+    const entry = entries.find((e) => e.horse_id === id)
+    const rawJockeyName = entry?.jockey_name ?? ''
+    const aliasKey   = rawJockeyName ? (JOCKEY_ALIAS[rawJockeyName] ?? rawJockeyName) : ''
+    const jockeyScore = aliasKey ? (JOCKEY_PLACE_SCORE[aliasKey] ?? JOCKEY_DEFAULT_SCORE) : JOCKEY_DEFAULT_SCORE
+    return paceFit * 0.40 + distanceFit * 0.40 + jockeyScore * 0.10 + venueAdj + stabilityComp * 0.10
   }
 
   const allSorted = entries
