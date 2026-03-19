@@ -376,6 +376,36 @@ function getDistanceFitScore(style: RunningStyle | null, distanceM: number | nul
   return 0.5
 }
 
+// コース×脚質補正（ヒモスコアへの加算値）
+// 小回りコース（直線短い）→ 追い込み不利、逃げ有利
+// 広いコース（直線長い）→ 追い込みやや有利
+// ※阪神は距離で内/外回りを判定（1800m以下=内回り的、2000m以上=外回り的）
+function getVenueStyleAdjustment(venue: string | null | undefined, style: RunningStyle | null, distanceM: number | null): number {
+  if (!venue || !style) return 0
+  const isTight =
+    venue.includes('中山') ||
+    venue.includes('福島') ||
+    venue.includes('函館') ||
+    venue.includes('札幌') ||
+    (venue.includes('阪神') && (distanceM ?? 9999) <= 1800)
+  const isWide =
+    venue.includes('東京') ||
+    venue.includes('京都') ||
+    (venue.includes('阪神') && (distanceM ?? 0) >= 2000)
+
+  if (isTight) {
+    if (style === 'deep_closer') return -0.04
+    if (style === 'closer')      return -0.02
+    if (style === 'front')       return +0.02
+  }
+  if (isWide) {
+    if (style === 'deep_closer') return +0.03
+    if (style === 'closer')      return +0.02
+    if (style === 'front')       return -0.02
+  }
+  return 0
+}
+
 const STRATEGIES_MAP = STRATEGIES
 const BET_LEVELS_MAP = BET_LEVELS
 
@@ -1904,6 +1934,7 @@ function computeFormationV9_1(
   stabilityScore: number,
   distanceM: number | null,
   raceName: string | null | undefined,
+  venue: string | null | undefined = null,
 ): FormationV9_1Result {
   const resolveName = (id: string) => horses.find((h) => h.id === id)?.name ?? id
   const raceType = classifyRaceType(raceName)
@@ -1972,7 +2003,8 @@ function computeFormationV9_1(
     const jockeyScore = aliasKey ? (JOCKEY_PLACE_SCORE[aliasKey] ?? JOCKEY_DEFAULT_SCORE) : JOCKEY_DEFAULT_SCORE
 
     const himoScoreV9   = paceFit * Wv9.pace + distanceFit * Wv9.dist + jockeyScore * Wv9.jockey + stabilityComp * Wv9.stability
-    const himoScoreV9_1 = paceFit * W.pace   + distanceFit * W.dist   + jockeyScore * W.jockey   + stabilityComp * W.stability
+    const venueAdj = getVenueStyleAdjustment(venue, style, distanceM)
+    const himoScoreV9_1 = paceFit * W.pace   + distanceFit * W.dist   + jockeyScore * W.jockey   + stabilityComp * W.stability + venueAdj
 
     return { id, paceFit, distanceFit, jockeyScore, himoScoreV9, himoScoreV9_1 }
   })
@@ -2150,7 +2182,7 @@ export default async function RaceDetailPage({
     formationV8Debug = v8Result.debug
     const v9Result = computeFormationV9(origFormation, horses, entries, pace, earlyStabilityScore, race?.distance_m ?? null, race?.race_name ?? null)
     formationV9Debug = v9Result.debug
-    const v9_1Result = computeFormationV9_1(origFormation, horses, entries, pace, earlyStabilityScore, race?.distance_m ?? null, race?.race_name ?? null)
+    const v9_1Result = computeFormationV9_1(origFormation, horses, entries, pace, earlyStabilityScore, race?.distance_m ?? null, race?.race_name ?? null, race?.venue ?? null)
     formationV9_1Debug = v9_1Result.debug
     formation = v9_1Result.formation  // v9.1 を実際の表示に使用
   }
@@ -2158,7 +2190,7 @@ export default async function RaceDetailPage({
   // 本番レース（is_test=false）でも 2026-03-16 以降はv9.1を適用
   // 阪神大賞典（2026-03-16）・フラワーカップ（2026-03-21）以降が対象
   if (!race?.is_test && race?.date != null && race.date >= '2026-03-16' && formation) {
-    const v9_1Result = computeFormationV9_1(formation, horses, entries, pace, earlyStabilityScore, race.distance_m ?? null, race.race_name ?? null)
+    const v9_1Result = computeFormationV9_1(formation, horses, entries, pace, earlyStabilityScore, race.distance_m ?? null, race.race_name ?? null, race.venue ?? null)
     formation = v9_1Result.formation
   }
 
