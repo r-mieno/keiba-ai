@@ -2155,6 +2155,13 @@ export default async function RaceDetailPage({
     formation = v9_1Result.formation  // v9.1 を実際の表示に使用
   }
 
+  // 本番レース（is_test=false）でも 2026-03-16 以降はv9.1を適用
+  // 阪神大賞典（2026-03-16）・フラワーカップ（2026-03-21）以降が対象
+  if (!race?.is_test && race?.date != null && race.date >= '2026-03-16' && formation) {
+    const v9_1Result = computeFormationV9_1(formation, horses, entries, pace, earlyStabilityScore, race.distance_m ?? null, race.race_name ?? null)
+    formation = v9_1Result.formation
+  }
+
   // Axis horses stay in their original AI-determined order.
   // Himo horses are re-sorted by pace adjustment: most favored by current pace comes first.
   const paceAdjustedHimo = [...(formation?.himo_horses ?? [])].sort((a, b) => {
