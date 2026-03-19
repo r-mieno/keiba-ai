@@ -40,7 +40,13 @@ function LoginContent() {
         maxWidth: 360,
       }}>
         <div style={{ textAlign: 'center' }}>
-          <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.10em', textTransform: 'uppercase', color: '#62627A', margin: '0 0 10px' }}>
+          <div style={{
+            width: 52, height: 52, borderRadius: 14,
+            background: 'linear-gradient(135deg, #14B8A6 0%, #0D9488 100%)',
+            display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+            fontSize: 28, marginBottom: 16,
+          }}>♞</div>
+          <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.10em', textTransform: 'uppercase', color: '#62627A', margin: '0 0 8px' }}>
             Keiba AI
           </p>
           <h1 style={{ fontSize: 20, fontWeight: 700, color: '#EEEEF5', margin: 0 }}>
