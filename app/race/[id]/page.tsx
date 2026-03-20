@@ -2094,6 +2094,7 @@ export default async function RaceDetailPage({
   const currentUserEmail = user?.email ?? ''
 
   const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY ?? key
   const baseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
 
   let race: Race | null = null
@@ -2250,7 +2251,7 @@ export default async function RaceDetailPage({
   try {
     const picksRes = await fetch(
       `${baseUrl}/rest/v1/race_picks?race_id=eq.${id}&select=id,user_email,horse_ids`,
-      { headers: { apikey: key, Authorization: `Bearer ${key}` }, cache: 'no-store' }
+      { headers: { apikey: serviceKey, Authorization: `Bearer ${serviceKey}` }, cache: 'no-store' }
     )
     if (picksRes.ok) racePicks = await picksRes.json()
   } catch {}
