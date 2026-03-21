@@ -46,6 +46,7 @@ type Entry = {
   last3f_1: number | null
   last3f_2: number | null
   last3f_3: number | null
+  finish_position: number | null
 }
 
 // ─── 騎手スコアマスタ（複勝圏能力の初期仮説値 0〜1）──────────────────────────
@@ -2160,7 +2161,7 @@ export default async function RaceDetailPage({
       fetch(`${baseUrl}/rest/v1/race_results?race_id=eq.${id}&select=horse_id,finish_pos`, {
         headers: { apikey: key, Authorization: `Bearer ${key}` }, cache: 'no-store',
       }),
-      fetch(`${baseUrl}/rest/v1/entries?race_id=eq.${id}&select=horse_id,horse_number,popularity_rank,jockey_name,last3f_1,last3f_2,last3f_3`, {
+      fetch(`${baseUrl}/rest/v1/entries?race_id=eq.${id}&select=horse_id,horse_number,popularity_rank,jockey_name,last3f_1,last3f_2,last3f_3,finish_position`, {
         headers: { apikey: key, Authorization: `Bearer ${key}` }, cache: 'no-store',
       }),
     ])
@@ -3882,6 +3883,10 @@ export default async function RaceDetailPage({
               return 0
             })}
           initialPicks={racePicks}
+          top3={entries
+            .filter((e) => e.finish_position != null && e.finish_position <= 3)
+            .sort((a, b) => (a.finish_position ?? 0) - (b.finish_position ?? 0))
+            .map((e) => e.horse_id)}
         />
       </div>
     </main>

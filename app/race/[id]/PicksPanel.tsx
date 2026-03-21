@@ -18,9 +18,10 @@ type Props = {
   raceDate: string   // 'YYYY-MM-DD'
   horses: Horse[]
   initialPicks: Pick[]
+  top3?: string[]    // 1〜3着のhorse_id（着順順）
 }
 
-export default function PicksPanel({ raceId, userId, userEmail, raceDate, horses, initialPicks }: Props) {
+export default function PicksPanel({ raceId, userId, userEmail, raceDate, horses, initialPicks, top3 = [] }: Props) {
   const supabase = createClient()
   const [picks, setPicks] = useState<Pick[]>(initialPicks)
   const [loading, setLoading] = useState(false)
@@ -70,6 +71,12 @@ export default function PicksPanel({ raceId, userId, userEmail, raceDate, horses
     setLoading(false)
   }
 
+  const hasResult = top3.length === 3
+
+  // 各ユーザーの予想で何頭3着以内に入ったか
+  const hitCount = (horseIds: string[]) =>
+    horseIds.filter((id) => top3.includes(id)).length
+
   const sectionLabel: React.CSSProperties = {
     fontSize: 10, fontWeight: 700, letterSpacing: '0.10em',
     textTransform: 'uppercase', color: '#62627A', margin: '0 0 14px',
@@ -95,7 +102,29 @@ export default function PicksPanel({ raceId, userId, userEmail, raceDate, horses
         )}
       </div>
 
-      {!isClosed && (
+      {/* レース結果 */}
+      {hasResult && (
+        <div style={{
+          background: 'rgba(20,184,166,0.06)',
+          border: '1px solid rgba(20,184,166,0.20)',
+          borderRadius: 10, padding: '10px 14px', marginBottom: 16,
+        }}>
+          <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.10em', color: '#14B8A6', margin: '0 0 8px' }}>
+            RESULT
+          </p>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            {top3.map((id, i) => (
+              <div key={id} style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                <span style={{ fontSize: 10, fontWeight: 700, color: '#14B8A6' }}>{i + 1}着</span>
+                <span style={{ fontSize: 13, color: '#EEEEF5' }}>{horseName(id)}</span>
+                {i < 2 && <span style={{ color: 'rgba(255,255,255,0.15)', marginLeft: 3 }}>—</span>}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {!isClosed && !hasResult && (
         <p style={{ fontSize: 12, color: '#62627A', margin: '0 0 16px', lineHeight: 1.6 }}>
           3着以内に入ると思う馬を3頭選んでください（順不同）
         </p>
@@ -221,9 +250,19 @@ export default function PicksPanel({ raceId, userId, userEmail, raceDate, horses
                 }}>
                   {displayName(pick.user_email)}
                 </span>
-                <span style={{ fontSize: 13, color: isMe ? '#EEEEF5' : '#9898B0' }}>
+                <span style={{ fontSize: 13, color: isMe ? '#EEEEF5' : '#9898B0', flex: 1 }}>
                   {pick.horse_ids.map((id) => horseName(id)).join('・')}
                 </span>
+                {hasResult && (
+                  <span style={{
+                    fontSize: 12, fontWeight: 700, flexShrink: 0,
+                    color: hitCount(pick.horse_ids) === 3 ? '#14B8A6'
+                         : hitCount(pick.horse_ids) >= 1 ? '#F472B6'
+                         : '#3A3A50',
+                  }}>
+                    {hitCount(pick.horse_ids)}/3
+                  </span>
+                )}
               </div>
             )
           })}
