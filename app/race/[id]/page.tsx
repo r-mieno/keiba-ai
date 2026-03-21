@@ -49,6 +49,7 @@ type Entry = {
   last3f_2: number | null
   last3f_3: number | null
   finish_position: number | null
+  weight_kg: number | null
 }
 
 // ─── 騎手スコアマスタ（複勝圏能力の初期仮説値 0〜1）──────────────────────────
@@ -479,6 +480,14 @@ function getBloodlineFitBonus(
   const crossBonus = CROSS_BONUS[crossKey] ?? 0
 
   return (combined - 0.5) * 0.12 + crossBonus  // -0.036〜+0.054 + crossBonus
+}
+
+// 斤量補正（基準57kg。超過分はペナルティ、軽減分は小ボーナス）
+// 57kg超: -0.015/kg、57kg未満: +0.008/kg
+function getWeightAdjustment(weightKg: number | null): number {
+  if (weightKg == null) return 0
+  const diff = weightKg - 57
+  return diff > 0 ? diff * -0.015 : diff * -0.008
 }
 
 // 直近3走の上がり3ハロンから末脚スコアを算出（1走前を重視した加重平均）
@@ -2034,6 +2043,7 @@ type FormationV9_1DebugRow = {
   himoScoreV9: number    // 比較用
   himoScoreV9_1: number
   bloodlineBonus: number
+  weightAdj: number
   isHimo: boolean
   wasHimoV9: boolean     // v9 でヒモだったか
 }
@@ -2082,7 +2092,8 @@ function computeFormationV9_1(
     const closingScore = getClosingSpeedScore(entry?.last3f_1 ?? null, entry?.last3f_2 ?? null, entry?.last3f_3 ?? null)
     const horse = horses.find((h) => h.id === id)
     const bloodlineBonus = getBloodlineFitBonus(horse?.father_line ?? null, horse?.damsire_line ?? null, distanceM)
-    return paceFit * 0.35 + distanceFit * 0.35 + jockeyScore * 0.10 + closingScore * 0.10 + venueAdj + stabilityComp * 0.10 + bloodlineBonus
+    const weightAdj = getWeightAdjustment(entry?.weight_kg ?? null)
+    return paceFit * 0.35 + distanceFit * 0.35 + jockeyScore * 0.10 + closingScore * 0.10 + venueAdj + stabilityComp * 0.10 + bloodlineBonus + weightAdj
   }
 
   const allSorted = entries
@@ -2131,9 +2142,10 @@ function computeFormationV9_1(
     const venueAdj = getVenueStyleAdjustment(venue, style, distanceM)
     const horse = horses.find((h) => h.id === id)
     const bloodlineBonus = getBloodlineFitBonus(horse?.father_line ?? null, horse?.damsire_line ?? null, distanceM)
-    const himoScoreV9_1 = paceFit * W.pace + distanceFit * W.dist + jockeyScore * W.jockey + closingScore * W.closing + stabilityComp * W.stability + venueAdj + bloodlineBonus
+    const weightAdj = getWeightAdjustment(entry?.weight_kg ?? null)
+    const himoScoreV9_1 = paceFit * W.pace + distanceFit * W.dist + jockeyScore * W.jockey + closingScore * W.closing + stabilityComp * W.stability + venueAdj + bloodlineBonus + weightAdj
 
-    return { id, paceFit, distanceFit, jockeyScore, closingScore, himoScoreV9, himoScoreV9_1, bloodlineBonus }
+    return { id, paceFit, distanceFit, jockeyScore, closingScore, himoScoreV9, himoScoreV9_1, bloodlineBonus, weightAdj }
   })
 
   // v9 でのヒモ集合（比較用）
@@ -2154,6 +2166,7 @@ function computeFormationV9_1(
     himoScoreV9: s.himoScoreV9,
     himoScoreV9_1: s.himoScoreV9_1,
     bloodlineBonus: s.bloodlineBonus,
+    weightAdj: s.weightAdj,
     isHimo: himoSet.has(s.id),
     wasHimoV9: himoV9Set.has(s.id),
   }))
@@ -2233,10 +2246,11 @@ function computeFormationV9_2(
 
     const horse = horses.find((h) => h.id === id)
     const bloodlineBonus = getBloodlineFitBonus(horse?.father_line ?? null, horse?.damsire_line ?? null, distanceM)
+    const weightAdj = getWeightAdjustment(entry?.weight_kg ?? null)
     const himoScoreV9_1 = paceFit * Wv9_1.pace + distanceFit * Wv9_1.dist + jockeyScore * Wv9_1.jockey + closingRaw * Wv9_1.closing + stabilityComp * Wv9_1.stability + venueAdj
-    const himoScoreV9_2 = paceFit * Wv9_1.pace + distanceFit * Wv9_1.dist + jockeyScore * Wv9_1.jockey + closingScore * Wv9_1.closing + stabilityComp * Wv9_1.stability + venueAdj + bloodlineBonus
+    const himoScoreV9_2 = paceFit * Wv9_1.pace + distanceFit * Wv9_1.dist + jockeyScore * Wv9_1.jockey + closingScore * Wv9_1.closing + stabilityComp * Wv9_1.stability + venueAdj + bloodlineBonus + weightAdj
 
-    return { id, paceFit, distanceFit, jockeyScore, closingScore, himoScoreV9: himoScoreV9_1, himoScoreV9_1: himoScoreV9_2, bloodlineBonus, isHimo: false, wasHimoV9: false }
+    return { id, paceFit, distanceFit, jockeyScore, closingScore, himoScoreV9: himoScoreV9_1, himoScoreV9_1: himoScoreV9_2, bloodlineBonus, weightAdj, isHimo: false, wasHimoV9: false }
   })
 
   const scoredByV9_1 = [...scored].sort((a, b) => b.himoScoreV9 - a.himoScoreV9)
@@ -2256,6 +2270,7 @@ function computeFormationV9_2(
     himoScoreV9: s.himoScoreV9,
     himoScoreV9_1: s.himoScoreV9_1,
     bloodlineBonus: s.bloodlineBonus,
+    weightAdj: s.weightAdj,
     isHimo: himoSet.has(s.id),
     wasHimoV9: himoV9_1Set.has(s.id),
   }))
@@ -2351,7 +2366,7 @@ export default async function RaceDetailPage({
       fetch(`${baseUrl}/rest/v1/race_results?race_id=eq.${id}&select=horse_id,finish_pos`, {
         headers: { apikey: key, Authorization: `Bearer ${key}` }, cache: 'no-store',
       }),
-      fetch(`${baseUrl}/rest/v1/entries?race_id=eq.${id}&select=horse_id,horse_number,popularity_rank,jockey_name,last3f_1,last3f_2,last3f_3,finish_position`, {
+      fetch(`${baseUrl}/rest/v1/entries?race_id=eq.${id}&select=horse_id,horse_number,popularity_rank,jockey_name,last3f_1,last3f_2,last3f_3,finish_position,weight_kg`, {
         headers: { apikey: key, Authorization: `Bearer ${key}` }, cache: 'no-store',
       }),
     ])
@@ -3634,7 +3649,7 @@ export default async function RaceDetailPage({
                       <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 11 }}>
                         <thead>
                           <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                            {['馬名', 'pace_fit', 'dist_fit', 'jockey', 'stability', 'blood bonus', 'v9 score', 'v9.1 score'].map((h) => (
+                            {['馬名', 'pace_fit', 'dist_fit', 'jockey', 'stability', 'blood bonus', 'weight adj', 'v9 score', 'v9.1 score'].map((h) => (
                               <th key={h} style={{ padding: '4px 6px', color: '#9898B0', fontWeight: 600, textAlign: 'right', whiteSpace: 'nowrap' }}>{h}</th>
                             ))}
                             <th style={{ padding: '4px 6px', color: '#9898B0', fontWeight: 600, textAlign: 'center' }}>採用</th>
@@ -3659,6 +3674,7 @@ export default async function RaceDetailPage({
                                 <td style={{ padding: '5px 6px', color: '#9898B0', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{row.jockeyScore.toFixed(2)}</td>
                                 <td style={{ padding: '5px 6px', color: '#9898B0', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{row.stabilityComponent.toFixed(4)}</td>
                                 <td style={{ padding: '5px 6px', color: row.bloodlineBonus > 0 ? '#34D399' : '#62627A', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{row.bloodlineBonus > 0 ? `+${row.bloodlineBonus.toFixed(4)}` : row.bloodlineBonus.toFixed(4)}</td>
+                                <td style={{ padding: '5px 6px', color: row.weightAdj < 0 ? '#F87171' : row.weightAdj > 0 ? '#34D399' : '#62627A', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{row.weightAdj > 0 ? `+${row.weightAdj.toFixed(4)}` : row.weightAdj.toFixed(4)}</td>
                                 <td style={{ padding: '5px 6px', color: '#62627A', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{row.himoScoreV9.toFixed(4)}</td>
                                 <td style={{ padding: '5px 6px', color: row.isHimo ? '#60A5FA' : '#9898B0', textAlign: 'right', fontWeight: row.isHimo ? 700 : 400, fontVariantNumeric: 'tabular-nums' }}>{row.himoScoreV9_1.toFixed(4)}</td>
                                 <td style={{ padding: '5px 6px', textAlign: 'center' }}>
@@ -3700,7 +3716,7 @@ export default async function RaceDetailPage({
                       <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 11 }}>
                         <thead>
                           <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                            {['馬名', 'pace_fit', 'dist_fit', 'jockey', 'closing(補正後)', 'blood bonus', 'v9.1 score', 'v9.2 score'].map((h) => (
+                            {['馬名', 'pace_fit', 'dist_fit', 'jockey', 'closing(補正後)', 'blood bonus', 'weight adj', 'v9.1 score', 'v9.2 score'].map((h) => (
                               <th key={h} style={{ padding: '4px 6px', color: '#9898B0', fontWeight: 600, textAlign: 'right', whiteSpace: 'nowrap' }}>{h}</th>
                             ))}
                             <th style={{ padding: '4px 6px', color: '#9898B0', fontWeight: 600, textAlign: 'center' }}>採用</th>
@@ -3725,6 +3741,7 @@ export default async function RaceDetailPage({
                                 <td style={{ padding: '5px 6px', color: '#9898B0', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{row.jockeyScore.toFixed(2)}</td>
                                 <td style={{ padding: '5px 6px', color: row.closingScore >= 0.5 ? '#FBBF24' : '#9898B0', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{row.closingScore.toFixed(3)}</td>
                                 <td style={{ padding: '5px 6px', color: row.bloodlineBonus > 0 ? '#34D399' : '#62627A', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{row.bloodlineBonus > 0 ? `+${row.bloodlineBonus.toFixed(4)}` : row.bloodlineBonus.toFixed(4)}</td>
+                                <td style={{ padding: '5px 6px', color: row.weightAdj < 0 ? '#F87171' : row.weightAdj > 0 ? '#34D399' : '#62627A', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{row.weightAdj > 0 ? `+${row.weightAdj.toFixed(4)}` : row.weightAdj.toFixed(4)}</td>
                                 <td style={{ padding: '5px 6px', color: '#62627A', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{row.himoScoreV9.toFixed(4)}</td>
                                 <td style={{ padding: '5px 6px', color: row.isHimo ? '#FBBF24' : '#9898B0', textAlign: 'right', fontWeight: row.isHimo ? 700 : 400, fontVariantNumeric: 'tabular-nums' }}>{row.himoScoreV9_1.toFixed(4)}</td>
                                 <td style={{ padding: '5px 6px', textAlign: 'center' }}>
