@@ -2047,6 +2047,8 @@ type FormationV9_1Result = {
     axisTypeV7: AxisType
     himoCount: number
     rows: FormationV9_1DebugRow[]
+    axisScore: number
+    axisName: string
   }
 }
 
@@ -2158,7 +2160,7 @@ function computeFormationV9_1(
 
   return {
     formation: { ...formation, axis_count: 1, axis_horses: axisV9_1, himo_horses: himoV9_1 },
-    debug: { pace, raceType, jockeyWeight: W.jockey, axisTypeV7, himoCount, rows },
+    debug: { pace, raceType, jockeyWeight: W.jockey, axisTypeV7, himoCount, rows, axisScore: top1Score, axisName: resolveName(axisId ?? '') },
   }
 }
 
@@ -2260,7 +2262,7 @@ function computeFormationV9_2(
 
   return {
     formation: { ...formation, axis_count: 1, axis_horses: axisV9_2, himo_horses: himoV9_2 },
-    debug: { pace, raceType, jockeyWeight: Wv9_1.jockey, axisTypeV7, himoCount, rows },
+    debug: { pace, raceType, jockeyWeight: Wv9_1.jockey, axisTypeV7, himoCount, rows, axisScore: top1Score, axisName: resolveName(axisId ?? '') },
   }
 }
 
@@ -3619,6 +3621,14 @@ export default async function RaceDetailPage({
                       <p style={{ fontSize: 11, color: '#62627A', marginBottom: 14 }}>v9 と v9.1 のヒモ構成は同一です</p>
                     )}
 
+                    {/* ── 軸馬スコア ────────────────────── */}
+                    <div style={{ marginBottom: 10, padding: '8px 10px', borderRadius: 6, background: 'rgba(20,184,166,0.06)', border: '1px solid rgba(20,184,166,0.20)' }}>
+                      <span style={{ fontSize: 10, fontWeight: 700, color: '#14B8A6', marginRight: 8 }}>軸</span>
+                      <span style={{ fontSize: 12, fontWeight: 700, color: '#EEEEF5', marginRight: 10 }}>{formationV9_1Debug.axisName}</span>
+                      <span style={{ fontSize: 11, color: '#9898B0' }}>axis score: </span>
+                      <span style={{ fontSize: 12, fontWeight: 700, color: '#14B8A6', fontVariantNumeric: 'tabular-nums' }}>{formationV9_1Debug.axisScore.toFixed(4)}</span>
+                    </div>
+
                     {/* ── スコアテーブル ─────────────────── */}
                     <div style={{ overflowX: 'auto' }}>
                       <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 11 }}>
@@ -3680,6 +3690,12 @@ export default async function RaceDetailPage({
                     <p style={{ fontSize: 11, color: '#9898B0', margin: '0 0 10px', lineHeight: 1.7 }}>
                       v9.1との差分: 逃げ・先行の上がりスコアを下限0.5に設定。遅い上がりでも減点しない。差し・追込はそのまま。
                     </p>
+                    <div style={{ marginBottom: 10, padding: '8px 10px', borderRadius: 6, background: 'rgba(20,184,166,0.06)', border: '1px solid rgba(20,184,166,0.20)' }}>
+                      <span style={{ fontSize: 10, fontWeight: 700, color: '#14B8A6', marginRight: 8 }}>軸</span>
+                      <span style={{ fontSize: 12, fontWeight: 700, color: '#EEEEF5', marginRight: 10 }}>{formationV9_2Debug.axisName}</span>
+                      <span style={{ fontSize: 11, color: '#9898B0' }}>axis score: </span>
+                      <span style={{ fontSize: 12, fontWeight: 700, color: '#14B8A6', fontVariantNumeric: 'tabular-nums' }}>{formationV9_2Debug.axisScore.toFixed(4)}</span>
+                    </div>
                     <div style={{ overflowX: 'auto' }}>
                       <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 11 }}>
                         <thead>
