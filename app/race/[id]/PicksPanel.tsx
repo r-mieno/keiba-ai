@@ -52,6 +52,15 @@ export default function PicksPanel({ raceId, userId, userEmail, raceDate, horses
     )
   }
 
+  const deletePick = async () => {
+    if (!myPick || loading || isClosed) return
+    setLoading(true)
+    await supabase.from('race_picks').delete().eq('id', myPick.id)
+    setPicks((prev) => prev.filter((p) => p.id !== myPick.id))
+    setSelected([])
+    setLoading(false)
+  }
+
   const submit = async () => {
     if (selected.length !== 3 || loading || isClosed) return
     setLoading(true)
@@ -217,6 +226,17 @@ const hasResult = top3.length === 3
                 <span style={{ fontSize: 13, color: isMe ? '#EEEEF5' : '#9898B0', flex: 1 }}>
                   {pick.horse_ids.map((id) => horseName(id)).join('・')}
                 </span>
+                {isMe && !isClosed && (
+                  <button
+                    onClick={deletePick}
+                    disabled={loading}
+                    style={{
+                      fontSize: 11, color: '#62627A', background: 'transparent',
+                      border: '1px solid rgba(255,255,255,0.08)', borderRadius: 6,
+                      padding: '3px 8px', cursor: 'pointer', fontFamily: 'inherit', flexShrink: 0,
+                    }}
+                  >取消</button>
+                )}
                 {hasResult && (() => {
                   const n = hitCount(pick.horse_ids)
                   return (
