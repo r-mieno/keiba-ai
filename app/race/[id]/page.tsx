@@ -52,63 +52,16 @@ type Entry = {
   weight_kg: number | null
 }
 
+type JockeyStat = {
+  jockey_name: string
+  place3_rate: number
+}
+
 // ─── 騎手スコアマスタ（複勝圏能力の初期仮説値 0〜1）──────────────────────────
 // 0.60 をデフォルト値として、上位騎手を上乗せする運用。
 // 更新時はここだけを修正する。
-const JOCKEY_PLACE_SCORE: Record<string, number> = {
-  'ルメール': 0.92,
-  'モレイラ': 0.91,
-  '川田':     0.89,
-  'レーン':   0.88,
-  'キング':   0.87,
-  '戸崎':     0.85,
-  '坂井':     0.83,
-  '武豊':     0.82,
-  '横山武':   0.81,
-  'デムーロ': 0.80,
-
-  '岩田望':   0.79,
-  '松山':     0.78,
-  '鮫島克':   0.77,
-  '西村淳':   0.77,
-  '団野':     0.76,
-  '丹内':     0.75,
-  '田辺':     0.75,
-  '津村':     0.74,
-  '菅原明':   0.74,
-  '横山和':   0.73,
-  '横山典':   0.74,
-
-  '北村友':   0.73,
-  '岩田康':   0.72,
-  '三浦':     0.72,
-  '佐々木':   0.71,
-  '池添':     0.71,
-  '浜中':     0.70,
-  '石川':     0.69,
-
-  '大野':     0.68,
-  '吉田豊':   0.67,
-  '幸':       0.67,
-  '藤岡佑':   0.67,
-  '藤岡康':   0.67,
-  '和田竜':   0.66,
-  '角田大':   0.65,
-  '柴田善':   0.65,
-  '菱田':     0.65,
-
-  '石橋':     0.64,
-  '松岡':     0.64,
-  '武藤':     0.63,
-  '笹川':     0.63,
-  '高杉':     0.62,
-  '矢野':     0.62,
-  '原':       0.61,
-  '原田和':   0.61,
-}
-
-// 騎手名が未登録の場合のデフォルトスコア
-const JOCKEY_DEFAULT_SCORE = 0.60
+// 騎手名が未登録の場合のデフォルトスコア（JRA全体の平均3着内率付近）
+const JOCKEY_DEFAULT_SCORE = 0.25
 
 // DB上の表記 → JOCKEY_PLACE_SCORE のキーへのエイリアスマッピング
 // 同姓が多い日本人騎手を誤マッチしないよう、フルネームで明示的にマップする
@@ -1791,6 +1744,7 @@ function computeFormationV8(
   pace: PaceType,
   stabilityScore: number,
   distanceM: number | null,
+  jockeyScoreMap: Record<string, number> = {},
 ): FormationV8Result {
   const resolveName = (id: string) => horses.find((h) => h.id === id)?.name ?? id
 
@@ -1850,7 +1804,7 @@ function computeFormationV8(
     const entry = entries.find((e) => e.horse_id === id)
     const rawJockeyName = entry?.jockey_name ?? ''
     const aliasKey  = rawJockeyName ? (JOCKEY_ALIAS[rawJockeyName] ?? rawJockeyName) : ''
-    const jockeyScore = aliasKey ? (JOCKEY_PLACE_SCORE[aliasKey] ?? JOCKEY_DEFAULT_SCORE) : JOCKEY_DEFAULT_SCORE
+    const jockeyScore = aliasKey ? (jockeyScoreMap[aliasKey] ?? jockeyScoreMap[rawJockeyName] ?? JOCKEY_DEFAULT_SCORE) : JOCKEY_DEFAULT_SCORE
 
     const himoScoreV7 = paceFit * 0.50 + distanceFit * 0.35 + stabilityComp * 0.15
     const himoScoreV8 = paceFit * 0.40 + distanceFit * 0.30 + jockeyScore * 0.20 + stabilityComp * 0.10
@@ -1932,6 +1886,7 @@ function computeFormationV9(
   stabilityScore: number,
   distanceM: number | null,
   raceName: string | null | undefined,
+  jockeyScoreMap: Record<string, number> = {},
 ): FormationV9Result {
   const resolveName = (id: string) => horses.find((h) => h.id === id)?.name ?? id
   const raceType = classifyRaceType(raceName)
@@ -1994,7 +1949,7 @@ function computeFormationV9(
     const entry = entries.find((e) => e.horse_id === id)
     const rawJockeyName = entry?.jockey_name ?? ''
     const aliasKey  = rawJockeyName ? (JOCKEY_ALIAS[rawJockeyName] ?? rawJockeyName) : ''
-    const jockeyScore = aliasKey ? (JOCKEY_PLACE_SCORE[aliasKey] ?? JOCKEY_DEFAULT_SCORE) : JOCKEY_DEFAULT_SCORE
+    const jockeyScore = aliasKey ? (jockeyScoreMap[aliasKey] ?? jockeyScoreMap[rawJockeyName] ?? JOCKEY_DEFAULT_SCORE) : JOCKEY_DEFAULT_SCORE
 
     const himoScoreV8 = paceFit * 0.40 + distanceFit * 0.30 + jockeyScore * 0.20 + stabilityComp * 0.10
     const himoScoreV9 = paceFit * W.pace + distanceFit * W.dist + jockeyScore * W.jockey + stabilityComp * W.stability
@@ -2084,6 +2039,7 @@ function computeFormationV9_1(
   distanceM: number | null,
   raceName: string | null | undefined,
   venue: string | null | undefined = null,
+  jockeyScoreMap: Record<string, number> = {},
 ): FormationV9_1Result {
   const resolveName = (id: string) => horses.find((h) => h.id === id)?.name ?? id
   const raceType = classifyRaceType(raceName)
@@ -2101,7 +2057,7 @@ function computeFormationV9_1(
     const entry = entries.find((e) => e.horse_id === id)
     const rawJockeyName = entry?.jockey_name ?? ''
     const aliasKey   = rawJockeyName ? (JOCKEY_ALIAS[rawJockeyName] ?? rawJockeyName) : ''
-    const jockeyScore = aliasKey ? (JOCKEY_PLACE_SCORE[aliasKey] ?? JOCKEY_DEFAULT_SCORE) : JOCKEY_DEFAULT_SCORE
+    const jockeyScore = aliasKey ? (jockeyScoreMap[aliasKey] ?? jockeyScoreMap[rawJockeyName] ?? JOCKEY_DEFAULT_SCORE) : JOCKEY_DEFAULT_SCORE
     const closingScore = getClosingSpeedScore(entry?.last3f_1 ?? null, entry?.last3f_2 ?? null, entry?.last3f_3 ?? null)
     const horse = horses.find((h) => h.id === id)
     const bloodlineBonus = getBloodlineFitBonus(horse?.father_line ?? null, horse?.damsire_line ?? null, distanceM)
@@ -2149,7 +2105,7 @@ function computeFormationV9_1(
     const entry = entries.find((e) => e.horse_id === id)
     const rawJockeyName = entry?.jockey_name ?? ''
     const aliasKey  = rawJockeyName ? (JOCKEY_ALIAS[rawJockeyName] ?? rawJockeyName) : ''
-    const jockeyScore = aliasKey ? (JOCKEY_PLACE_SCORE[aliasKey] ?? JOCKEY_DEFAULT_SCORE) : JOCKEY_DEFAULT_SCORE
+    const jockeyScore = aliasKey ? (jockeyScoreMap[aliasKey] ?? jockeyScoreMap[rawJockeyName] ?? JOCKEY_DEFAULT_SCORE) : JOCKEY_DEFAULT_SCORE
     const closingScore = getClosingSpeedScore(entry?.last3f_1 ?? null, entry?.last3f_2 ?? null, entry?.last3f_3 ?? null)
 
     const himoScoreV9   = paceFit * Wv9.pace + distanceFit * Wv9.dist + jockeyScore * Wv9.jockey + stabilityComp * Wv9.stability
@@ -2215,6 +2171,7 @@ function computeFormationV9_2(
   distanceM: number | null,
   raceName: string | null | undefined,
   venue: string | null | undefined = null,
+  jockeyScoreMap: Record<string, number> = {},
 ): FormationV9_1Result {
   const resolveName = (id: string) => horses.find((h) => h.id === id)?.name ?? id
   const raceType = classifyRaceType(raceName)
@@ -2229,7 +2186,7 @@ function computeFormationV9_2(
     const entry = entries.find((e) => e.horse_id === id)
     const rawJockeyName = entry?.jockey_name ?? ''
     const aliasKey = rawJockeyName ? (JOCKEY_ALIAS[rawJockeyName] ?? rawJockeyName) : ''
-    const jockeyScore = aliasKey ? (JOCKEY_PLACE_SCORE[aliasKey] ?? JOCKEY_DEFAULT_SCORE) : JOCKEY_DEFAULT_SCORE
+    const jockeyScore = aliasKey ? (jockeyScoreMap[aliasKey] ?? jockeyScoreMap[rawJockeyName] ?? JOCKEY_DEFAULT_SCORE) : JOCKEY_DEFAULT_SCORE
     const closingScore = getStyleAdjustedClosingScore(entry?.last3f_1 ?? null, entry?.last3f_2 ?? null, entry?.last3f_3 ?? null, style)
     const horse = horses.find((h) => h.id === id)
     const bloodlineBonus = getBloodlineFitBonus(horse?.father_line ?? null, horse?.damsire_line ?? null, distanceM)
@@ -2269,7 +2226,7 @@ function computeFormationV9_2(
     const entry = entries.find((e) => e.horse_id === id)
     const rawJockeyName = entry?.jockey_name ?? ''
     const aliasKey = rawJockeyName ? (JOCKEY_ALIAS[rawJockeyName] ?? rawJockeyName) : ''
-    const jockeyScore = aliasKey ? (JOCKEY_PLACE_SCORE[aliasKey] ?? JOCKEY_DEFAULT_SCORE) : JOCKEY_DEFAULT_SCORE
+    const jockeyScore = aliasKey ? (jockeyScoreMap[aliasKey] ?? jockeyScoreMap[rawJockeyName] ?? JOCKEY_DEFAULT_SCORE) : JOCKEY_DEFAULT_SCORE
     const closingRaw = getClosingSpeedScore(entry?.last3f_1 ?? null, entry?.last3f_2 ?? null, entry?.last3f_3 ?? null)
     const closingScore = getStyleAdjustedClosingScore(entry?.last3f_1 ?? null, entry?.last3f_2 ?? null, entry?.last3f_3 ?? null, style)
     const venueAdj = getVenueStyleAdjustment(venue, style, distanceM)
@@ -2350,6 +2307,7 @@ export default async function RaceDetailPage({
   let horses: Horse[] = []
   let raceResults: RaceResult[] = []
   let entries: Entry[] = []
+  let jockeyScoreMap: Record<string, number> = {}
   let errorMessage = ''
 
   try {
@@ -2404,16 +2362,23 @@ export default async function RaceDetailPage({
 
   // Results and entries fetched separately so formation errors don't block them
   try {
-    const [resultsRes, entriesRes] = await Promise.all([
+    const [resultsRes, entriesRes, jockeyStatsRes] = await Promise.all([
       fetch(`${baseUrl}/rest/v1/race_results?race_id=eq.${id}&select=horse_id,finish_pos`, {
         headers: { apikey: key, Authorization: `Bearer ${key}` }, cache: 'no-store',
       }),
       fetch(`${baseUrl}/rest/v1/entries?race_id=eq.${id}&select=horse_id,horse_number,popularity_rank,jockey_name,last3f_1,last3f_2,last3f_3,finish_position,weight_kg`, {
         headers: { apikey: key, Authorization: `Bearer ${key}` }, cache: 'no-store',
       }),
+      fetch(`${baseUrl}/rest/v1/jockey_stats?select=jockey_name,place3_rate`, {
+        headers: { apikey: key, Authorization: `Bearer ${key}` }, cache: 'no-store',
+      }),
     ])
     if (resultsRes.ok) raceResults = await resultsRes.json()
     if (entriesRes.ok) entries = await entriesRes.json()
+    if (jockeyStatsRes.ok) {
+      const stats: JockeyStat[] = await jockeyStatsRes.json()
+      jockeyScoreMap = Object.fromEntries(stats.map((s) => [s.jockey_name, s.place3_rate]))
+    }
 
     // Fetch running style from horse_style_profiles and merge into horses array
     const raceHorseIdList = entries.map((e) => e.horse_id)
@@ -2478,21 +2443,20 @@ export default async function RaceDetailPage({
     formationV6Debug = v6Result.debug
     const v7Result = computeFormationV7(origFormation, horses, entries, pace, earlyStabilityScore, race?.distance_m ?? null)
     formationV7Debug = v7Result.debug
-    const v8Result = computeFormationV8(origFormation, horses, entries, pace, earlyStabilityScore, race?.distance_m ?? null)
+    const v8Result = computeFormationV8(origFormation, horses, entries, pace, earlyStabilityScore, race?.distance_m ?? null, jockeyScoreMap)
     formationV8Debug = v8Result.debug
-    const v9Result = computeFormationV9(origFormation, horses, entries, pace, earlyStabilityScore, race?.distance_m ?? null, race?.race_name ?? null)
+    const v9Result = computeFormationV9(origFormation, horses, entries, pace, earlyStabilityScore, race?.distance_m ?? null, race?.race_name ?? null, jockeyScoreMap)
     formationV9Debug = v9Result.debug
-    const v9_1Result = computeFormationV9_1(origFormation, horses, entries, pace, earlyStabilityScore, race?.distance_m ?? null, race?.race_name ?? null, race?.venue ?? null)
+    const v9_1Result = computeFormationV9_1(origFormation, horses, entries, pace, earlyStabilityScore, race?.distance_m ?? null, race?.race_name ?? null, race?.venue ?? null, jockeyScoreMap)
     formationV9_1Debug = v9_1Result.debug
     formation = v9_1Result.formation  // v9.1 を実際の表示に使用
-    const v9_2Result = computeFormationV9_2(origFormation, horses, entries, pace, earlyStabilityScore, race?.distance_m ?? null, race?.race_name ?? null, race?.venue ?? null)
+    const v9_2Result = computeFormationV9_2(origFormation, horses, entries, pace, earlyStabilityScore, race?.distance_m ?? null, race?.race_name ?? null, race?.venue ?? null, jockeyScoreMap)
     formationV9_2Debug = v9_2Result.debug
   }
 
   // 本番レース（is_test=false）でも 2026-03-16 以降はv9.1を適用
-  // 阪神大賞典（2026-03-16）・フラワーカップ（2026-03-21）以降が対象
   if (!race?.is_test && race?.date != null && race.date >= '2026-03-16' && formation) {
-    const v9_1Result = computeFormationV9_1(formation, horses, entries, pace, earlyStabilityScore, race.distance_m ?? null, race.race_name ?? null, race.venue ?? null)
+    const v9_1Result = computeFormationV9_1(formation, horses, entries, pace, earlyStabilityScore, race.distance_m ?? null, race.race_name ?? null, race.venue ?? null, jockeyScoreMap)
     formation = v9_1Result.formation
   }
 
@@ -3474,7 +3438,7 @@ export default async function RaceDetailPage({
                       </table>
                     </div>
                     <p style={{ fontSize: 10, color: '#62627A', marginTop: 10, lineHeight: 1.7 }}>
-                      騎手未登録の場合はデフォルト {JOCKEY_DEFAULT_SCORE.toFixed(2)} を使用 / マスタは JOCKEY_PLACE_SCORE で管理
+                      騎手未登録の場合はデフォルト {JOCKEY_DEFAULT_SCORE.toFixed(2)} を使用 / マスタは jockey_stats テーブルで管理（place3_rate を使用）
                     </p>
                   </div>
                 )
