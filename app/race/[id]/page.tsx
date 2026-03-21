@@ -750,11 +750,15 @@ const sectionLabel: React.CSSProperties = {
   borderBottom: '1px solid rgba(255,255,255,0.05)',
 }
 
+const circled = (n: number | null | undefined) =>
+  n != null && n >= 1 && n <= 20 ? String.fromCharCode(0x245f + n) : null
+
 // ─── HorseRow component ───────────────────────────────────────────────────────
 
 function HorseRow({
   rank,
   name,
+  horseNumber,
   role,
   paceTag,
   styleTag,
@@ -763,6 +767,7 @@ function HorseRow({
 }: {
   rank: number
   name: string
+  horseNumber?: number | null
   role: 'axis' | 'himo' | 'other'
   paceTag?: 'up' | 'down' | null
   styleTag?: { label: string; color: string } | null
@@ -816,6 +821,11 @@ function HorseRow({
             letterSpacing: isAxis ? '0.01em' : 0,
           }}
         >
+          {circled(horseNumber) != null && (
+            <span style={{ fontSize: 13, color: '#62627A', marginRight: 5 }}>
+              {circled(horseNumber)}
+            </span>
+          )}
           {name}
         </span>
         {popularityRank != null && (
@@ -3750,6 +3760,7 @@ export default async function RaceDetailPage({
                       key={horseId}
                       rank={aiRank}
                       name={getHorseName(horseId)}
+                      horseNumber={entry?.horse_number ?? null}
                       role={role}
                       paceTag={paceTag}
                       styleTag={styleTag}
@@ -3824,8 +3835,8 @@ export default async function RaceDetailPage({
                     >
                       {finish_pos}着
                     </span>
-                    <span style={{ fontSize: 13, color: '#9898B0', fontVariantNumeric: 'tabular-nums' }}>
-                      {horseNumber !== null ? `${horseNumber}番` : '—'}
+                    <span style={{ fontSize: 14, color: '#9898B0' }}>
+                      {circled(horseNumber) ?? '—'}
                     </span>
                     <span
                       style={{

@@ -35,10 +35,14 @@ export default function PicksPanel({ raceId, userId, userEmail, raceDate, horses
 
   const displayName = (email: string) => email.split('@')[0]
 
+  const circled = (n: number | null | undefined) =>
+    n != null && n >= 1 && n <= 20 ? String.fromCharCode(0x245f + n) : null
+
   const horseName = (id: string) => {
     const h = horses.find((h) => h.id === id)
     if (!h) return id
-    return h.number != null ? `${h.number}番 ${h.name}` : h.name
+    const c = circled(h.number)
+    return c ? `${c} ${h.name}` : h.name
   }
 
   const toggleHorse = (id: string) => {
@@ -150,9 +154,9 @@ const hasResult = top3.length === 3
                     transition: 'all 0.15s',
                   }}
                 >
-                  {horse.number != null && (
-                    <span style={{ fontSize: 11, color: isSelected ? '#F472B6' : '#62627A', marginRight: 4 }}>
-                      {horse.number}
+                  {circled(horse.number) != null && (
+                    <span style={{ fontSize: 13, color: isSelected ? '#F472B6' : '#62627A', marginRight: 4 }}>
+                      {circled(horse.number)}
                     </span>
                   )}
                   {horse.name}
