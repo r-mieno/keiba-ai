@@ -279,8 +279,13 @@ function computePaceOutlook(
     else if (frontCount === 1 && stalkerCount <= 2) pace = 'slow'
     else pace = 'balanced'
   } else if (d <= 1999) {
-    // マイル〜中距離前半（1401〜1999m）：逃げ3頭以上でfast、2頭はbalanced
-    if (frontCount >= 3) pace = 'fast'
+    // マイル〜中距離前半（1401〜1999m）
+    // 逃げ5頭以上：お見合いが起きやすくbalanced（多すぎる逃げ馬は互いに控える）
+    // 逃げ3〜4頭：fast
+    // 逃げ2頭：balanced
+    // 逃げ1頭・先行少：slow
+    if (frontCount >= 5) pace = 'balanced'
+    else if (frontCount >= 3) pace = 'fast'
     else if (frontCount >= 2) pace = 'balanced'
     else if (frontCount === 1 && stalkerCount <= 2) pace = 'slow'
     else pace = 'balanced'
@@ -446,6 +451,22 @@ function getClosingSpeedScore(
   const totalWeight = available.reduce((sum, [, w]) => sum + w, 0)
   const weightedAvg = available.reduce((sum, [v, w]) => sum + v * w, 0) / totalWeight
   return Math.max(0, Math.min(1, (WORST - weightedAvg) / (WORST - BEST)))
+}
+
+// 脚質補正付き上がりスコア
+// 逃げ・先行は上がりが遅くても粘れるのでフロアを0.5に設定（ペナルティなし）
+// 差し・追込は末脚勝負なので生スコアをそのまま使用
+function getStyleAdjustedClosingScore(
+  last3f_1: number | null,
+  last3f_2: number | null,
+  last3f_3: number | null,
+  style: RunningStyle | null,
+): number {
+  const raw = getClosingSpeedScore(last3f_1, last3f_2, last3f_3)
+  if (style === 'front' || style === 'stalker') {
+    return Math.max(raw, 0.5)  // 下限0.5：遅くても減点しない
+  }
+  return raw
 }
 
 const STRATEGIES_MAP = STRATEGIES
@@ -2086,6 +2107,105 @@ function computeFormationV9_1(
   }
 }
 
+// ─── v9.2: 脚質別上がり補正版 ─────────────────────────────────────────────────
+// v9.1との差分: closingScore → getStyleAdjustedClosingScore（逃げ・先行の下限0.5）
+
+function computeFormationV9_2(
+  formation: FormationResponse,
+  horses: Horse[],
+  entries: Entry[],
+  pace: PaceType,
+  stabilityScore: number,
+  distanceM: number | null,
+  raceName: string | null | undefined,
+  venue: string | null | undefined = null,
+): FormationV9_1Result {
+  const resolveName = (id: string) => horses.find((h) => h.id === id)?.name ?? id
+  const raceType = classifyRaceType(raceName)
+  const stabilityComp = 1 - stabilityScore / 100
+
+  const computeAxisScore = (id: string): number => {
+    const style = horses.find((h) => h.id === id)?.style ?? null
+    const rawAdj = getPaceAdjustment(style, pace)
+    const paceFit = 0.5 + rawAdj * 2
+    const distanceFit = getDistanceFitScore(style, distanceM)
+    const venueAdj = getVenueStyleAdjustment(venue, style, distanceM)
+    const entry = entries.find((e) => e.horse_id === id)
+    const rawJockeyName = entry?.jockey_name ?? ''
+    const aliasKey = rawJockeyName ? (JOCKEY_ALIAS[rawJockeyName] ?? rawJockeyName) : ''
+    const jockeyScore = aliasKey ? (JOCKEY_PLACE_SCORE[aliasKey] ?? JOCKEY_DEFAULT_SCORE) : JOCKEY_DEFAULT_SCORE
+    const closingScore = getStyleAdjustedClosingScore(entry?.last3f_1 ?? null, entry?.last3f_2 ?? null, entry?.last3f_3 ?? null, style)
+    return paceFit * 0.35 + distanceFit * 0.35 + jockeyScore * 0.10 + closingScore * 0.10 + venueAdj + stabilityComp * 0.10
+  }
+
+  const allSorted = entries
+    .map((e) => ({ id: e.horse_id, score: computeAxisScore(e.horse_id) }))
+    .sort((a, b) => b.score - a.score)
+
+  const axisId    = allSorted[0]?.id ?? null
+  const top1Score = allSorted[0]?.score ?? 0
+  const top2Score = allSorted[1]?.score ?? 0
+  const top4Score = allSorted[3]?.score ?? null
+
+  const axisConfidence = top4Score !== null
+    ? (top1Score - top2Score) * 0.7 + (top1Score - top4Score) * 0.3
+    : top1Score - top2Score
+  const axisTypeV7: AxisType =
+    axisConfidence >= 0.08 ? '軸強い' : axisConfidence >= 0.04 ? '標準' : '混戦'
+  const himoCount = axisTypeV7 === '軸強い' ? 4 : axisTypeV7 === '標準' ? 5 : 6
+
+  const axisV9_2 = axisId ? [axisId] : formation.axis_horses
+  const candidatePool = entries.map((e) => e.horse_id).filter((id) => id !== axisId)
+
+  const Wv9_1 = raceType === '3歳戦'
+    ? { pace: 0.35, dist: 0.25, jockey: 0.20, closing: 0.10, stability: 0.10 }
+    : { pace: 0.38, dist: 0.29, jockey: 0.13, closing: 0.10, stability: 0.10 }
+
+  const scored = candidatePool.map((id) => {
+    const style = horses.find((h) => h.id === id)?.style ?? null
+    const rawAdj = getPaceAdjustment(style, pace)
+    const paceFit = (rawAdj + 0.08) / 0.18
+    const distanceFit = getDistanceFitScore(style, distanceM)
+    const entry = entries.find((e) => e.horse_id === id)
+    const rawJockeyName = entry?.jockey_name ?? ''
+    const aliasKey = rawJockeyName ? (JOCKEY_ALIAS[rawJockeyName] ?? rawJockeyName) : ''
+    const jockeyScore = aliasKey ? (JOCKEY_PLACE_SCORE[aliasKey] ?? JOCKEY_DEFAULT_SCORE) : JOCKEY_DEFAULT_SCORE
+    const closingRaw = getClosingSpeedScore(entry?.last3f_1 ?? null, entry?.last3f_2 ?? null, entry?.last3f_3 ?? null)
+    const closingScore = getStyleAdjustedClosingScore(entry?.last3f_1 ?? null, entry?.last3f_2 ?? null, entry?.last3f_3 ?? null, style)
+    const venueAdj = getVenueStyleAdjustment(venue, style, distanceM)
+
+    const himoScoreV9_1 = paceFit * Wv9_1.pace + distanceFit * Wv9_1.dist + jockeyScore * Wv9_1.jockey + closingRaw * Wv9_1.closing + stabilityComp * Wv9_1.stability + venueAdj
+    const himoScoreV9_2 = paceFit * Wv9_1.pace + distanceFit * Wv9_1.dist + jockeyScore * Wv9_1.jockey + closingScore * Wv9_1.closing + stabilityComp * Wv9_1.stability + venueAdj
+
+    return { id, paceFit, distanceFit, jockeyScore, closingScore, himoScoreV9: himoScoreV9_1, himoScoreV9_1: himoScoreV9_2, isHimo: false, wasHimoV9: false }
+  })
+
+  const scoredByV9_1 = [...scored].sort((a, b) => b.himoScoreV9 - a.himoScoreV9)
+  const himoV9_1Set = new Set(scoredByV9_1.slice(0, himoCount).map((s) => s.id))
+
+  scored.sort((a, b) => b.himoScoreV9_1 - a.himoScoreV9_1)
+  const himoV9_2 = scored.slice(0, himoCount).map((s) => s.id)
+  const himoSet  = new Set(himoV9_2)
+
+  const rows: FormationV9_1DebugRow[] = scored.map((s) => ({
+    horseName: resolveName(s.id),
+    paceFit: s.paceFit,
+    distanceFit: s.distanceFit,
+    jockeyScore: s.jockeyScore,
+    closingScore: s.closingScore,
+    stabilityComponent: stabilityComp,
+    himoScoreV9: s.himoScoreV9,
+    himoScoreV9_1: s.himoScoreV9_1,
+    isHimo: himoSet.has(s.id),
+    wasHimoV9: himoV9_1Set.has(s.id),
+  }))
+
+  return {
+    formation: { ...formation, axis_count: 1, axis_horses: axisV9_2, himo_horses: himoV9_2 },
+    debug: { pace, raceType, jockeyWeight: Wv9_1.jockey, axisTypeV7, himoCount, rows },
+  }
+}
+
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default async function RaceDetailPage({
@@ -2226,7 +2346,8 @@ export default async function RaceDetailPage({
   let formationV8Debug: FormationV8Result['debug'] | null = null
   let formationV9Debug: FormationV9Result['debug'] | null = null
   let formationV9_1Debug: FormationV9_1Result['debug'] | null = null
-  if (race?.is_test && formation) {
+  let formationV9_2Debug: FormationV9_1Result['debug'] | null = null
+  if ((race?.is_test || showDebug) && formation) {
     const origFormation = formation  // v2〜v9.1 すべて同じ RPC 結果から計算
     const v2Result = computeFormationV2(origFormation, horses, entries, pace, earlyStabilityScore)
     formationV2Debug = v2Result.debug
@@ -2247,6 +2368,8 @@ export default async function RaceDetailPage({
     const v9_1Result = computeFormationV9_1(origFormation, horses, entries, pace, earlyStabilityScore, race?.distance_m ?? null, race?.race_name ?? null, race?.venue ?? null)
     formationV9_1Debug = v9_1Result.debug
     formation = v9_1Result.formation  // v9.1 を実際の表示に使用
+    const v9_2Result = computeFormationV9_2(origFormation, horses, entries, pace, earlyStabilityScore, race?.distance_m ?? null, race?.race_name ?? null, race?.venue ?? null)
+    formationV9_2Debug = v9_2Result.debug
   }
 
   // 本番レース（is_test=false）でも 2026-03-16 以降はv9.1を適用
@@ -3484,6 +3607,65 @@ export default async function RaceDetailPage({
                     </div>
                     <p style={{ fontSize: 10, color: '#62627A', marginTop: 10, lineHeight: 1.7 }}>
                       軸タイプ: <span style={{ color: AXIS_TYPE_COLOR[formationV9_1Debug.axisTypeV7] }}>{formationV9_1Debug.axisTypeV7}</span>　ヒモ {formationV9_1Debug.himoCount}頭　jockey重み(v9.1)={formationV9_1Debug.jockeyWeight}
+                    </p>
+                  </div>
+                )
+              })()}
+
+              {/* ── v9.2 debug ── */}
+              {showDebug && formationV9_2Debug && (() => {
+                const AXIS_TYPE_COLOR: Record<string, string> = { '軸強い': '#14B8A6', '標準': '#60A5FA', '混戦': '#F87171' }
+                return (
+                  <div style={{ ...card, fontSize: 11 }}>
+                    <p style={{ ...sectionLabel }}>v9.2 DEBUG — 脚質別上がり補正（逃げ・先行フロア0.5）</p>
+                    <p style={{ fontSize: 11, color: '#9898B0', margin: '0 0 10px', lineHeight: 1.7 }}>
+                      v9.1との差分: 逃げ・先行の上がりスコアを下限0.5に設定。遅い上がりでも減点しない。差し・追込はそのまま。
+                    </p>
+                    <div style={{ overflowX: 'auto' }}>
+                      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 11 }}>
+                        <thead>
+                          <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                            {['馬名', 'pace_fit', 'dist_fit', 'jockey', 'closing(補正後)', 'v9.1 score', 'v9.2 score'].map((h) => (
+                              <th key={h} style={{ padding: '4px 6px', color: '#9898B0', fontWeight: 600, textAlign: 'right', whiteSpace: 'nowrap' }}>{h}</th>
+                            ))}
+                            <th style={{ padding: '4px 6px', color: '#9898B0', fontWeight: 600, textAlign: 'center' }}>採用</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {formationV9_2Debug.rows.map((row, i) => {
+                            const added   =  row.isHimo && !row.wasHimoV9
+                            const removed = !row.isHimo &&  row.wasHimoV9
+                            return (
+                              <tr key={i} style={{
+                                borderBottom: '1px solid rgba(255,255,255,0.04)',
+                                background: row.isHimo ? 'rgba(251,191,36,0.06)' : 'transparent',
+                              }}>
+                                <td style={{ padding: '5px 6px', color: row.isHimo ? '#FBBF24' : '#9898B0', fontWeight: row.isHimo ? 700 : 400, whiteSpace: 'nowrap' }}>
+                                  {row.horseName}
+                                  {added   && <span style={{ marginLeft: 4, fontSize: 9, color: '#6EE7B7' }}>↑新規</span>}
+                                  {removed && <span style={{ marginLeft: 4, fontSize: 9, color: '#DC2626' }}>↓除外</span>}
+                                </td>
+                                <td style={{ padding: '5px 6px', color: '#9898B0', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{row.paceFit.toFixed(4)}</td>
+                                <td style={{ padding: '5px 6px', color: '#9898B0', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{row.distanceFit.toFixed(2)}</td>
+                                <td style={{ padding: '5px 6px', color: '#9898B0', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{row.jockeyScore.toFixed(2)}</td>
+                                <td style={{ padding: '5px 6px', color: row.closingScore >= 0.5 ? '#FBBF24' : '#9898B0', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{row.closingScore.toFixed(3)}</td>
+                                <td style={{ padding: '5px 6px', color: '#62627A', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{row.himoScoreV9.toFixed(4)}</td>
+                                <td style={{ padding: '5px 6px', color: row.isHimo ? '#FBBF24' : '#9898B0', textAlign: 'right', fontWeight: row.isHimo ? 700 : 400, fontVariantNumeric: 'tabular-nums' }}>{row.himoScoreV9_1.toFixed(4)}</td>
+                                <td style={{ padding: '5px 6px', textAlign: 'center' }}>
+                                  {row.isHimo && (
+                                    <span style={{ fontSize: 10, fontWeight: 700, padding: '1px 6px', borderRadius: 6, background: 'rgba(251,191,36,0.15)', color: '#FBBF24', border: '1px solid rgba(251,191,36,0.35)' }}>
+                                      ◎ヒモ
+                                    </span>
+                                  )}
+                                </td>
+                              </tr>
+                            )
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                    <p style={{ fontSize: 10, color: '#62627A', marginTop: 10, lineHeight: 1.7 }}>
+                      軸タイプ: <span style={{ color: AXIS_TYPE_COLOR[formationV9_2Debug.axisTypeV7] }}>{formationV9_2Debug.axisTypeV7}</span>　ヒモ {formationV9_2Debug.himoCount}頭
                     </p>
                   </div>
                 )
