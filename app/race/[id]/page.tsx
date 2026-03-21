@@ -65,56 +65,6 @@ const JOCKEY_DEFAULT_SCORE = 0.25
 
 // DB上の表記 → JOCKEY_PLACE_SCORE のキーへのエイリアスマッピング
 // 同姓が多い日本人騎手を誤マッチしないよう、フルネームで明示的にマップする
-const JOCKEY_ALIAS: Record<string, string> = {
-  // 外国人騎手（全角/半角・ピリオド混在対策）
-  'Ｃ．ルメール': 'ルメール', 'C.ルメール': 'ルメール', 'ルメール': 'ルメール',
-  'Ｍ．デムーロ': 'デムーロ', 'M.デムーロ': 'デムーロ', 'デムーロ': 'デムーロ',
-  'Ｒ．キング':   'キング',   'R.キング':   'キング',   'キング': 'キング',
-  'Ｊ．モレイラ': 'モレイラ', 'J.モレイラ': 'モレイラ', 'モレイラ': 'モレイラ',
-  // 国内騎手（同姓区別のため必ずフルネームで登録）
-  '戸崎圭太':   '戸崎',
-  '川田将雅':   '川田',
-  '坂井瑠星':   '坂井',
-  '武豊':       '武豊',
-  '横山武史':   '横山武',
-  '横山和生':   '横山和',
-  '横山典弘':   '横山典',
-  '岩田康誠':   '岩田康',
-  '岩田望来':   '岩田望',
-  '西村淳也':   '西村淳',
-  '団野大成':   '団野',
-  '松山弘平':   '松山',
-  '鮫島克駿':   '鮫島克',
-  '丹内祐次':   '丹内',
-  '田辺裕信':   '田辺',
-  '三浦皇成':   '三浦',
-  '津村明秀':   '津村',
-  '菅原明良':   '菅原明',
-  '幸英明':     '幸',
-  '北村友一':   '北村友',
-  '佐々木大輔': '佐々木',
-  '石川裕紀人': '石川',
-  '大野拓弥':   '大野',
-  '吉田豊':     '吉田豊',
-  '池添謙一':   '池添',
-  '浜中俊':     '浜中',
-  '藤岡佑介':   '藤岡佑',
-  '藤岡康太':   '藤岡康',
-  '和田竜二':   '和田竜',
-  '菱田裕二':   '菱田',
-  '角田大和':   '角田大',
-  '原優介':     '原',
-  '原田和真':   '原田和',
-  '柴田善臣':   '柴田善',
-  '柴田大知':   '柴田大',
-  '石橋脩':     '石橋',
-  '松岡正海':   '松岡',
-  '松本大輝':   '松本大',
-  '武藤雅':     '武藤',
-  '笹川翼':     '笹川',
-  '高杉吏麒':   '高杉',
-  '矢野貴之':   '矢野',
-}
 
 // ─── Score level data ────────────────────────────────────────────────────────
 
@@ -1718,7 +1668,6 @@ type FormationV8DebugRow = {
   paceFit: number
   distanceFit: number
   rawJockeyName: string   // DB上の表記そのまま
-  aliasKey: string        // JOCKEY_ALIAS で正規化したキー
   jockeyScore: number
   stabilityComponent: number
   himoScoreV8: number
@@ -1803,13 +1752,12 @@ function computeFormationV8(
 
     const entry = entries.find((e) => e.horse_id === id)
     const rawJockeyName = entry?.jockey_name ?? ''
-    const aliasKey  = rawJockeyName ? (JOCKEY_ALIAS[rawJockeyName] ?? rawJockeyName) : ''
-    const jockeyScore = aliasKey ? (jockeyScoreMap[aliasKey] ?? jockeyScoreMap[rawJockeyName] ?? JOCKEY_DEFAULT_SCORE) : JOCKEY_DEFAULT_SCORE
+    const jockeyScore = rawJockeyName ? (jockeyScoreMap[rawJockeyName] ?? JOCKEY_DEFAULT_SCORE) : JOCKEY_DEFAULT_SCORE
 
     const himoScoreV7 = paceFit * 0.50 + distanceFit * 0.35 + stabilityComp * 0.15
     const himoScoreV8 = paceFit * 0.40 + distanceFit * 0.30 + jockeyScore * 0.20 + stabilityComp * 0.10
 
-    return { id, axisGap: getAxisGap(id), paceFit, distanceFit, rawJockeyName, aliasKey, jockeyScore, himoScoreV7, himoScoreV8 }
+    return { id, axisGap: getAxisGap(id), paceFit, distanceFit, rawJockeyName, jockeyScore, himoScoreV7, himoScoreV8 }
   })
 
   scored.sort((a, b) => b.himoScoreV8 - a.himoScoreV8)
@@ -1822,7 +1770,6 @@ function computeFormationV8(
     paceFit: s.paceFit,
     distanceFit: s.distanceFit,
     rawJockeyName: s.rawJockeyName || '—',
-    aliasKey: s.aliasKey || '—',
     jockeyScore: s.jockeyScore,
     stabilityComponent: stabilityComp,
     himoScoreV8: s.himoScoreV8,
@@ -1948,8 +1895,7 @@ function computeFormationV9(
     const distanceFit = getDistanceFitScore(style, distanceM)
     const entry = entries.find((e) => e.horse_id === id)
     const rawJockeyName = entry?.jockey_name ?? ''
-    const aliasKey  = rawJockeyName ? (JOCKEY_ALIAS[rawJockeyName] ?? rawJockeyName) : ''
-    const jockeyScore = aliasKey ? (jockeyScoreMap[aliasKey] ?? jockeyScoreMap[rawJockeyName] ?? JOCKEY_DEFAULT_SCORE) : JOCKEY_DEFAULT_SCORE
+    const jockeyScore = rawJockeyName ? (jockeyScoreMap[rawJockeyName] ?? JOCKEY_DEFAULT_SCORE) : JOCKEY_DEFAULT_SCORE
 
     const himoScoreV8 = paceFit * 0.40 + distanceFit * 0.30 + jockeyScore * 0.20 + stabilityComp * 0.10
     const himoScoreV9 = paceFit * W.pace + distanceFit * W.dist + jockeyScore * W.jockey + stabilityComp * W.stability
@@ -2056,8 +2002,7 @@ function computeFormationV9_1(
     const venueAdj = getVenueStyleAdjustment(venue, style, distanceM)
     const entry = entries.find((e) => e.horse_id === id)
     const rawJockeyName = entry?.jockey_name ?? ''
-    const aliasKey   = rawJockeyName ? (JOCKEY_ALIAS[rawJockeyName] ?? rawJockeyName) : ''
-    const jockeyScore = aliasKey ? (jockeyScoreMap[aliasKey] ?? jockeyScoreMap[rawJockeyName] ?? JOCKEY_DEFAULT_SCORE) : JOCKEY_DEFAULT_SCORE
+    const jockeyScore = rawJockeyName ? (jockeyScoreMap[rawJockeyName] ?? JOCKEY_DEFAULT_SCORE) : JOCKEY_DEFAULT_SCORE
     const closingScore = getClosingSpeedScore(entry?.last3f_1 ?? null, entry?.last3f_2 ?? null, entry?.last3f_3 ?? null)
     const horse = horses.find((h) => h.id === id)
     const bloodlineBonus = getBloodlineFitBonus(horse?.father_line ?? null, horse?.damsire_line ?? null, distanceM)
@@ -2104,8 +2049,7 @@ function computeFormationV9_1(
     const distanceFit = getDistanceFitScore(style, distanceM)
     const entry = entries.find((e) => e.horse_id === id)
     const rawJockeyName = entry?.jockey_name ?? ''
-    const aliasKey  = rawJockeyName ? (JOCKEY_ALIAS[rawJockeyName] ?? rawJockeyName) : ''
-    const jockeyScore = aliasKey ? (jockeyScoreMap[aliasKey] ?? jockeyScoreMap[rawJockeyName] ?? JOCKEY_DEFAULT_SCORE) : JOCKEY_DEFAULT_SCORE
+    const jockeyScore = rawJockeyName ? (jockeyScoreMap[rawJockeyName] ?? JOCKEY_DEFAULT_SCORE) : JOCKEY_DEFAULT_SCORE
     const closingScore = getClosingSpeedScore(entry?.last3f_1 ?? null, entry?.last3f_2 ?? null, entry?.last3f_3 ?? null)
 
     const himoScoreV9   = paceFit * Wv9.pace + distanceFit * Wv9.dist + jockeyScore * Wv9.jockey + stabilityComp * Wv9.stability
@@ -2185,8 +2129,7 @@ function computeFormationV9_2(
     const venueAdj = getVenueStyleAdjustment(venue, style, distanceM)
     const entry = entries.find((e) => e.horse_id === id)
     const rawJockeyName = entry?.jockey_name ?? ''
-    const aliasKey = rawJockeyName ? (JOCKEY_ALIAS[rawJockeyName] ?? rawJockeyName) : ''
-    const jockeyScore = aliasKey ? (jockeyScoreMap[aliasKey] ?? jockeyScoreMap[rawJockeyName] ?? JOCKEY_DEFAULT_SCORE) : JOCKEY_DEFAULT_SCORE
+    const jockeyScore = rawJockeyName ? (jockeyScoreMap[rawJockeyName] ?? JOCKEY_DEFAULT_SCORE) : JOCKEY_DEFAULT_SCORE
     const closingScore = getStyleAdjustedClosingScore(entry?.last3f_1 ?? null, entry?.last3f_2 ?? null, entry?.last3f_3 ?? null, style)
     const horse = horses.find((h) => h.id === id)
     const bloodlineBonus = getBloodlineFitBonus(horse?.father_line ?? null, horse?.damsire_line ?? null, distanceM)
@@ -2225,8 +2168,7 @@ function computeFormationV9_2(
     const distanceFit = getDistanceFitScore(style, distanceM)
     const entry = entries.find((e) => e.horse_id === id)
     const rawJockeyName = entry?.jockey_name ?? ''
-    const aliasKey = rawJockeyName ? (JOCKEY_ALIAS[rawJockeyName] ?? rawJockeyName) : ''
-    const jockeyScore = aliasKey ? (jockeyScoreMap[aliasKey] ?? jockeyScoreMap[rawJockeyName] ?? JOCKEY_DEFAULT_SCORE) : JOCKEY_DEFAULT_SCORE
+    const jockeyScore = rawJockeyName ? (jockeyScoreMap[rawJockeyName] ?? JOCKEY_DEFAULT_SCORE) : JOCKEY_DEFAULT_SCORE
     const closingRaw = getClosingSpeedScore(entry?.last3f_1 ?? null, entry?.last3f_2 ?? null, entry?.last3f_3 ?? null)
     const closingScore = getStyleAdjustedClosingScore(entry?.last3f_1 ?? null, entry?.last3f_2 ?? null, entry?.last3f_3 ?? null, style)
     const venueAdj = getVenueStyleAdjustment(venue, style, distanceM)
@@ -3393,7 +3335,7 @@ export default async function RaceDetailPage({
                       <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 11 }}>
                         <thead>
                           <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                            {['馬名', 'pace_fit', 'dist_fit', 'raw_jockey', 'alias_key', 'jockey', 'stability', 'v7 score', 'v8 score'].map((h) => (
+                            {['馬名', 'pace_fit', 'dist_fit', 'jockey_name', 'jockey', 'stability', 'v7 score', 'v8 score'].map((h) => (
                               <th key={h} style={{ padding: '4px 6px', color: '#9898B0', fontWeight: 600, textAlign: 'right', whiteSpace: 'nowrap' }}>{h}</th>
                             ))}
                             <th style={{ padding: '4px 6px', color: '#9898B0', fontWeight: 600, textAlign: 'center' }}>採用</th>
@@ -3402,7 +3344,6 @@ export default async function RaceDetailPage({
                         <tbody>
                           {formationV8Debug.rows.map((row, i) => {
                             const rankChanged = row.isHimo !== v7HimoNames.has(row.horseName)
-                            const aliasResolved = row.rawJockeyName !== row.aliasKey && row.aliasKey !== '—'
                             return (
                               <tr key={i} style={{
                                 borderBottom: '1px solid rgba(255,255,255,0.04)',
@@ -3418,8 +3359,7 @@ export default async function RaceDetailPage({
                                 </td>
                                 <td style={{ padding: '5px 6px', color: '#9898B0', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{row.paceFit.toFixed(4)}</td>
                                 <td style={{ padding: '5px 6px', color: '#9898B0', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{row.distanceFit.toFixed(2)}</td>
-                                <td style={{ padding: '5px 6px', color: aliasResolved ? '#92400E' : '#62627A', textAlign: 'right', whiteSpace: 'nowrap', fontSize: 10 }}>{row.rawJockeyName}</td>
-                                <td style={{ padding: '5px 6px', color: '#EEEEF5', textAlign: 'right', whiteSpace: 'nowrap', fontWeight: aliasResolved ? 700 : 400 }}>{row.aliasKey}</td>
+                                <td style={{ padding: '5px 6px', color: '#62627A', textAlign: 'right', whiteSpace: 'nowrap', fontSize: 10 }}>{row.rawJockeyName}</td>
                                 <td style={{ padding: '5px 6px', color: '#9898B0', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{row.jockeyScore.toFixed(2)}</td>
                                 <td style={{ padding: '5px 6px', color: '#9898B0', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{row.stabilityComponent.toFixed(4)}</td>
                                 <td style={{ padding: '5px 6px', color: '#62627A', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{row.himoScoreV7.toFixed(4)}</td>
