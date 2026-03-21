@@ -31,6 +31,8 @@ type Horse = {
   id: string
   name: string
   style: RunningStyle | null
+  father_line: string | null
+  damsire_line: string | null
 }
 
 type RaceResult = {
@@ -430,6 +432,53 @@ function getVenueStyleAdjustment(venue: string | null | undefined, style: Runnin
     if (style === 'front')       return -0.02
   }
   return 0
+}
+
+// ─── 血統スコア ────────────────────────────────────────────────────────────────
+// 父系統・母父系統の距離適性をスコア化し、小さいボーナスとして加算する（ロマン枠）
+// 父6割・母父4割で合成し、黄金配合クロスにはさらにボーナスを乗せる
+// 影響は venueAdj 程度（±0.05以内）に抑える
+
+const BLOODLINE_DIST_FIT: Record<string, { sprint: number; mile: number; middle: number; long: number }> = {
+  sunday:         { sprint: 0.55, mile: 0.65, middle: 0.80, long: 0.65 }, // 日本芝中距離の王道
+  mrprospector:   { sprint: 0.70, mile: 0.75, middle: 0.65, long: 0.40 }, // スピード型・マイル
+  roberto:        { sprint: 0.40, mile: 0.55, middle: 0.65, long: 0.80 }, // タフネス・長距離
+  northerndancer: { sprint: 0.40, mile: 0.55, middle: 0.65, long: 0.80 }, // スタミナ・欧州型
+  nasrullah:      { sprint: 0.80, mile: 0.65, middle: 0.50, long: 0.35 }, // スピード特化・短距離
+  other:          { sprint: 0.50, mile: 0.50, middle: 0.50, long: 0.50 },
+}
+
+const CROSS_BONUS: Record<string, number> = {
+  'sunday×mrprospector':   0.04, // 日本の黄金配合
+  'mrprospector×sunday':   0.04,
+  'sunday×northerndancer': 0.03,
+  'northerndancer×sunday': 0.03,
+  'sunday×roberto':        0.02,
+  'roberto×sunday':        0.02,
+}
+
+function getBloodlineFitBonus(
+  father_line: string | null,
+  damsire_line: string | null,
+  distanceM: number | null,
+): number {
+  const bucket = !distanceM ? 'middle'
+    : distanceM <= 1400 ? 'sprint'
+    : distanceM <= 1800 ? 'mile'
+    : distanceM <= 2200 ? 'middle'
+    : 'long'
+
+  const fKey = father_line?.toLowerCase().replace(/[\s-]/g, '') ?? 'other'
+  const dKey = damsire_line?.toLowerCase().replace(/[\s-]/g, '') ?? 'other'
+
+  const fFit = (BLOODLINE_DIST_FIT[fKey] ?? BLOODLINE_DIST_FIT.other)[bucket]
+  const dFit = (BLOODLINE_DIST_FIT[dKey] ?? BLOODLINE_DIST_FIT.other)[bucket]
+  const combined = fFit * 0.6 + dFit * 0.4  // 父の影響6割・母父4割
+
+  const crossKey = `${fKey}×${dKey}`
+  const crossBonus = CROSS_BONUS[crossKey] ?? 0
+
+  return (combined - 0.5) * 0.12 + crossBonus  // -0.036〜+0.054 + crossBonus
 }
 
 // 直近3走の上がり3ハロンから末脚スコアを算出（1走前を重視した加重平均）
@@ -1984,6 +2033,7 @@ type FormationV9_1DebugRow = {
   stabilityComponent: number
   himoScoreV9: number    // 比較用
   himoScoreV9_1: number
+  bloodlineBonus: number
   isHimo: boolean
   wasHimoV9: boolean     // v9 でヒモだったか
 }
@@ -2028,7 +2078,9 @@ function computeFormationV9_1(
     const aliasKey   = rawJockeyName ? (JOCKEY_ALIAS[rawJockeyName] ?? rawJockeyName) : ''
     const jockeyScore = aliasKey ? (JOCKEY_PLACE_SCORE[aliasKey] ?? JOCKEY_DEFAULT_SCORE) : JOCKEY_DEFAULT_SCORE
     const closingScore = getClosingSpeedScore(entry?.last3f_1 ?? null, entry?.last3f_2 ?? null, entry?.last3f_3 ?? null)
-    return paceFit * 0.35 + distanceFit * 0.35 + jockeyScore * 0.10 + closingScore * 0.10 + venueAdj + stabilityComp * 0.10
+    const horse = horses.find((h) => h.id === id)
+    const bloodlineBonus = getBloodlineFitBonus(horse?.father_line ?? null, horse?.damsire_line ?? null, distanceM)
+    return paceFit * 0.35 + distanceFit * 0.35 + jockeyScore * 0.10 + closingScore * 0.10 + venueAdj + stabilityComp * 0.10 + bloodlineBonus
   }
 
   const allSorted = entries
@@ -2075,9 +2127,11 @@ function computeFormationV9_1(
 
     const himoScoreV9   = paceFit * Wv9.pace + distanceFit * Wv9.dist + jockeyScore * Wv9.jockey + stabilityComp * Wv9.stability
     const venueAdj = getVenueStyleAdjustment(venue, style, distanceM)
-    const himoScoreV9_1 = paceFit * W.pace + distanceFit * W.dist + jockeyScore * W.jockey + closingScore * W.closing + stabilityComp * W.stability + venueAdj
+    const horse = horses.find((h) => h.id === id)
+    const bloodlineBonus = getBloodlineFitBonus(horse?.father_line ?? null, horse?.damsire_line ?? null, distanceM)
+    const himoScoreV9_1 = paceFit * W.pace + distanceFit * W.dist + jockeyScore * W.jockey + closingScore * W.closing + stabilityComp * W.stability + venueAdj + bloodlineBonus
 
-    return { id, paceFit, distanceFit, jockeyScore, closingScore, himoScoreV9, himoScoreV9_1 }
+    return { id, paceFit, distanceFit, jockeyScore, closingScore, himoScoreV9, himoScoreV9_1, bloodlineBonus }
   })
 
   // v9 でのヒモ集合（比較用）
@@ -2097,6 +2151,7 @@ function computeFormationV9_1(
     stabilityComponent: stabilityComp,
     himoScoreV9: s.himoScoreV9,
     himoScoreV9_1: s.himoScoreV9_1,
+    bloodlineBonus: s.bloodlineBonus,
     isHimo: himoSet.has(s.id),
     wasHimoV9: himoV9Set.has(s.id),
   }))
@@ -2174,10 +2229,12 @@ function computeFormationV9_2(
     const closingScore = getStyleAdjustedClosingScore(entry?.last3f_1 ?? null, entry?.last3f_2 ?? null, entry?.last3f_3 ?? null, style)
     const venueAdj = getVenueStyleAdjustment(venue, style, distanceM)
 
+    const horse = horses.find((h) => h.id === id)
+    const bloodlineBonus = getBloodlineFitBonus(horse?.father_line ?? null, horse?.damsire_line ?? null, distanceM)
     const himoScoreV9_1 = paceFit * Wv9_1.pace + distanceFit * Wv9_1.dist + jockeyScore * Wv9_1.jockey + closingRaw * Wv9_1.closing + stabilityComp * Wv9_1.stability + venueAdj
-    const himoScoreV9_2 = paceFit * Wv9_1.pace + distanceFit * Wv9_1.dist + jockeyScore * Wv9_1.jockey + closingScore * Wv9_1.closing + stabilityComp * Wv9_1.stability + venueAdj
+    const himoScoreV9_2 = paceFit * Wv9_1.pace + distanceFit * Wv9_1.dist + jockeyScore * Wv9_1.jockey + closingScore * Wv9_1.closing + stabilityComp * Wv9_1.stability + venueAdj + bloodlineBonus
 
-    return { id, paceFit, distanceFit, jockeyScore, closingScore, himoScoreV9: himoScoreV9_1, himoScoreV9_1: himoScoreV9_2, isHimo: false, wasHimoV9: false }
+    return { id, paceFit, distanceFit, jockeyScore, closingScore, himoScoreV9: himoScoreV9_1, himoScoreV9_1: himoScoreV9_2, bloodlineBonus, isHimo: false, wasHimoV9: false }
   })
 
   const scoredByV9_1 = [...scored].sort((a, b) => b.himoScoreV9 - a.himoScoreV9)
@@ -2196,6 +2253,7 @@ function computeFormationV9_2(
     stabilityComponent: stabilityComp,
     himoScoreV9: s.himoScoreV9,
     himoScoreV9_1: s.himoScoreV9_1,
+    bloodlineBonus: s.bloodlineBonus,
     isHimo: himoSet.has(s.id),
     wasHimoV9: himoV9_1Set.has(s.id),
   }))
@@ -2274,7 +2332,7 @@ export default async function RaceDetailPage({
     }
     formation = await rpcRes.json()
 
-    const horseRes = await fetch(`${baseUrl}/rest/v1/horses?select=id,name`, {
+    const horseRes = await fetch(`${baseUrl}/rest/v1/horses?select=id,name,father_line,damsire_line`, {
       headers: { apikey: key, Authorization: `Bearer ${key}` },
       cache: 'no-store',
     })
