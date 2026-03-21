@@ -605,8 +605,8 @@ function getValueOpportunity(
   // AI上位40%のカットライン
   const aiTopCutoff = Math.ceil(totalHorses * 0.4)
 
-  // ヒモ馬 + 軸馬 全候補を評価
-  const allCandidateIds = [...formation.himo_horses, ...formation.axis_horses]
+  // ヒモ馬のみを評価（軸馬は既にメイン軸として採用済みのため除外）
+  const allCandidateIds = [...formation.himo_horses]
 
   type Scored = {
     id: string
