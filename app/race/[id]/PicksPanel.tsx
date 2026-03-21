@@ -62,16 +62,7 @@ export default function PicksPanel({ raceId, userId, userEmail, raceDate, horses
     setLoading(false)
   }
 
-  const deletePick = async () => {
-    if (!myPick || loading || isClosed) return
-    setLoading(true)
-    await supabase.from('race_picks').delete().eq('id', myPick.id)
-    setPicks((prev) => prev.filter((p) => p.id !== myPick.id))
-    setSelected([])
-    setLoading(false)
-  }
-
-  const hasResult = top3.length === 3
+const hasResult = top3.length === 3
 
   // 各ユーザーの予想で何頭3着以内に入ったか
   const hitCount = (horseIds: string[]) =>
@@ -192,37 +183,6 @@ export default function PicksPanel({ raceId, userId, userEmail, raceDate, horses
         </>
       )}
 
-      {/* 自分の投稿済み表示 */}
-      {myPick && (
-        <div style={{
-          background: 'rgba(244,114,182,0.06)',
-          border: '1px solid rgba(244,114,182,0.20)',
-          borderRadius: 8,
-          padding: '10px 14px',
-          marginBottom: 14,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          gap: 8,
-        }}>
-          <span style={{ fontSize: 13, color: '#F472B6', fontWeight: 600 }}>
-            あなたの予想：{myPick.horse_ids.map((id) => horseName(id)).join('・')}
-          </span>
-          {!isClosed && (
-            <button
-              onClick={deletePick}
-              disabled={loading}
-              style={{
-                fontSize: 11, color: '#62627A', background: 'transparent',
-                border: '1px solid rgba(255,255,255,0.08)', borderRadius: 6,
-                padding: '3px 8px', cursor: 'pointer', fontFamily: 'inherit', flexShrink: 0,
-              }}
-            >
-              取消
-            </button>
-          )}
-        </div>
-      )}
 
       {/* みんなの予想一覧 */}
       {picks.length === 0 ? (
@@ -253,16 +213,17 @@ export default function PicksPanel({ raceId, userId, userEmail, raceDate, horses
                 <span style={{ fontSize: 13, color: isMe ? '#EEEEF5' : '#9898B0', flex: 1 }}>
                   {pick.horse_ids.map((id) => horseName(id)).join('・')}
                 </span>
-                {hasResult && (
-                  <span style={{
-                    fontSize: 12, fontWeight: 700, flexShrink: 0,
-                    color: hitCount(pick.horse_ids) === 3 ? '#14B8A6'
-                         : hitCount(pick.horse_ids) >= 1 ? '#F472B6'
-                         : '#3A3A50',
-                  }}>
-                    {hitCount(pick.horse_ids)}/3
-                  </span>
-                )}
+                {hasResult && (() => {
+                  const n = hitCount(pick.horse_ids)
+                  return (
+                    <span style={{
+                      fontSize: 12, fontWeight: 700, flexShrink: 0,
+                      color: n === 3 ? '#14B8A6' : n >= 1 ? '#F472B6' : '#3A3A50',
+                    }}>
+                      {n === 0 ? '的中なし' : `${n}/3的中`}
+                    </span>
+                  )
+                })()}
               </div>
             )
           })}
