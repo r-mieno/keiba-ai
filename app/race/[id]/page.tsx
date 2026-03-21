@@ -3624,7 +3624,7 @@ export default async function RaceDetailPage({
                       <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 11 }}>
                         <thead>
                           <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                            {['馬名', 'pace_fit', 'dist_fit', 'jockey', 'stability', 'v9 score', 'v9.1 score'].map((h) => (
+                            {['馬名', 'pace_fit', 'dist_fit', 'jockey', 'stability', 'blood bonus', 'v9 score', 'v9.1 score'].map((h) => (
                               <th key={h} style={{ padding: '4px 6px', color: '#9898B0', fontWeight: 600, textAlign: 'right', whiteSpace: 'nowrap' }}>{h}</th>
                             ))}
                             <th style={{ padding: '4px 6px', color: '#9898B0', fontWeight: 600, textAlign: 'center' }}>採用</th>
@@ -3648,6 +3648,7 @@ export default async function RaceDetailPage({
                                 <td style={{ padding: '5px 6px', color: '#9898B0', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{row.distanceFit.toFixed(2)}</td>
                                 <td style={{ padding: '5px 6px', color: '#9898B0', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{row.jockeyScore.toFixed(2)}</td>
                                 <td style={{ padding: '5px 6px', color: '#9898B0', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{row.stabilityComponent.toFixed(4)}</td>
+                                <td style={{ padding: '5px 6px', color: row.bloodlineBonus > 0 ? '#34D399' : '#62627A', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{row.bloodlineBonus > 0 ? `+${row.bloodlineBonus.toFixed(4)}` : row.bloodlineBonus.toFixed(4)}</td>
                                 <td style={{ padding: '5px 6px', color: '#62627A', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{row.himoScoreV9.toFixed(4)}</td>
                                 <td style={{ padding: '5px 6px', color: row.isHimo ? '#60A5FA' : '#9898B0', textAlign: 'right', fontWeight: row.isHimo ? 700 : 400, fontVariantNumeric: 'tabular-nums' }}>{row.himoScoreV9_1.toFixed(4)}</td>
                                 <td style={{ padding: '5px 6px', textAlign: 'center' }}>
@@ -3683,7 +3684,7 @@ export default async function RaceDetailPage({
                       <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 11 }}>
                         <thead>
                           <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                            {['馬名', 'pace_fit', 'dist_fit', 'jockey', 'closing(補正後)', 'v9.1 score', 'v9.2 score'].map((h) => (
+                            {['馬名', 'pace_fit', 'dist_fit', 'jockey', 'closing(補正後)', 'blood bonus', 'v9.1 score', 'v9.2 score'].map((h) => (
                               <th key={h} style={{ padding: '4px 6px', color: '#9898B0', fontWeight: 600, textAlign: 'right', whiteSpace: 'nowrap' }}>{h}</th>
                             ))}
                             <th style={{ padding: '4px 6px', color: '#9898B0', fontWeight: 600, textAlign: 'center' }}>採用</th>
@@ -3707,6 +3708,7 @@ export default async function RaceDetailPage({
                                 <td style={{ padding: '5px 6px', color: '#9898B0', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{row.distanceFit.toFixed(2)}</td>
                                 <td style={{ padding: '5px 6px', color: '#9898B0', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{row.jockeyScore.toFixed(2)}</td>
                                 <td style={{ padding: '5px 6px', color: row.closingScore >= 0.5 ? '#FBBF24' : '#9898B0', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{row.closingScore.toFixed(3)}</td>
+                                <td style={{ padding: '5px 6px', color: row.bloodlineBonus > 0 ? '#34D399' : '#62627A', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{row.bloodlineBonus > 0 ? `+${row.bloodlineBonus.toFixed(4)}` : row.bloodlineBonus.toFixed(4)}</td>
                                 <td style={{ padding: '5px 6px', color: '#62627A', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{row.himoScoreV9.toFixed(4)}</td>
                                 <td style={{ padding: '5px 6px', color: row.isHimo ? '#FBBF24' : '#9898B0', textAlign: 'right', fontWeight: row.isHimo ? 700 : 400, fontVariantNumeric: 'tabular-nums' }}>{row.himoScoreV9_1.toFixed(4)}</td>
                                 <td style={{ padding: '5px 6px', textAlign: 'center' }}>
