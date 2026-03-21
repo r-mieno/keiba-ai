@@ -2048,6 +2048,18 @@ type FormationV9_1DebugRow = {
   wasHimoV9: boolean     // v9 でヒモだったか
 }
 
+type AxisDebugRow = {
+  horseName: string
+  axisScore: number
+  paceFit: number
+  distanceFit: number
+  jockeyScore: number
+  closingScore: number
+  bloodlineBonus: number
+  weightAdj: number
+  isSelected: boolean  // 実際に軸として選ばれたか
+}
+
 type FormationV9_1Result = {
   formation: FormationResponse
   debug: {
@@ -2059,6 +2071,7 @@ type FormationV9_1Result = {
     rows: FormationV9_1DebugRow[]
     axisScore: number
     axisName: string
+    axisRows: AxisDebugRow[]
   }
 }
 
@@ -2079,7 +2092,7 @@ function computeFormationV9_1(
   // v9.1 では RPC の軸順に依存せず、独自スコアで全馬をランキングして軸を決定
   // paceFit は 0.5 + rawAdj*2 で正規化（deep_closer が fast で 1.0 固定になるのを防ぐ）
   // 騎手は小さい重みで補助的に加味（同脚質内の優劣をつけるため）
-  const computeAxisScore = (id: string): number => {
+  const computeAxisDetail = (id: string) => {
     const style = horses.find((h) => h.id === id)?.style ?? null
     const rawAdj = getPaceAdjustment(style, pace)
     const paceFit = 0.5 + rawAdj * 2                          // 0.34〜0.70 の範囲に圧縮
@@ -2093,17 +2106,18 @@ function computeFormationV9_1(
     const horse = horses.find((h) => h.id === id)
     const bloodlineBonus = getBloodlineFitBonus(horse?.father_line ?? null, horse?.damsire_line ?? null, distanceM)
     const weightAdj = getWeightAdjustment(entry?.weight_kg ?? null)
-    return paceFit * 0.35 + distanceFit * 0.35 + jockeyScore * 0.10 + closingScore * 0.10 + venueAdj + stabilityComp * 0.10 + bloodlineBonus + weightAdj
+    const axisScore = paceFit * 0.35 + distanceFit * 0.35 + jockeyScore * 0.10 + closingScore * 0.10 + venueAdj + stabilityComp * 0.10 + bloodlineBonus + weightAdj
+    return { id, axisScore, paceFit, distanceFit, jockeyScore, closingScore, bloodlineBonus, weightAdj }
   }
 
   const allSorted = entries
-    .map((e) => ({ id: e.horse_id, score: computeAxisScore(e.horse_id) }))
-    .sort((a, b) => b.score - a.score)
+    .map((e) => computeAxisDetail(e.horse_id))
+    .sort((a, b) => b.axisScore - a.axisScore)
 
   const axisId    = allSorted[0]?.id ?? null
-  const top1Score = allSorted[0]?.score ?? 0
-  const top2Score = allSorted[1]?.score ?? 0
-  const top4Score = allSorted[3]?.score ?? null
+  const top1Score = allSorted[0]?.axisScore ?? 0
+  const top2Score = allSorted[1]?.axisScore ?? 0
+  const top4Score = allSorted[3]?.axisScore ?? null
 
   const axisConfidenceV7 = top4Score !== null
     ? (top1Score - top2Score) * 0.7 + (top1Score - top4Score) * 0.3
@@ -2171,9 +2185,21 @@ function computeFormationV9_1(
     wasHimoV9: himoV9Set.has(s.id),
   }))
 
+  const axisRows: AxisDebugRow[] = allSorted.slice(0, 3).map((s) => ({
+    horseName: resolveName(s.id),
+    axisScore: s.axisScore,
+    paceFit: s.paceFit,
+    distanceFit: s.distanceFit,
+    jockeyScore: s.jockeyScore,
+    closingScore: s.closingScore,
+    bloodlineBonus: s.bloodlineBonus,
+    weightAdj: s.weightAdj,
+    isSelected: s.id === axisId,
+  }))
+
   return {
     formation: { ...formation, axis_count: 1, axis_horses: axisV9_1, himo_horses: himoV9_1 },
-    debug: { pace, raceType, jockeyWeight: W.jockey, axisTypeV7, himoCount, rows, axisScore: top1Score, axisName: resolveName(axisId ?? '') },
+    debug: { pace, raceType, jockeyWeight: W.jockey, axisTypeV7, himoCount, rows, axisScore: top1Score, axisName: resolveName(axisId ?? ''), axisRows },
   }
 }
 
@@ -2194,7 +2220,7 @@ function computeFormationV9_2(
   const raceType = classifyRaceType(raceName)
   const stabilityComp = 1 - stabilityScore / 100
 
-  const computeAxisScore = (id: string): number => {
+  const computeAxisDetail = (id: string) => {
     const style = horses.find((h) => h.id === id)?.style ?? null
     const rawAdj = getPaceAdjustment(style, pace)
     const paceFit = 0.5 + rawAdj * 2
@@ -2205,17 +2231,21 @@ function computeFormationV9_2(
     const aliasKey = rawJockeyName ? (JOCKEY_ALIAS[rawJockeyName] ?? rawJockeyName) : ''
     const jockeyScore = aliasKey ? (JOCKEY_PLACE_SCORE[aliasKey] ?? JOCKEY_DEFAULT_SCORE) : JOCKEY_DEFAULT_SCORE
     const closingScore = getStyleAdjustedClosingScore(entry?.last3f_1 ?? null, entry?.last3f_2 ?? null, entry?.last3f_3 ?? null, style)
-    return paceFit * 0.35 + distanceFit * 0.35 + jockeyScore * 0.10 + closingScore * 0.10 + venueAdj + stabilityComp * 0.10
+    const horse = horses.find((h) => h.id === id)
+    const bloodlineBonus = getBloodlineFitBonus(horse?.father_line ?? null, horse?.damsire_line ?? null, distanceM)
+    const weightAdj = getWeightAdjustment(entry?.weight_kg ?? null)
+    const axisScore = paceFit * 0.35 + distanceFit * 0.35 + jockeyScore * 0.10 + closingScore * 0.10 + venueAdj + stabilityComp * 0.10 + bloodlineBonus + weightAdj
+    return { id, axisScore, paceFit, distanceFit, jockeyScore, closingScore, bloodlineBonus, weightAdj }
   }
 
   const allSorted = entries
-    .map((e) => ({ id: e.horse_id, score: computeAxisScore(e.horse_id) }))
-    .sort((a, b) => b.score - a.score)
+    .map((e) => computeAxisDetail(e.horse_id))
+    .sort((a, b) => b.axisScore - a.axisScore)
 
   const axisId    = allSorted[0]?.id ?? null
-  const top1Score = allSorted[0]?.score ?? 0
-  const top2Score = allSorted[1]?.score ?? 0
-  const top4Score = allSorted[3]?.score ?? null
+  const top1Score = allSorted[0]?.axisScore ?? 0
+  const top2Score = allSorted[1]?.axisScore ?? 0
+  const top4Score = allSorted[3]?.axisScore ?? null
 
   const axisConfidence = top4Score !== null
     ? (top1Score - top2Score) * 0.7 + (top1Score - top4Score) * 0.3
@@ -2275,9 +2305,21 @@ function computeFormationV9_2(
     wasHimoV9: himoV9_1Set.has(s.id),
   }))
 
+  const axisRows: AxisDebugRow[] = allSorted.slice(0, 3).map((s) => ({
+    horseName: resolveName(s.id),
+    axisScore: s.axisScore,
+    paceFit: s.paceFit,
+    distanceFit: s.distanceFit,
+    jockeyScore: s.jockeyScore,
+    closingScore: s.closingScore,
+    bloodlineBonus: s.bloodlineBonus,
+    weightAdj: s.weightAdj,
+    isSelected: s.id === axisId,
+  }))
+
   return {
     formation: { ...formation, axis_count: 1, axis_horses: axisV9_2, himo_horses: himoV9_2 },
-    debug: { pace, raceType, jockeyWeight: Wv9_1.jockey, axisTypeV7, himoCount, rows, axisScore: top1Score, axisName: resolveName(axisId ?? '') },
+    debug: { pace, raceType, jockeyWeight: Wv9_1.jockey, axisTypeV7, himoCount, rows, axisScore: top1Score, axisName: resolveName(axisId ?? ''), axisRows },
   }
 }
 
@@ -3636,12 +3678,38 @@ export default async function RaceDetailPage({
                       <p style={{ fontSize: 11, color: '#62627A', marginBottom: 14 }}>v9 と v9.1 のヒモ構成は同一です</p>
                     )}
 
-                    {/* ── 軸馬スコア ────────────────────── */}
-                    <div style={{ marginBottom: 10, padding: '8px 10px', borderRadius: 6, background: 'rgba(20,184,166,0.06)', border: '1px solid rgba(20,184,166,0.20)' }}>
-                      <span style={{ fontSize: 10, fontWeight: 700, color: '#14B8A6', marginRight: 8 }}>軸</span>
-                      <span style={{ fontSize: 12, fontWeight: 700, color: '#EEEEF5', marginRight: 10 }}>{formationV9_1Debug.axisName}</span>
-                      <span style={{ fontSize: 11, color: '#9898B0' }}>axis score: </span>
-                      <span style={{ fontSize: 12, fontWeight: 700, color: '#14B8A6', fontVariantNumeric: 'tabular-nums' }}>{formationV9_1Debug.axisScore.toFixed(4)}</span>
+                    {/* ── 軸候補上位3頭 ─────────────────── */}
+                    <div style={{ marginBottom: 14 }}>
+                      <p style={{ fontSize: 10, fontWeight: 700, color: '#14B8A6', margin: '0 0 6px', letterSpacing: '0.08em' }}>AXIS CANDIDATES TOP 3</p>
+                      <div style={{ overflowX: 'auto' }}>
+                        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 11 }}>
+                          <thead>
+                            <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                              {['', '馬名', 'pace_fit', 'dist_fit', 'jockey', 'closing', 'blood', 'weight', 'axis score'].map((h) => (
+                                <th key={h} style={{ padding: '4px 6px', color: '#9898B0', fontWeight: 600, textAlign: 'right', whiteSpace: 'nowrap' }}>{h}</th>
+                              ))}
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {formationV9_1Debug.axisRows.map((r, i) => (
+                              <tr key={i} style={{ borderBottom: '1px solid rgba(255,255,255,0.04)', background: r.isSelected ? 'rgba(20,184,166,0.06)' : 'transparent' }}>
+                                <td style={{ padding: '5px 6px', textAlign: 'center', width: 20 }}>
+                                  {r.isSelected && <span style={{ fontSize: 10, fontWeight: 700, color: '#14B8A6' }}>◎</span>}
+                                  {!r.isSelected && <span style={{ fontSize: 10, color: '#62627A' }}>{i + 1}</span>}
+                                </td>
+                                <td style={{ padding: '5px 6px', color: r.isSelected ? '#14B8A6' : '#9898B0', fontWeight: r.isSelected ? 700 : 400, whiteSpace: 'nowrap' }}>{r.horseName}</td>
+                                <td style={{ padding: '5px 6px', color: '#9898B0', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{r.paceFit.toFixed(3)}</td>
+                                <td style={{ padding: '5px 6px', color: '#9898B0', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{r.distanceFit.toFixed(2)}</td>
+                                <td style={{ padding: '5px 6px', color: '#9898B0', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{r.jockeyScore.toFixed(2)}</td>
+                                <td style={{ padding: '5px 6px', color: '#9898B0', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{r.closingScore.toFixed(3)}</td>
+                                <td style={{ padding: '5px 6px', color: r.bloodlineBonus > 0 ? '#34D399' : '#62627A', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{r.bloodlineBonus > 0 ? `+${r.bloodlineBonus.toFixed(3)}` : r.bloodlineBonus.toFixed(3)}</td>
+                                <td style={{ padding: '5px 6px', color: r.weightAdj < 0 ? '#F87171' : r.weightAdj > 0 ? '#34D399' : '#62627A', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{r.weightAdj > 0 ? `+${r.weightAdj.toFixed(3)}` : r.weightAdj.toFixed(3)}</td>
+                                <td style={{ padding: '5px 6px', color: r.isSelected ? '#14B8A6' : '#9898B0', fontWeight: r.isSelected ? 700 : 400, textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{r.axisScore.toFixed(4)}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
                     </div>
 
                     {/* ── スコアテーブル ─────────────────── */}
@@ -3706,11 +3774,37 @@ export default async function RaceDetailPage({
                     <p style={{ fontSize: 11, color: '#9898B0', margin: '0 0 10px', lineHeight: 1.7 }}>
                       v9.1との差分: 逃げ・先行の上がりスコアを下限0.5に設定。遅い上がりでも減点しない。差し・追込はそのまま。
                     </p>
-                    <div style={{ marginBottom: 10, padding: '8px 10px', borderRadius: 6, background: 'rgba(20,184,166,0.06)', border: '1px solid rgba(20,184,166,0.20)' }}>
-                      <span style={{ fontSize: 10, fontWeight: 700, color: '#14B8A6', marginRight: 8 }}>軸</span>
-                      <span style={{ fontSize: 12, fontWeight: 700, color: '#EEEEF5', marginRight: 10 }}>{formationV9_2Debug.axisName}</span>
-                      <span style={{ fontSize: 11, color: '#9898B0' }}>axis score: </span>
-                      <span style={{ fontSize: 12, fontWeight: 700, color: '#14B8A6', fontVariantNumeric: 'tabular-nums' }}>{formationV9_2Debug.axisScore.toFixed(4)}</span>
+                    <div style={{ marginBottom: 14 }}>
+                      <p style={{ fontSize: 10, fontWeight: 700, color: '#14B8A6', margin: '0 0 6px', letterSpacing: '0.08em' }}>AXIS CANDIDATES TOP 3</p>
+                      <div style={{ overflowX: 'auto' }}>
+                        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 11 }}>
+                          <thead>
+                            <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                              {['', '馬名', 'pace_fit', 'dist_fit', 'jockey', 'closing', 'blood', 'weight', 'axis score'].map((h) => (
+                                <th key={h} style={{ padding: '4px 6px', color: '#9898B0', fontWeight: 600, textAlign: 'right', whiteSpace: 'nowrap' }}>{h}</th>
+                              ))}
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {formationV9_2Debug.axisRows.map((r, i) => (
+                              <tr key={i} style={{ borderBottom: '1px solid rgba(255,255,255,0.04)', background: r.isSelected ? 'rgba(20,184,166,0.06)' : 'transparent' }}>
+                                <td style={{ padding: '5px 6px', textAlign: 'center', width: 20 }}>
+                                  {r.isSelected && <span style={{ fontSize: 10, fontWeight: 700, color: '#14B8A6' }}>◎</span>}
+                                  {!r.isSelected && <span style={{ fontSize: 10, color: '#62627A' }}>{i + 1}</span>}
+                                </td>
+                                <td style={{ padding: '5px 6px', color: r.isSelected ? '#14B8A6' : '#9898B0', fontWeight: r.isSelected ? 700 : 400, whiteSpace: 'nowrap' }}>{r.horseName}</td>
+                                <td style={{ padding: '5px 6px', color: '#9898B0', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{r.paceFit.toFixed(3)}</td>
+                                <td style={{ padding: '5px 6px', color: '#9898B0', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{r.distanceFit.toFixed(2)}</td>
+                                <td style={{ padding: '5px 6px', color: '#9898B0', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{r.jockeyScore.toFixed(2)}</td>
+                                <td style={{ padding: '5px 6px', color: '#9898B0', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{r.closingScore.toFixed(3)}</td>
+                                <td style={{ padding: '5px 6px', color: r.bloodlineBonus > 0 ? '#34D399' : '#62627A', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{r.bloodlineBonus > 0 ? `+${r.bloodlineBonus.toFixed(3)}` : r.bloodlineBonus.toFixed(3)}</td>
+                                <td style={{ padding: '5px 6px', color: r.weightAdj < 0 ? '#F87171' : r.weightAdj > 0 ? '#34D399' : '#62627A', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{r.weightAdj > 0 ? `+${r.weightAdj.toFixed(3)}` : r.weightAdj.toFixed(3)}</td>
+                                <td style={{ padding: '5px 6px', color: r.isSelected ? '#14B8A6' : '#9898B0', fontWeight: r.isSelected ? 700 : 400, textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{r.axisScore.toFixed(4)}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
                     </div>
                     <div style={{ overflowX: 'auto' }}>
                       <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 11 }}>
