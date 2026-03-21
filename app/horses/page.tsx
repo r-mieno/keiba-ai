@@ -190,6 +190,57 @@ export default async function HorsesPage() {
           </div>
         )}
 
+        {/* 血統系統の特徴 */}
+        <div style={{
+          background: '#13141F', border: '1px solid rgba(255,255,255,0.08)',
+          borderRadius: 12, padding: '16px 20px', marginBottom: 24,
+        }}>
+          <p style={{
+            fontSize: 10, fontWeight: 700, letterSpacing: '0.10em', textTransform: 'uppercase',
+            color: '#62627A', margin: '0 0 14px',
+          }}>血統系統の特徴</p>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {[
+              {
+                key: 'sunday',
+                label: 'サンデー系',
+                desc: '芝の中距離〜長距離に強く、末脚（切れ味）に優れる。日本の芝コースに最適化。ディープインパクト、ハーツクライなど。',
+              },
+              {
+                key: 'mrprospector',
+                label: 'ミスプロ系',
+                desc: 'スピードとパワーのバランスが良く、短距離〜マイルに適性。ダートでも活躍。キングカメハメハ、ロードカナロアなど。',
+              },
+              {
+                key: 'northerndancer',
+                label: 'ノーザンダンサー系',
+                desc: 'スタミナと頑丈さが特徴。道悪・重馬場に強く、欧州型は長距離向き。サドラーズウェルズ系はステイヤーに多い。',
+              },
+              {
+                key: 'roberto',
+                label: 'ロベルト系',
+                desc: 'パワーと根性が特徴。雨・重馬場に強く、直線の短いコースや洋芝向き。ブライアンズタイム、スクリーンヒーロー、モーリスなど。',
+              },
+              {
+                key: 'nasrullah',
+                label: 'ナスルーラ系',
+                desc: 'スピード特化型が多い古い系統。現代では純粋な系統は少なく、グレイソヴリン系などを通じて残っている。',
+              },
+            ].map(({ key, label, desc }) => {
+              const meta = LINE_META[key]
+              return (
+                <div key={key} style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
+                  <span style={{
+                    fontSize: 10, fontWeight: 700, padding: '2px 7px', borderRadius: 4, flexShrink: 0, marginTop: 1,
+                    background: meta.bg, color: meta.color, border: `1px solid ${meta.border}`,
+                  }}>{label}</span>
+                  <span style={{ fontSize: 12, color: '#9898B0', lineHeight: 1.7 }}>{desc}</span>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+
         {/* テーブル */}
         <div style={{
           background: 'rgba(255,255,255,0.03)',
@@ -200,13 +251,13 @@ export default async function HorsesPage() {
           {/* Column header */}
           <div style={{
             display: 'grid',
-            gridTemplateColumns: '1fr 70px 1fr 1fr',
-            gap: 0,
-            padding: '10px 16px',
+            gridTemplateColumns: '1fr 80px 1fr 1fr',
+            gap: '0 16px',
+            padding: '10px 20px',
             borderBottom: '1px solid rgba(255,255,255,0.07)',
             background: 'rgba(255,255,255,0.02)',
           }}>
-            {['馬名', '脚質', '父 / 父系統', '母 / 母父'].map((col) => (
+            {['馬名', '脚質', '父 / 父系統', '母父 / 母父系統'].map((col) => (
               <span key={col} style={{
                 fontSize: 10, fontWeight: 700, color: '#62627A',
                 letterSpacing: '0.08em', textTransform: 'uppercase',
@@ -229,9 +280,9 @@ export default async function HorsesPage() {
                 key={horse.id}
                 style={{
                   display: 'grid',
-                  gridTemplateColumns: '1fr 70px 1fr 1fr',
-                  gap: 0,
-                  padding: '10px 16px',
+                  gridTemplateColumns: '1fr 80px 1fr 1fr',
+                  gap: '0 16px',
+                  padding: '12px 20px',
                   alignItems: 'center',
                   borderBottom: i < horses.length - 1 ? '1px solid rgba(255,255,255,0.05)' : 'none',
                   background: i % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.01)',
