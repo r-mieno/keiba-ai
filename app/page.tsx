@@ -154,7 +154,7 @@ export default async function Home() {
         </div>
 
         {/* ── 重賞カレンダー ──────────────────────────────────────────────── */}
-        <GradeCalendar today={new Date().toISOString().slice(0, 10)} />
+        <GradeCalendar today={new Date(new Date().getTime() + 9 * 60 * 60 * 1000).toISOString().slice(0, 10)} />
 
         {/* ── 馬マスタ一覧リンク ───────────────────────────────────────── */}
         <div style={{ marginTop: 24 }}>
