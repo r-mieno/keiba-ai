@@ -688,47 +688,63 @@ function getValueOpportunity(
 
 // ─── AI summary builder ───────────────────────────────────────────────────────
 
-// Combines stability, pace, and value signals into 2–3 natural-language sentences.
 function buildAiSummary(
   stabilityScore: number,
   pace: PaceType,
   advantageHorses: { style: RunningStyle }[],
   valueHorse: { horseName: string } | null,
+  distanceM: number | null,
+  grade: string | null,
+  frontCount: number,
+  axisName: string | null,
+  axisType: AxisType,
 ): string[] {
-  const stabilityTexts: [number, string][] = [
-    [81, '非常に安定した'],
-    [61, '安定した'],
-    [41, 'バランス型の'],
-    [21, '荒れやすい'],
-    [0,  '非常に荒れやすい'],
-  ]
-  const stabilityText = stabilityTexts.find(([min]) => stabilityScore >= min)?.[1] ?? '荒れやすい'
-
   const lines: string[] = []
 
-  // Line 1: race type + pace
-  lines.push(`${stabilityText}レースで${PACE_INFO[pace].label}想定。`)
+  // Line 1: グレード × 距離カテゴリ × ペース
+  const distLabel =
+    distanceM == null  ? '' :
+    distanceM <= 1400  ? 'スプリント〜マイル' :
+    distanceM <= 2000  ? 'マイル〜中距離' :
+    distanceM <= 2400  ? '中距離〜クラシック距離' : '長距離'
+  const gradeLabel = grade === 'G1' ? 'G1' : grade === 'G2' ? 'G2' : grade === 'G3' ? 'G3' : null
+  const raceChar = [gradeLabel, distLabel ? `${distLabel}戦` : null].filter(Boolean).join('の')
+  lines.push(`${raceChar ? raceChar + '。' : ''}${PACE_INFO[pace].label}が想定され、${
+    pace === 'fast'     ? 'ペースが上がりやすく後半での脚の使い方が鍵になる。' :
+    pace === 'slow'     ? 'スローになりやすく瞬発力勝負になりやすい。' :
+    pace === 'balanced' ? '平均的なペースで実力が出やすい展開。' :
+    'ペース読みが難しいレース。'
+  }`)
 
-  // Line 2: pace advantage style (or stability-based fallback)
-  if (advantageHorses.length > 0) {
-    const styleComment: Partial<Record<RunningStyle, string>> = {
-      front:       '逃げ・先行馬が有利な展開になりそう。',
-      stalker:     '先行馬が好位を取りやすい展開になりそう。',
-      closer:      '差し馬に展開が向く可能性が高い。',
-      deep_closer: '追込馬が台頭しやすい展開になりそう。',
-    }
-    lines.push(styleComment[advantageHorses[0].style] ?? 'ペース適性馬が台頭しやすい。')
-  } else {
-    if (stabilityScore >= 61) {
-      lines.push('展開の有利・不利は少なく、実力通りの結果になりやすい。')
-    } else if (stabilityScore >= 41) {
-      lines.push('展開の有利・不利は少なめだが、波乱の可能性も残る。')
-    } else {
-      lines.push('波乱含みのレースで、ヒモを広めに取りたい。')
-    }
+  // Line 2: 逃げ馬頭数 × 展開有利脚質
+  const frontNote =
+    frontCount === 0 ? '逃げ馬不在で先行馬同士の駆け引きが焦点。' :
+    frontCount === 1 ? '逃げ馬が1頭で主導権を握りやすく、ペースが読みやすい。' :
+    frontCount === 2 ? '逃げ馬が2頭おり、前半から流れやすい。' :
+                       `逃げ馬が${frontCount}頭いる乱ペースになりやすい展開。`
+  const styleNote = advantageHorses.length > 0 ? (() => {
+    const s = advantageHorses[0].style
+    return s === 'front'       ? '逃げ・先行馬が恵まれる展開になりそう。' :
+           s === 'stalker'     ? '好位から運べる先行馬に有利な流れ。' :
+           s === 'closer'      ? '差し馬に展開が向く可能性が高い。' :
+           s === 'deep_closer' ? '追込馬が台頭しやすい展開。' : ''
+  })() : (
+    stabilityScore >= 61 ? '展開の有利不利は少なく実力通りの結果になりやすい。' :
+    stabilityScore >= 41 ? '波乱の可能性も残るため広めに構えたい。' :
+                           '荒れやすいレースでヒモを広めに取りたい。'
+  )
+  lines.push(frontNote + (styleNote ? ' ' + styleNote : ''))
+
+  // Line 3: 軸信頼度
+  if (axisName) {
+    const axisComment =
+      axisType === '軸強い' ? `軸は${axisName}で信頼度が高く、1頭軸でのフォーメーションが有効。` :
+      axisType === '標準'   ? `軸候補は${axisName}だが混戦気味のため相手を手広く取りたい。` :
+                              `混戦模様のため${axisName}を中心に軸を2〜3頭に広げた買い方を推奨。`
+    lines.push(axisComment)
   }
 
-  // Line 3: value horse
+  // Line 4: 穴馬
   if (valueHorse) {
     lines.push(`配当妙味が期待できる穴候補として ${valueHorse.horseName} に注目。`)
   }
@@ -2720,8 +2736,12 @@ export default async function RaceDetailPage({
 
           const advantageHorses = getPaceAdvantageHorses(raceHorseIds, horses, pace)
           const { candidate: valueHorse, nextBest: valueNextBest } = getValueOpportunity(formation, horses, pace, allRankedHorses, entries)
-          const aiSummaryLines = buildAiSummary(raceStabilityScore, pace, advantageHorses, valueHorse)
-          const strategy = getStrategy(raceStabilityScore)
+          const aiSummaryLines = buildAiSummary(
+            raceStabilityScore, pace, advantageHorses, valueHorse,
+            race?.distance_m ?? null, race?.grade ?? null,
+            paceInfo.frontCount,
+            axisDetails[0]?.name ?? null, axisConfLevel,
+          )
 
           const favoredStyles = [...new Set(advantageHorses.map((h) => STYLE_LABELS[h.style]))]
 
@@ -3823,15 +3843,6 @@ export default async function RaceDetailPage({
                       {line}
                     </p>
                   ))}
-                </div>
-                <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                  <span style={{ fontSize: 11, color: '#9898B0', flexShrink: 0 }}>推奨戦略</span>
-                  <span style={{
-                    fontSize: 12, fontWeight: 700, padding: '3px 10px', borderRadius: 6,
-                    background: 'rgba(20,184,166,0.08)', color: '#14B8A6', border: '1px solid rgba(20,184,166,0.2)',
-                  }}>
-                    {strategy.approach}
-                  </span>
                 </div>
               </div>
 
