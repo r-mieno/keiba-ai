@@ -228,7 +228,7 @@ export default function BetPlanPanel({
               枠順確定前の暫定予想
             </p>
             <p style={{ fontSize: 11, color: '#9898B0', margin: 0, lineHeight: 1.6 }}>
-              馬番がまだ確定していません。枠順確定後にページを再読み込みすると予想が更新されます。
+              馬番は金曜に確定します。枠順確定後にページを再読み込みすると予想が更新されます。
             </p>
           </div>
         </div>

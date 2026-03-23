@@ -135,7 +135,7 @@ const hasResult = top3.length === 3
           </p>
           <p style={{ fontSize: 11, color: '#FBBF24', margin: '0 0 16px', lineHeight: 1.7 }}>
             ※ 出走取消・除外になった馬を選択していた場合、その予想は無効扱いになります。<br />
-            ※ 馬番は木曜夕方ごろ確定します。確定前は馬名のみ表示されます。
+            ※ 出走馬は木曜の夕方ごろに確定します。
           </p>
         </>
       )}
