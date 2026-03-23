@@ -133,7 +133,7 @@ const hasResult = top3.length === 3
           <p style={{ fontSize: 12, color: '#62627A', margin: '0 0 8px', lineHeight: 1.6 }}>
             3着以内に入ると思う馬を3頭選んでください（順不同）
           </p>
-          <p style={{ fontSize: 11, color: '#3A3A50', margin: '0 0 16px', lineHeight: 1.7 }}>
+          <p style={{ fontSize: 11, color: '#FBBF24', margin: '0 0 16px', lineHeight: 1.7 }}>
             ※ 出走取消・除外になった馬を選択していた場合、その予想は無効扱いになります。<br />
             ※ 馬番は木曜夕方ごろ確定します。確定前は馬名のみ表示されます。
           </p>
