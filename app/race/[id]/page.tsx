@@ -23,6 +23,7 @@ type Race = {
   start_time?: string | null
   is_test?: boolean | null
   pace_override?: string | null
+  description?: string | null
 }
 
 type RunningStyle = 'front' | 'stalker' | 'closer' | 'deep_closer'
@@ -2320,7 +2321,7 @@ export default async function RaceDetailPage({
     if (race) {
       try {
         const extRes = await fetch(
-          `${baseUrl}/rest/v1/races?id=eq.${id}&select=venue,grade,surface,distance_m,start_time,is_test,pace_override`,
+          `${baseUrl}/rest/v1/races?id=eq.${id}&select=venue,grade,surface,distance_m,start_time,is_test,pace_override,description`,
           { headers: { apikey: key, Authorization: `Bearer ${key}` }, cache: 'no-store' }
         )
         if (extRes.ok) {
@@ -2751,6 +2752,21 @@ export default async function RaceDetailPage({
             <>
               {/* ── Chapter 1: AI予想 ────────────────────────────────────── */}
               {chapterHeader('AI予想')}
+
+              {/* ── レース紹介文 ─────────────────────────────────────────── */}
+              {race?.description && (
+                <div style={{
+                  background: 'rgba(255,255,255,0.02)',
+                  border: '1px solid rgba(255,255,255,0.07)',
+                  borderRadius: 10,
+                  padding: '12px 16px',
+                  marginBottom: 8,
+                }}>
+                  <p style={{ fontSize: 12, color: '#9898B0', lineHeight: 1.85, margin: 0 }}>
+                    {race.description}
+                  </p>
+                </div>
+              )}
 
               <BetPlanPanel
                 betType={betType}
