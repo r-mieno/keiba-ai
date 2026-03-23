@@ -2634,6 +2634,13 @@ export default async function RaceDetailPage({
 
       <div style={{ maxWidth: 720, margin: '0 auto', padding: '24px 20px' }}>
 
+        {/* ── レース紹介文 ─────────────────────────────────────────────── */}
+        {race?.description && (
+          <p style={{ fontSize: 13, color: '#9898B0', lineHeight: 1.85, margin: '0 0 24px' }}>
+            {race.description}
+          </p>
+        )}
+
         {errorMessage && (
           <div style={{
             background: 'rgba(248,113,113,0.08)',
@@ -2752,21 +2759,6 @@ export default async function RaceDetailPage({
             <>
               {/* ── Chapter 1: AI予想 ────────────────────────────────────── */}
               {chapterHeader('AI予想')}
-
-              {/* ── レース紹介文 ─────────────────────────────────────────── */}
-              {race?.description && (
-                <div style={{
-                  background: 'rgba(255,255,255,0.02)',
-                  border: '1px solid rgba(255,255,255,0.07)',
-                  borderRadius: 10,
-                  padding: '12px 16px',
-                  marginBottom: 8,
-                }}>
-                  <p style={{ fontSize: 12, color: '#9898B0', lineHeight: 1.85, margin: 0 }}>
-                    {race.description}
-                  </p>
-                </div>
-              )}
 
               <BetPlanPanel
                 betType={betType}
