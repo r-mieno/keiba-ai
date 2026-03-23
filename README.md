@@ -55,6 +55,14 @@ https://keiba-ai-zeta.vercel.app/
 | アイコン | Lucide React |
 | デプロイ | Vercel |
 
+## 開発環境・使用ツール
+
+| ツール | 用途 |
+|--------|------|
+| VS Code + Claude Code | メインエディタ・AI駆動開発（実装・レビュー） |
+| GitHub | ソース管理 |
+| ChatGPT / Gemini | セカンドオピニオン（ロジック相談・設計確認）|
+
 ## ページ構成
 
 ```
