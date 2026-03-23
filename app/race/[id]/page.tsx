@@ -2514,9 +2514,11 @@ export default async function RaceDetailPage({
     : race.grade === 'G2' ? '#C0C8D0'
     : race.grade === 'G3' ? '#14B8A6'
     : '#14B8A6'
+  const normalizeSurface = (s: string) =>
+    s === 'turf' ? '芝' : s === 'dirt' ? 'ダート' : s
   const raceSurfaceColor = !race?.surface ? null
-    : race.surface === '芝' ? '#166534'
-    : race.surface === 'ダート' ? '#FB923C'
+    : (race.surface === '芝' || race.surface === 'turf') ? '#166534'
+    : (race.surface === 'ダート' || race.surface === 'dirt') ? '#FB923C'
     : null
 
   return (
@@ -2612,7 +2614,7 @@ export default async function RaceDetailPage({
                 color: raceSurfaceColor ?? '#9898B0',
                 border: `1px solid ${raceSurfaceColor ? raceSurfaceColor + '44' : 'rgba(255,255,255,0.10)'}`,
               }}>
-                {race.surface}
+                {normalizeSurface(race.surface)}
               </span>
             )}
             {race.distance_m && (
