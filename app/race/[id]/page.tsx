@@ -428,8 +428,10 @@ function getGroundStrengthScore(
     totalWeight += w
   }
   if (totalWeight === 0) return 0
+  // サンプル数が少ないほど信頼性が低いため0に近づける（1件→×0.4 / 2件→×0.7 / 3件以上→×1.0）
+  const confidence = records.length === 1 ? 0.4 : records.length === 2 ? 0.7 : 1.0
   // avgRelativePos: 0.0(1着/全頭) → +0.08、0.5(中位) → 0、1.0(最下位) → -0.08
-  return (0.5 - weightedSum / totalWeight) * 0.16
+  return (0.5 - weightedSum / totalWeight) * 0.16 * confidence
 }
 
 // 直近3走の上がり3ハロンから末脚スコアを算出（1走前を重視した加重平均）
