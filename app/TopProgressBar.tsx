@@ -52,10 +52,10 @@ export default function TopProgressBar() {
       position: 'fixed',
       top: 0,
       left: 0,
-      height: 2,
+      height: 3,
       width: `${width}%`,
-      background: 'linear-gradient(90deg, #0D9488, #14B8A6)',
-      boxShadow: '0 0 8px rgba(20,184,166,0.7)',
+      background: 'linear-gradient(90deg, #0D9488, #2DD4BF)',
+      boxShadow: '0 0 10px rgba(20,184,166,0.9), 0 0 20px rgba(20,184,166,0.5)',
       zIndex: 99999,
       opacity,
       transition: width === 100
@@ -64,6 +64,19 @@ export default function TopProgressBar() {
         ? 'none'
         : 'width 0.18s ease-out',
       pointerEvents: 'none',
-    }} />
+    }}>
+      {/* 先端の光点 */}
+      <div style={{
+        position: 'absolute',
+        right: 0,
+        top: '50%',
+        transform: 'translateY(-50%)',
+        width: 6,
+        height: 6,
+        borderRadius: '50%',
+        background: '#fff',
+        boxShadow: '0 0 6px 2px rgba(20,184,166,1), 0 0 12px 4px rgba(45,212,191,0.8)',
+      }} />
+    </div>
   )
 }
