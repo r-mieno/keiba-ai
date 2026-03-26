@@ -63,6 +63,7 @@ type HorseFormRecord = {
   finish_pos: number
   grade: string | null
   field_size: number
+  distance_m: number | null
 }
 
 // ─── 騎手スコアマスタ（複勝圏能力の初期仮説値 0〜1）──────────────────────────
@@ -403,18 +404,30 @@ function getWeightAdjustment(weightKg: number | null): number {
 
 // 過去の重賞実績から地力スコアを算出（グレード重み付き相対着順の平均）
 // データなし = 0（加算なし）、1着続き ≈ +0.08、最下位続き ≈ -0.08
-function getGroundStrengthScore(horseId: string, formRecords: HorseFormRecord[]): number {
+function getGroundStrengthScore(
+  horseId: string,
+  formRecords: HorseFormRecord[],
+  targetDistanceM: number | null = null,
+): number {
   const records = formRecords.filter((r) => r.horse_id === horseId)
   if (records.length === 0) return 0
   const gradeWeight = (grade: string | null) =>
     grade === 'G1' ? 1.5 : grade === 'G2' ? 1.2 : grade === 'G3' ? 1.0 : 0.8
+  const distanceWeight = (dm: number | null) => {
+    if (!dm || !targetDistanceM) return 1.0
+    const diff = Math.abs(dm - targetDistanceM)
+    if (diff <= 200) return 1.5
+    if (diff <= 400) return 1.0
+    return 0.5
+  }
   let weightedSum = 0
   let totalWeight = 0
   for (const r of records) {
-    const w = gradeWeight(r.grade)
+    const w = gradeWeight(r.grade) * distanceWeight(r.distance_m)
     weightedSum += (r.finish_pos / r.field_size) * w
     totalWeight += w
   }
+  if (totalWeight === 0) return 0
   // avgRelativePos: 0.0(1着/全頭) → +0.08、0.5(中位) → 0、1.0(最下位) → -0.08
   return (0.5 - weightedSum / totalWeight) * 0.16
 }
@@ -2052,7 +2065,7 @@ function computeFormationV9_1(
     const horse = horses.find((h) => h.id === id)
     const bloodlineBonus = getBloodlineFitBonus(horse?.father_line ?? null, horse?.damsire_line ?? null, distanceM)
     const weightAdj = getWeightAdjustment(entry?.weight_kg ?? null)
-    const groundStrength = getGroundStrengthScore(id, horseFormRecords)
+    const groundStrength = getGroundStrengthScore(id, horseFormRecords, distanceM)
     const axisScore = paceFit * 0.35 + distanceFit * 0.35 + jockeyScore * 0.10 + closingScore * 0.10 + venueAdj + stabilityComp * 0.10 + bloodlineBonus + weightAdj + groundStrength
     return { id, axisScore, paceFit, distanceFit, jockeyScore, closingScore, bloodlineBonus, weightAdj, groundStrength }
   }
@@ -2103,7 +2116,7 @@ function computeFormationV9_1(
     const horse = horses.find((h) => h.id === id)
     const bloodlineBonus = getBloodlineFitBonus(horse?.father_line ?? null, horse?.damsire_line ?? null, distanceM)
     const weightAdj = getWeightAdjustment(entry?.weight_kg ?? null)
-    const groundStrength = getGroundStrengthScore(id, horseFormRecords)
+    const groundStrength = getGroundStrengthScore(id, horseFormRecords, distanceM)
     const himoScoreV9_1 = paceFit * W.pace + distanceFit * W.dist + jockeyScore * W.jockey + closingScore * W.closing + stabilityComp * W.stability + venueAdj + bloodlineBonus + weightAdj + groundStrength
 
     return { id, paceFit, distanceFit, jockeyScore, closingScore, himoScoreV9, himoScoreV9_1, bloodlineBonus, weightAdj, groundStrength }
@@ -2184,7 +2197,7 @@ function computeFormationV9_2(
     const horse = horses.find((h) => h.id === id)
     const bloodlineBonus = getBloodlineFitBonus(horse?.father_line ?? null, horse?.damsire_line ?? null, distanceM)
     const weightAdj = getWeightAdjustment(entry?.weight_kg ?? null)
-    const groundStrength = getGroundStrengthScore(id, horseFormRecords)
+    const groundStrength = getGroundStrengthScore(id, horseFormRecords, distanceM)
     const axisScore = paceFit * 0.35 + distanceFit * 0.35 + jockeyScore * 0.10 + closingScore * 0.10 + venueAdj + stabilityComp * 0.10 + bloodlineBonus + weightAdj + groundStrength
     return { id, axisScore, paceFit, distanceFit, jockeyScore, closingScore, bloodlineBonus, weightAdj, groundStrength }
   }
@@ -2227,7 +2240,7 @@ function computeFormationV9_2(
     const horse = horses.find((h) => h.id === id)
     const bloodlineBonus = getBloodlineFitBonus(horse?.father_line ?? null, horse?.damsire_line ?? null, distanceM)
     const weightAdj = getWeightAdjustment(entry?.weight_kg ?? null)
-    const groundStrength = getGroundStrengthScore(id, horseFormRecords)
+    const groundStrength = getGroundStrengthScore(id, horseFormRecords, distanceM)
     const himoScoreV9_1 = paceFit * Wv9_1.pace + distanceFit * Wv9_1.dist + jockeyScore * Wv9_1.jockey + closingRaw * Wv9_1.closing + stabilityComp * Wv9_1.stability + venueAdj
     const himoScoreV9_2 = paceFit * Wv9_1.pace + distanceFit * Wv9_1.dist + jockeyScore * Wv9_1.jockey + closingScore * Wv9_1.closing + stabilityComp * Wv9_1.stability + venueAdj + bloodlineBonus + weightAdj + groundStrength
 
@@ -2386,7 +2399,7 @@ export default async function RaceDetailPage({
           { headers: { apikey: key, Authorization: `Bearer ${key}` }, cache: 'no-store' }
         ),
         fetch(
-          `${baseUrl}/rest/v1/horse_form_view?horse_id=in.(${raceHorseIdList.join(',')})&select=horse_id,finish_pos,grade,field_size`,
+          `${baseUrl}/rest/v1/horse_past_results?horse_id=in.(${raceHorseIdList.join(',')})&select=horse_id,finish_pos,grade,distance_m,field_size`,
           { headers: { apikey: key, Authorization: `Bearer ${key}` }, cache: 'no-store' }
         ),
       ])
