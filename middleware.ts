@@ -39,6 +39,14 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL('/login', request.url))
   }
 
+  // /admin は管理者のみ
+  if (pathname.startsWith('/admin')) {
+    const adminEmail = process.env.ADMIN_EMAIL
+    if (!adminEmail || user.email !== adminEmail) {
+      return NextResponse.redirect(new URL('/', request.url))
+    }
+  }
+
   return supabaseResponse
 }
 
