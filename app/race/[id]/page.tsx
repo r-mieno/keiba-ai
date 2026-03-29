@@ -402,6 +402,54 @@ function getWeightAdjustment(weightKg: number | null): number {
   return diff > 0 ? diff * -0.015 : diff * -0.008
 }
 
+// ── 脚質多様性ルール（2026-03-30以降のレースに適用） ─────────────────────────
+// 同じ脚質は最大2頭まで。ただし除外馬のスコアが選出最低馬より0.05以上高ければ救済採用。
+const DIVERSITY_RULE_START_DATE = '2026-03-30'
+
+function selectHimoDiverse(
+  sorted: { id: string; score: number }[],
+  count: number,
+  getStyle: (id: string) => string | null,
+): string[] {
+  const RESCUE_THRESHOLD = 0.05
+  const styleCount: Record<string, number> = {}
+  const selected: { id: string; score: number }[] = []
+
+  // Step1: 多様性ルールで選出
+  for (const c of sorted) {
+    if (selected.length >= count) break
+    const style = getStyle(c.id) ?? '_unknown'
+    if ((styleCount[style] ?? 0) < 2) {
+      selected.push(c)
+      styleCount[style] = (styleCount[style] ?? 0) + 1
+    }
+  }
+
+  // 頭数不足時は脚質制約なしで補充（頭数が少ないレース対応）
+  if (selected.length < count) {
+    const selectedIds = new Set(selected.map((s) => s.id))
+    for (const c of sorted) {
+      if (selected.length >= count) break
+      if (!selectedIds.has(c.id)) { selected.push(c); selectedIds.add(c.id) }
+    }
+  }
+
+  // Step2: 救済チェック（除外馬が選出最低スコアを0.05以上上回る場合は入れ替え）
+  const selectedIds = new Set(selected.map((s) => s.id))
+  const minEntry = selected.reduce((a, b) => a.score < b.score ? a : b)
+  for (const c of sorted) {
+    if (selectedIds.has(c.id)) continue
+    if (c.score < minEntry.score) break  // ソート済みなのでここで打ち切り
+    if (c.score - minEntry.score >= RESCUE_THRESHOLD) {
+      const idx = selected.findIndex((s) => s.id === minEntry.id)
+      selected[idx] = c
+      break
+    }
+  }
+
+  return selected.map((s) => s.id)
+}
+
 // 過去の重賞実績から地力スコアを算出（グレード重み付き相対着順の平均）
 // データなし = 0（加算なし）、1着続き ≈ +0.08、最下位続き ≈ -0.08
 function getGroundStrengthScore(
@@ -2046,6 +2094,7 @@ function computeFormationV9_1(
   venue: string | null | undefined = null,
   jockeyScoreMap: Record<string, number> = {},
   horseFormRecords: HorseFormRecord[] = [],
+  applyDiversity = false,
 ): FormationV9_1Result {
   const resolveName = (id: string) => horses.find((h) => h.id === id)?.name ?? id
   const raceType = classifyRaceType(raceName)
@@ -2129,7 +2178,13 @@ function computeFormationV9_1(
   const himoV9Set = new Set(scoredByV9.slice(0, himoCount).map((s) => s.id))
 
   scored.sort((a, b) => b.himoScoreV9_1 - a.himoScoreV9_1)
-  const himoV9_1 = scored.slice(0, himoCount).map((s) => s.id)
+  const himoV9_1 = applyDiversity
+    ? selectHimoDiverse(
+        scored.map((s) => ({ id: s.id, score: s.himoScoreV9_1 })),
+        himoCount,
+        (id) => horses.find((h) => h.id === id)?.style ?? null,
+      )
+    : scored.slice(0, himoCount).map((s) => s.id)
   const himoSet  = new Set(himoV9_1)
 
   const rows: FormationV9_1DebugRow[] = scored.map((s) => ({
@@ -2181,6 +2236,7 @@ function computeFormationV9_2(
   venue: string | null | undefined = null,
   jockeyScoreMap: Record<string, number> = {},
   horseFormRecords: HorseFormRecord[] = [],
+  applyDiversity = false,
 ): FormationV9_1Result {
   const resolveName = (id: string) => horses.find((h) => h.id === id)?.name ?? id
   const raceType = classifyRaceType(raceName)
@@ -2253,7 +2309,13 @@ function computeFormationV9_2(
   const himoV9_1Set = new Set(scoredByV9_1.slice(0, himoCount).map((s) => s.id))
 
   scored.sort((a, b) => b.himoScoreV9_1 - a.himoScoreV9_1)
-  const himoV9_2 = scored.slice(0, himoCount).map((s) => s.id)
+  const himoV9_2 = applyDiversity
+    ? selectHimoDiverse(
+        scored.map((s) => ({ id: s.id, score: s.himoScoreV9_1 })),
+        himoCount,
+        (id) => horses.find((h) => h.id === id)?.style ?? null,
+      )
+    : scored.slice(0, himoCount).map((s) => s.id)
   const himoSet  = new Set(himoV9_2)
 
   const rows: FormationV9_1DebugRow[] = scored.map((s) => ({
@@ -2468,16 +2530,18 @@ export default async function RaceDetailPage({
     formationV8Debug = v8Result.debug
     const v9Result = computeFormationV9(origFormation, horses, entries, pace, earlyStabilityScore, race?.distance_m ?? null, race?.race_name ?? null, jockeyScoreMap)
     formationV9Debug = v9Result.debug
-    const v9_1Result = computeFormationV9_1(origFormation, horses, entries, pace, earlyStabilityScore, race?.distance_m ?? null, race?.race_name ?? null, race?.venue ?? null, jockeyScoreMap, horseFormRecords)
+    const applyDiv = (race?.date ?? '') >= DIVERSITY_RULE_START_DATE
+    const v9_1Result = computeFormationV9_1(origFormation, horses, entries, pace, earlyStabilityScore, race?.distance_m ?? null, race?.race_name ?? null, race?.venue ?? null, jockeyScoreMap, horseFormRecords, applyDiv)
     formationV9_1Debug = v9_1Result.debug
     formation = v9_1Result.formation  // v9.1 を実際の表示に使用
-    const v9_2Result = computeFormationV9_2(origFormation, horses, entries, pace, earlyStabilityScore, race?.distance_m ?? null, race?.race_name ?? null, race?.venue ?? null, jockeyScoreMap, horseFormRecords)
+    const v9_2Result = computeFormationV9_2(origFormation, horses, entries, pace, earlyStabilityScore, race?.distance_m ?? null, race?.race_name ?? null, race?.venue ?? null, jockeyScoreMap, horseFormRecords, applyDiv)
     formationV9_2Debug = v9_2Result.debug
   }
 
   // 本番レース（is_test=false）でも 2026-03-16 以降はv9.1を適用
   if (!race?.is_test && race?.date != null && race.date >= '2026-03-16' && formation) {
-    const v9_1Result = computeFormationV9_1(formation, horses, entries, pace, earlyStabilityScore, race.distance_m ?? null, race.race_name ?? null, race.venue ?? null, jockeyScoreMap, horseFormRecords)
+    const applyDiv = race.date >= DIVERSITY_RULE_START_DATE
+    const v9_1Result = computeFormationV9_1(formation, horses, entries, pace, earlyStabilityScore, race.distance_m ?? null, race.race_name ?? null, race.venue ?? null, jockeyScoreMap, horseFormRecords, applyDiv)
     formation = v9_1Result.formation
   }
 
