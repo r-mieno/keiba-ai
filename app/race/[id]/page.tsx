@@ -435,6 +435,7 @@ function selectHimoDiverse(
   }
 
   // Step2: 救済チェック（除外馬が選出最低スコアを0.05以上上回る場合は入れ替え）
+  if (selected.length === 0) return []
   const selectedIds = new Set(selected.map((s) => s.id))
   const minEntry = selected.reduce((a, b) => a.score < b.score ? a : b)
   for (const c of sorted) {
@@ -2096,6 +2097,7 @@ function computeFormationV9_1(
   horseFormRecords: HorseFormRecord[] = [],
   applyDiversity = false,
 ): FormationV9_1Result {
+  if (entries.length === 0) return { formation: { race_id: '', race_structure_score: 0, axis_count: 0, axis_horses: [], himo_horses: [], ticket_count: 0 }, debug: { pace, raceType: '古馬戦', jockeyWeight: 0.13, axisTypeV7: '混戦', himoCount: 6, rows: [], axisScore: 0, axisName: '—', axisRows: [] } }
   const resolveName = (id: string) => horses.find((h) => h.id === id)?.name ?? id
   const raceType = classifyRaceType(raceName)
   const stabilityComp = 1 - stabilityScore / 100
