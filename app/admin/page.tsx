@@ -50,8 +50,8 @@ export default async function AdminPage() {
   const totalPV = rows.length
   const uniqueUsers = new Set(rows.map((r) => r.user_email).filter(Boolean)).size
 
-  const today = new Date().toISOString().slice(0, 10)
-  const todayPV = rows.filter((r) => r.created_at.startsWith(today)).length
+  const today = new Date().toLocaleDateString('sv', { timeZone: 'Asia/Tokyo' })
+  const todayPV = rows.filter((r) => new Date(r.created_at).toLocaleDateString('sv', { timeZone: 'Asia/Tokyo' }) === today).length
 
   // パス別PV
   const pathCount: Record<string, number> = {}
@@ -138,7 +138,7 @@ export default async function AdminPage() {
             {rows.slice(0, 30).map((r) => (
               <tr key={r.id}>
                 <td style={{ padding: '8px 12px 8px 0', color: '#62627A', whiteSpace: 'nowrap' }}>
-                  {new Date(r.created_at).toLocaleString('ja-JP', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })}
+                  {new Date(r.created_at).toLocaleString('ja-JP', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Tokyo' })}
                 </td>
                 <td style={{ padding: '8px 12px 8px 0', color: '#9898B0' }}>{r.user_email ?? '—'}</td>
                 <td style={{ padding: '8px 0', color: '#EEEEF5', fontFamily: 'monospace' }}>{r.path}</td>
