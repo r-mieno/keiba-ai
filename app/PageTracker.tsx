@@ -12,6 +12,7 @@ export default function PageTracker() {
       const supabase = createClient()
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) return
+      if (pathname.startsWith('/admin')) return
       await supabase.from('page_views').insert({
         user_id: user.id,
         user_email: user.email,
