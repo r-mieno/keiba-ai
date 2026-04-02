@@ -13,6 +13,7 @@ export async function updateHorse(horseId: string, formData: FormData) {
     dam_name:     (formData.get('dam_name') as string) || null,
     father_line:  (formData.get('father_line') as string) || null,
     damsire_line: (formData.get('damsire_line') as string) || null,
+    place3_rate:  formData.get('place3_rate') ? Number(formData.get('place3_rate')) : null,
   }).eq('id', horseId)
 
   const style = formData.get('style') as string

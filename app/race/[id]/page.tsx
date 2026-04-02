@@ -34,6 +34,7 @@ type Horse = {
   style: RunningStyle | null
   father_line: string | null
   damsire_line: string | null
+  place3_rate: number | null
 }
 
 type RaceResult = {
@@ -362,12 +363,12 @@ const BLOODLINE_DIST_FIT: Record<string, { sprint: number; mile: number; middle:
 }
 
 const CROSS_BONUS: Record<string, number> = {
-  'sunday×mrprospector':   0.04, // 日本の黄金配合
-  'mrprospector×sunday':   0.04,
-  'sunday×northerndancer': 0.03,
-  'northerndancer×sunday': 0.03,
-  'sunday×roberto':        0.02,
-  'roberto×sunday':        0.02,
+  'sunday×mrprospector':   0.02, // 日本の黄金配合
+  'mrprospector×sunday':   0.02,
+  'sunday×northerndancer': 0.02,
+  'northerndancer×sunday': 0.02,
+  'sunday×roberto':        0.01,
+  'roberto×sunday':        0.01,
 }
 
 function getBloodlineFitBonus(
@@ -394,6 +395,13 @@ function getBloodlineFitBonus(
   return (combined - 0.5) * 0.12 + crossBonus  // -0.036〜+0.054 + crossBonus
 }
 
+// 馬の3着内率補正（出走馬の平均値を基準に±調整）
+// baseline = 出走馬のplace3_rate平均（未入力馬を除く）
+function getHorsePlace3RateAdj(place3Rate: number | null, baseline: number): number {
+  if (place3Rate == null) return 0
+  return (place3Rate - baseline) * 0.20
+}
+
 // 斤量補正（基準57kg。超過分はペナルティ、軽減分は小ボーナス）
 // 57kg超: -0.015/kg、57kg未満: +0.008/kg
 function getWeightAdjustment(weightKg: number | null): number {
@@ -405,6 +413,10 @@ function getWeightAdjustment(weightKg: number | null): number {
 // ── 脚質多様性ルール（2026-03-30以降のレースに適用） ─────────────────────────
 // 同じ脚質は最大2頭まで。ただし除外馬のスコアが選出最低馬より0.05以上高ければ救済採用。
 const DIVERSITY_RULE_START_DATE = '2026-03-30'
+
+// ── 管理画面入力済み着順を地力スコアに反映（2026-04-06以降のレースに適用） ─────
+// entries.finish_position + races(grade,distance_m) を horse_past_results と合算する
+const ENTRIES_GROUND_START_DATE = '2026-04-06'
 
 function selectHimoDiverse(
   sorted: { id: string; score: number }[],
@@ -480,7 +492,7 @@ function getGroundStrengthScore(
   // サンプル数が少ないほど信頼性が低いため0に近づける（1件→×0.4 / 2件→×0.7 / 3件以上→×1.0）
   const confidence = records.length === 1 ? 0.4 : records.length === 2 ? 0.7 : 1.0
   // avgRelativePos: 0.0(1着/全頭) → +0.08、0.5(中位) → 0、1.0(最下位) → -0.08
-  return (0.5 - weightedSum / totalWeight) * 0.16 * confidence
+  return (0.5 - weightedSum / totalWeight) * 0.20 * confidence
 }
 
 // 直近3走の上がり3ハロンから末脚スコアを算出（1走前を重視した加重平均）
@@ -2102,6 +2114,10 @@ function computeFormationV9_1(
   const raceType = classifyRaceType(raceName)
   const stabilityComp = 1 - stabilityScore / 100
 
+  // 出走馬のplace3_rate平均（未入力馬を除く）を基準値として使用
+  const fieldRates = entries.map((e) => horses.find((h) => h.id === e.horse_id)?.place3_rate ?? null).filter((r): r is number => r !== null)
+  const place3RateBaseline = fieldRates.length > 0 ? fieldRates.reduce((a, b) => a + b, 0) / fieldRates.length : 0.35
+
   // v9.1 では RPC の軸順に依存せず、独自スコアで全馬をランキングして軸を決定
   // paceFit は 0.5 + rawAdj*2 で正規化（deep_closer が fast で 1.0 固定になるのを防ぐ）
   // 騎手は小さい重みで補助的に加味（同脚質内の優劣をつけるため）
@@ -2119,8 +2135,9 @@ function computeFormationV9_1(
     const bloodlineBonus = getBloodlineFitBonus(horse?.father_line ?? null, horse?.damsire_line ?? null, distanceM)
     const weightAdj = getWeightAdjustment(entry?.weight_kg ?? null)
     const groundStrength = getGroundStrengthScore(id, horseFormRecords, distanceM)
-    const axisScore = paceFit * 0.35 + distanceFit * 0.35 + jockeyScore * 0.10 + closingScore * 0.10 + venueAdj + stabilityComp * 0.10 + bloodlineBonus + weightAdj + groundStrength
-    return { id, axisScore, paceFit, distanceFit, jockeyScore, closingScore, bloodlineBonus, weightAdj, groundStrength }
+    const horsePlace3RateAdj = getHorsePlace3RateAdj(horse?.place3_rate ?? null, place3RateBaseline)
+    const axisScore = paceFit * 0.35 + distanceFit * 0.35 + jockeyScore * 0.10 + closingScore * 0.10 + venueAdj + stabilityComp * 0.10 + bloodlineBonus + weightAdj + groundStrength + horsePlace3RateAdj
+    return { id, axisScore, paceFit, distanceFit, jockeyScore, closingScore, bloodlineBonus, weightAdj, groundStrength, horsePlace3RateAdj }
   }
 
   const allSorted = entries
@@ -2170,7 +2187,8 @@ function computeFormationV9_1(
     const bloodlineBonus = getBloodlineFitBonus(horse?.father_line ?? null, horse?.damsire_line ?? null, distanceM)
     const weightAdj = getWeightAdjustment(entry?.weight_kg ?? null)
     const groundStrength = getGroundStrengthScore(id, horseFormRecords, distanceM)
-    const himoScoreV9_1 = paceFit * W.pace + distanceFit * W.dist + jockeyScore * W.jockey + closingScore * W.closing + stabilityComp * W.stability + venueAdj + bloodlineBonus + weightAdj + groundStrength
+    const horsePlace3RateAdj = getHorsePlace3RateAdj(horse?.place3_rate ?? null, place3RateBaseline)
+    const himoScoreV9_1 = paceFit * W.pace + distanceFit * W.dist + jockeyScore * W.jockey + closingScore * W.closing + stabilityComp * W.stability + venueAdj + bloodlineBonus + weightAdj + groundStrength + horsePlace3RateAdj
 
     return { id, paceFit, distanceFit, jockeyScore, closingScore, himoScoreV9, himoScoreV9_1, bloodlineBonus, weightAdj, groundStrength }
   })
@@ -2244,6 +2262,9 @@ function computeFormationV9_2(
   const raceType = classifyRaceType(raceName)
   const stabilityComp = 1 - stabilityScore / 100
 
+  const fieldRates2 = entries.map((e) => horses.find((h) => h.id === e.horse_id)?.place3_rate ?? null).filter((r): r is number => r !== null)
+  const place3RateBaseline2 = fieldRates2.length > 0 ? fieldRates2.reduce((a, b) => a + b, 0) / fieldRates2.length : 0.35
+
   const computeAxisDetail = (id: string) => {
     const style = horses.find((h) => h.id === id)?.style ?? null
     const rawAdj = getPaceAdjustment(style, pace)
@@ -2258,8 +2279,9 @@ function computeFormationV9_2(
     const bloodlineBonus = getBloodlineFitBonus(horse?.father_line ?? null, horse?.damsire_line ?? null, distanceM)
     const weightAdj = getWeightAdjustment(entry?.weight_kg ?? null)
     const groundStrength = getGroundStrengthScore(id, horseFormRecords, distanceM)
-    const axisScore = paceFit * 0.35 + distanceFit * 0.35 + jockeyScore * 0.10 + closingScore * 0.10 + venueAdj + stabilityComp * 0.10 + bloodlineBonus + weightAdj + groundStrength
-    return { id, axisScore, paceFit, distanceFit, jockeyScore, closingScore, bloodlineBonus, weightAdj, groundStrength }
+    const horsePlace3RateAdj = getHorsePlace3RateAdj(horse?.place3_rate ?? null, place3RateBaseline2)
+    const axisScore = paceFit * 0.35 + distanceFit * 0.35 + jockeyScore * 0.10 + closingScore * 0.10 + venueAdj + stabilityComp * 0.10 + bloodlineBonus + weightAdj + groundStrength + horsePlace3RateAdj
+    return { id, axisScore, paceFit, distanceFit, jockeyScore, closingScore, bloodlineBonus, weightAdj, groundStrength, horsePlace3RateAdj }
   }
 
   const allSorted = entries
@@ -2301,8 +2323,9 @@ function computeFormationV9_2(
     const bloodlineBonus = getBloodlineFitBonus(horse?.father_line ?? null, horse?.damsire_line ?? null, distanceM)
     const weightAdj = getWeightAdjustment(entry?.weight_kg ?? null)
     const groundStrength = getGroundStrengthScore(id, horseFormRecords, distanceM)
+    const horsePlace3RateAdj = getHorsePlace3RateAdj(horse?.place3_rate ?? null, place3RateBaseline2)
     const himoScoreV9_1 = paceFit * Wv9_1.pace + distanceFit * Wv9_1.dist + jockeyScore * Wv9_1.jockey + closingRaw * Wv9_1.closing + stabilityComp * Wv9_1.stability + venueAdj
-    const himoScoreV9_2 = paceFit * Wv9_1.pace + distanceFit * Wv9_1.dist + jockeyScore * Wv9_1.jockey + closingScore * Wv9_1.closing + stabilityComp * Wv9_1.stability + venueAdj + bloodlineBonus + weightAdj + groundStrength
+    const himoScoreV9_2 = paceFit * Wv9_1.pace + distanceFit * Wv9_1.dist + jockeyScore * Wv9_1.jockey + closingScore * Wv9_1.closing + stabilityComp * Wv9_1.stability + venueAdj + bloodlineBonus + weightAdj + groundStrength + horsePlace3RateAdj
 
     return { id, paceFit, distanceFit, jockeyScore, closingScore, himoScoreV9: himoScoreV9_1, himoScoreV9_1: himoScoreV9_2, bloodlineBonus, weightAdj, groundStrength, isHimo: false, wasHimoV9: false }
   })
@@ -2425,7 +2448,7 @@ export default async function RaceDetailPage({
     }
     formation = await rpcRes.json()
 
-    const horseRes = await fetch(`${baseUrl}/rest/v1/horses?select=id,name,father_line,damsire_line`, {
+    const horseRes = await fetch(`${baseUrl}/rest/v1/horses?select=id,name,father_line,damsire_line,place3_rate`, {
       headers: { apikey: key, Authorization: `Bearer ${key}` },
       cache: 'no-store',
     })
@@ -2476,6 +2499,47 @@ export default async function RaceDetailPage({
       }
       if (formRes.ok) {
         horseFormRecords = await formRes.json()
+      }
+
+      // 2026-04-06以降のレースは管理画面入力済み着順も地力スコアに加算
+      if (race?.date && race.date >= ENTRIES_GROUND_START_DATE) {
+        try {
+          const recentEntriesRes = await fetch(
+            `${baseUrl}/rest/v1/entries?horse_id=in.(${raceHorseIdList.join(',')})&finish_position=not.is.null&race_id=neq.${id}&select=horse_id,finish_position,race_id`,
+            { headers: { apikey: key, Authorization: `Bearer ${key}` }, cache: 'no-store' }
+          )
+          if (recentEntriesRes.ok) {
+            const recentEntries: { horse_id: string; finish_position: number; race_id: string }[] = await recentEntriesRes.json()
+            if (recentEntries.length > 0) {
+              const raceIds = [...new Set(recentEntries.map((e) => e.race_id))]
+              const [racesMetaRes, allEntriesRes] = await Promise.all([
+                fetch(
+                  `${baseUrl}/rest/v1/races?id=in.(${raceIds.join(',')})&select=id,grade,distance_m`,
+                  { headers: { apikey: key, Authorization: `Bearer ${key}` }, cache: 'no-store' }
+                ),
+                fetch(
+                  `${baseUrl}/rest/v1/entries?race_id=in.(${raceIds.join(',')})&select=race_id`,
+                  { headers: { apikey: key, Authorization: `Bearer ${key}` }, cache: 'no-store' }
+                ),
+              ])
+              if (racesMetaRes.ok && allEntriesRes.ok) {
+                const racesMeta: { id: string; grade: string | null; distance_m: number | null }[] = await racesMetaRes.json()
+                const allRaceEntries: { race_id: string }[] = await allEntriesRes.json()
+                const fieldSizeMap: Record<string, number> = {}
+                for (const e of allRaceEntries) {
+                  fieldSizeMap[e.race_id] = (fieldSizeMap[e.race_id] ?? 0) + 1
+                }
+                const raceMetaMap = new Map(racesMeta.map((r) => [r.id, r]))
+                const entryFormRecords: HorseFormRecord[] = recentEntries.flatMap((e) => {
+                  const meta = raceMetaMap.get(e.race_id)
+                  if (!meta) return []
+                  return [{ horse_id: e.horse_id, finish_pos: e.finish_position, grade: meta.grade, distance_m: meta.distance_m, field_size: fieldSizeMap[e.race_id] ?? 1 }]
+                })
+                horseFormRecords = [...horseFormRecords, ...entryFormRecords]
+              }
+            }
+          }
+        } catch { /* entries ground is optional */ }
       }
     }
   } catch {

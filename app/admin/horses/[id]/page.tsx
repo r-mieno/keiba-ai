@@ -34,7 +34,7 @@ export default async function AdminHorseDetailPage({ params }: { params: Promise
   const supabase = await createClient()
 
   const [{ data: horse }, { data: styleRow }, { data: pastResults }] = await Promise.all([
-    supabase.from('horses').select('id,name,sire_name,damsire_name,dam_name,father_line,damsire_line').eq('id', id).single(),
+    supabase.from('horses').select('id,name,sire_name,damsire_name,dam_name,father_line,damsire_line,place3_rate').eq('id', id).single(),
     supabase.from('horse_style_profiles').select('style').eq('horse_id', id).single(),
     supabase.from('horse_past_results').select('id,race_name,grade,distance_m,finish_pos,field_size').eq('horse_id', id).order('grade').order('race_name'),
   ])
@@ -88,6 +88,10 @@ export default async function AdminHorseDetailPage({ params }: { params: Promise
                 <option value="">—</option>
                 {BLOODLINE_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
               </select>
+            </div>
+            <div>
+              <label style={{ fontSize: 11, color: '#62627A', display: 'block', marginBottom: 4 }}>3着内率</label>
+              <input name="place3_rate" type="number" step="0.001" min="0" max="1" defaultValue={(horse as { place3_rate?: number }).place3_rate ?? ''} placeholder="0.350" style={inputStyle} />
             </div>
             <div>
               <label style={{ fontSize: 11, color: '#62627A', display: 'block', marginBottom: 4 }}>脚質</label>
