@@ -50,4 +50,6 @@ export async function saveResults(raceId: string, formData: FormData) {
 
   revalidatePath(`/admin/results/${raceId}`)
   revalidatePath(`/admin/results`)
+  revalidatePath(`/race/${raceId}`)
+  revalidatePath('/')
 }
