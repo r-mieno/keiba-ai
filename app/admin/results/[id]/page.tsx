@@ -1,6 +1,8 @@
 import { createClient } from '@/lib/supabase-server'
 import { notFound } from 'next/navigation'
 import { saveResults } from '../actions'
+import SavedToast from '../../components/SavedToast'
+import SubmitButton from '../../components/SubmitButton'
 
 export default async function AdminResultsDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -46,6 +48,7 @@ export default async function AdminResultsDetailPage({ params }: { params: Promi
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 32 }}>
+      <SavedToast message="着順を保存しました" />
       <div>
         <a href="/admin/results" style={{ fontSize: 12, color: '#62627A', textDecoration: 'none' }}>← 着順入力</a>
         <h1 style={{ fontSize: 20, fontWeight: 700, color: '#EEEEF5', margin: '8px 0 4px' }}>{race.race_name}</h1>
@@ -91,12 +94,7 @@ export default async function AdminResultsDetailPage({ params }: { params: Promi
             </tbody>
           </table>
 
-          <button type="submit" style={{
-            background: '#14B8A6', color: '#fff', border: 'none', borderRadius: 8,
-            padding: '10px 28px', fontSize: 14, fontWeight: 600, cursor: 'pointer',
-          }}>
-            保存する
-          </button>
+          <SubmitButton label="保存する" />
         </form>
       </div>
     </div>

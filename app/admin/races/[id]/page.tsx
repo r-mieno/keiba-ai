@@ -2,6 +2,8 @@ import { createClient } from '@/lib/supabase-server'
 import { notFound } from 'next/navigation'
 import { updateRace } from '../actions'
 import EntryManager from './EntryManager'
+import SavedToast from '../../components/SavedToast'
+import SubmitButton from '../../components/SubmitButton'
 
 const inputStyle = {
   background: 'rgba(255,255,255,0.05)',
@@ -37,6 +39,7 @@ export default async function AdminRaceDetailPage({ params }: { params: Promise<
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 32 }}>
+      <SavedToast />
       {/* ヘッダー */}
       <div>
         <a href="/admin/races" style={{ fontSize: 12, color: '#62627A', textDecoration: 'none' }}>← レース一覧</a>
@@ -112,12 +115,7 @@ export default async function AdminRaceDetailPage({ params }: { params: Promise<
               <textarea name="description" defaultValue={race.description ?? ''} rows={2} style={{ ...inputStyle, resize: 'vertical' }} />
             </div>
           </div>
-          <button type="submit" style={{
-            background: '#14B8A6', color: '#fff', border: 'none', borderRadius: 8,
-            padding: '9px 20px', fontSize: 13, fontWeight: 600, cursor: 'pointer',
-          }}>
-            保存
-          </button>
+          <SubmitButton label="保存" />
         </form>
       </div>
 

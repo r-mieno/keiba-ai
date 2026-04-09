@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase-server'
 import HorseList from './HorseList'
 import { createHorse } from './actions'
+import SubmitButton from '../components/SubmitButton'
 
 const inputStyle = {
   background: 'rgba(255,255,255,0.05)',
@@ -95,12 +96,7 @@ export default async function AdminHorsesPage() {
               <input name="place3_rate" type="number" step="0.001" min="0" max="1" placeholder="0.350" style={inputStyle} />
             </div>
           </div>
-          <button type="submit" style={{
-            background: '#14B8A6', color: '#0C0D14', border: 'none', borderRadius: 8,
-            padding: '9px 20px', fontSize: 13, fontWeight: 700, cursor: 'pointer',
-          }}>
-            登録
-          </button>
+          <SubmitButton label="登録" loadingLabel="登録中..." />
         </form>
       </div>
 

@@ -53,6 +53,7 @@ export async function updateHorse(horseId: string, formData: FormData) {
   }
 
   revalidatePath(`/admin/horses/${horseId}`)
+  redirect(`/admin/horses/${horseId}?saved=1`)
 }
 
 export async function addPastResult(horseId: string, formData: FormData) {
@@ -68,6 +69,7 @@ export async function addPastResult(horseId: string, formData: FormData) {
   })
 
   revalidatePath(`/admin/horses/${horseId}`)
+  redirect(`/admin/horses/${horseId}?saved=1`)
 }
 
 export async function deletePastResult(resultId: string, horseId: string) {

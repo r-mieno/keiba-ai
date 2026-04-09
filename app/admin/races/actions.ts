@@ -43,6 +43,7 @@ export async function updateRace(raceId: string, formData: FormData) {
     .eq('id', raceId)
 
   revalidatePath(`/admin/races/${raceId}`)
+  redirect(`/admin/races/${raceId}?saved=1`)
 }
 
 // ── エントリー ──────────────────────────────────────────────────────

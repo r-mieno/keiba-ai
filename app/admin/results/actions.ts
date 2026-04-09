@@ -1,6 +1,7 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
+import { redirect } from 'next/navigation'
 import { createAdminClient } from '@/lib/supabase-admin'
 
 export async function saveResults(raceId: string, formData: FormData) {
@@ -52,4 +53,5 @@ export async function saveResults(raceId: string, formData: FormData) {
   revalidatePath(`/admin/results`)
   revalidatePath(`/race/${raceId}`)
   revalidatePath('/')
+  redirect(`/admin/results/${raceId}?saved=1`)
 }

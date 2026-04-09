@@ -1,6 +1,8 @@
 import { createClient } from '@/lib/supabase-server'
 import { notFound } from 'next/navigation'
 import { updateHorse, addPastResult, deletePastResult } from '../actions'
+import SavedToast from '../../components/SavedToast'
+import SubmitButton from '../../components/SubmitButton'
 
 const BLOODLINE_OPTIONS = [
   { value: 'sunday',          label: 'サンデー系' },
@@ -46,6 +48,7 @@ export default async function AdminHorseDetailPage({ params }: { params: Promise
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 32 }}>
+      <SavedToast />
       {/* ヘッダー */}
       <div>
         <a href="/admin/horses" style={{ fontSize: 12, color: '#62627A', textDecoration: 'none' }}>← 馬マスタ</a>
@@ -101,12 +104,7 @@ export default async function AdminHorseDetailPage({ params }: { params: Promise
               </select>
             </div>
           </div>
-          <button type="submit" style={{
-            background: '#14B8A6', color: '#fff', border: 'none', borderRadius: 8,
-            padding: '9px 20px', fontSize: 13, fontWeight: 600, cursor: 'pointer',
-          }}>
-            保存
-          </button>
+          <SubmitButton label="保存" />
         </form>
       </div>
 
@@ -176,12 +174,7 @@ export default async function AdminHorseDetailPage({ params }: { params: Promise
               {GRADE_OPTIONS.map((g) => <option key={g} value={g}>{g}</option>)}
             </select>
           </div>
-          <button type="submit" style={{
-            background: '#14B8A6', color: '#fff', border: 'none', borderRadius: 8,
-            padding: '8px 16px', fontSize: 13, fontWeight: 600, cursor: 'pointer', alignSelf: 'flex-end',
-          }}>
-            追加
-          </button>
+          <SubmitButton label="追加" />
         </form>
       </div>
     </div>
