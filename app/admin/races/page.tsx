@@ -69,11 +69,21 @@ export default async function AdminRacesPage() {
             </div>
             <div>
               <label style={{ fontSize: 11, color: '#62627A', display: 'block', marginBottom: 4 }}>開催場</label>
-              <input name="venue" placeholder="例：中山" style={inputStyle} />
+              <select name="venue" style={inputStyle}>
+                <option value="">—</option>
+                {['札幌','函館','福島','新潟','東京','中山','中京','京都','阪神','小倉'].map((v) => (
+                  <option key={v} value={v}>{v}</option>
+                ))}
+              </select>
             </div>
             <div>
               <label style={{ fontSize: 11, color: '#62627A', display: 'block', marginBottom: 4 }}>距離(m)</label>
-              <input name="distance_m" type="number" placeholder="例：1200" style={inputStyle} />
+              <select name="distance_m" style={inputStyle}>
+                <option value="">—</option>
+                {[1200,1400,1600,1800,2000,2200,2400,2500,3000,3200,3600].map((d) => (
+                  <option key={d} value={d}>{d}m</option>
+                ))}
+              </select>
             </div>
             <div>
               <label style={{ fontSize: 11, color: '#62627A', display: 'block', marginBottom: 4 }}>馬場</label>

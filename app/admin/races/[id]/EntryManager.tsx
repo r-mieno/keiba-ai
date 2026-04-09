@@ -27,6 +27,29 @@ const inputStyle = {
   width: '100%',
 }
 
+const HORSE_NUMBERS = Array.from({ length: 20 }, (_, i) => i + 1)
+const WEIGHT_OPTIONS = [50, 51, 52, 53, 54, 54.5, 55, 55.5, 56, 56.5, 57, 57.5, 58, 58.5, 59]
+const RANK_OPTIONS = Array.from({ length: 20 }, (_, i) => i + 1)
+
+function SelectField({ name, label, value, options, width, placeholder }: {
+  name: string
+  label: string
+  value: number | null
+  options: number[]
+  width: number
+  placeholder?: string
+}) {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+      <label style={{ fontSize: 10, color: '#62627A' }}>{label}</label>
+      <select name={name} defaultValue={value ?? ''} style={{ ...inputStyle, width, cursor: 'pointer' }}>
+        <option value="">{placeholder ?? '—'}</option>
+        {options.map((o) => <option key={o} value={o}>{o}</option>)}
+      </select>
+    </div>
+  )
+}
+
 export default function EntryManager({
   raceId,
   entries,
@@ -68,25 +91,20 @@ export default function EntryManager({
                           style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}
                         >
                           <span style={{ fontSize: 12, color: '#EEEEF5', fontWeight: 600, minWidth: 80 }}>{entry.horse_name}</span>
-                          {[
-                            { name: 'horse_number',   label: '馬番', defaultValue: entry.horse_number,    width: 50 },
-                            { name: 'jockey_name',    label: '騎手', defaultValue: entry.jockey_name,     width: 100 },
-                            { name: 'weight_kg',      label: '斤量', defaultValue: entry.weight_kg,       width: 55 },
-                            { name: 'last3f_1',       label: '上り1', defaultValue: entry.last3f_1,       width: 55 },
-                            { name: 'last3f_2',       label: '上り2', defaultValue: entry.last3f_2,       width: 55 },
-                            { name: 'last3f_3',       label: '上り3', defaultValue: entry.last3f_3,       width: 55 },
-                            { name: 'finish_position',label: '着順', defaultValue: entry.finish_position, width: 50 },
-                            { name: 'popularity_rank',label: '人気', defaultValue: entry.popularity_rank, width: 50 },
-                          ].map(({ name, label, defaultValue, width }) => (
+                          <SelectField name="horse_number"    label="馬番" value={entry.horse_number}    options={HORSE_NUMBERS} width={60} />
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                            <label style={{ fontSize: 10, color: '#62627A' }}>騎手</label>
+                            <input name="jockey_name" defaultValue={entry.jockey_name ?? ''} style={{ ...inputStyle, width: 100 }} />
+                          </div>
+                          <SelectField name="weight_kg"       label="斤量" value={entry.weight_kg}       options={WEIGHT_OPTIONS} width={65} />
+                          {(['last3f_1','last3f_2','last3f_3'] as const).map((name, i) => (
                             <div key={name} style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                              <label style={{ fontSize: 10, color: '#62627A' }}>{label}</label>
-                              <input
-                                name={name}
-                                defaultValue={defaultValue ?? ''}
-                                style={{ ...inputStyle, width }}
-                              />
+                              <label style={{ fontSize: 10, color: '#62627A' }}>上り{i+1}</label>
+                              <input name={name} defaultValue={(entry[name] as number | null) ?? ''} style={{ ...inputStyle, width: 55 }} />
                             </div>
                           ))}
+                          <SelectField name="finish_position" label="着順" value={entry.finish_position} options={RANK_OPTIONS}   width={60} />
+                          <SelectField name="popularity_rank" label="人気" value={entry.popularity_rank} options={RANK_OPTIONS}   width={60} />
                           <div style={{ display: 'flex', gap: 6, alignSelf: 'flex-end' }}>
                             <button type="submit" style={{ background: '#14B8A6', color: '#fff', border: 'none', borderRadius: 6, padding: '6px 12px', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>保存</button>
                             <button type="button" onClick={() => setEditingId(null)} style={{ background: 'rgba(255,255,255,0.08)', color: '#9898B0', border: 'none', borderRadius: 6, padding: '6px 10px', fontSize: 12, cursor: 'pointer' }}>×</button>
@@ -128,24 +146,28 @@ export default function EntryManager({
           <datalist id="horse-list">
             {allHorseNames.map((n) => <option key={n} value={n} />)}
           </datalist>
-          {[
-            { name: 'horse_name',   label: '馬名',  type: 'text',   placeholder: '馬名',  list: 'horse-list', width: 160 },
-            { name: 'horse_number', label: '馬番',  type: 'number', placeholder: '1〜18', width: 70  },
-            { name: 'jockey_name',  label: '騎手',  type: 'text',   placeholder: '騎手名', width: 120 },
-            { name: 'weight_kg',    label: '斤量',  type: 'number', placeholder: '55',    width: 70  },
-          ].map(({ name, label, type, placeholder, list, width }) => (
-            <div key={name} style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-              <label style={{ fontSize: 11, color: '#62627A' }}>{label}</label>
-              <input
-                name={name}
-                type={type}
-                placeholder={placeholder}
-                list={list}
-                required={name === 'horse_name'}
-                style={{ ...inputStyle, width }}
-              />
-            </div>
-          ))}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+            <label style={{ fontSize: 11, color: '#62627A' }}>馬名</label>
+            <input name="horse_name" type="text" placeholder="馬名" list="horse-list" required style={{ ...inputStyle, width: 160 }} />
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+            <label style={{ fontSize: 11, color: '#62627A' }}>馬番</label>
+            <select name="horse_number" style={{ ...inputStyle, width: 70, cursor: 'pointer' }}>
+              <option value="">—</option>
+              {HORSE_NUMBERS.map((n) => <option key={n} value={n}>{n}</option>)}
+            </select>
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+            <label style={{ fontSize: 11, color: '#62627A' }}>騎手</label>
+            <input name="jockey_name" type="text" placeholder="騎手名" style={{ ...inputStyle, width: 120 }} />
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+            <label style={{ fontSize: 11, color: '#62627A' }}>斤量</label>
+            <select name="weight_kg" style={{ ...inputStyle, width: 75, cursor: 'pointer' }}>
+              <option value="">—</option>
+              {WEIGHT_OPTIONS.map((w) => <option key={w} value={w}>{w}</option>)}
+            </select>
+          </div>
           <button type="submit" style={{ background: '#14B8A6', color: '#fff', border: 'none', borderRadius: 8, padding: '8px 16px', fontSize: 13, fontWeight: 600, cursor: 'pointer', alignSelf: 'flex-end' }}>
             追加
           </button>

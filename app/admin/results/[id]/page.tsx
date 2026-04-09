@@ -31,7 +31,7 @@ export default async function AdminResultsDetailPage({ params }: { params: Promi
 
   const saveAction = saveResults.bind(null, id)
 
-  const inputStyle = {
+  const selectStyle = {
     background: 'rgba(255,255,255,0.05)',
     border: '1px solid rgba(255,255,255,0.12)',
     borderRadius: 6,
@@ -39,9 +39,10 @@ export default async function AdminResultsDetailPage({ params }: { params: Promi
     fontSize: 13,
     color: '#EEEEF5',
     outline: 'none',
-    width: 64,
-    textAlign: 'center' as const,
+    width: 72,
+    cursor: 'pointer' as const,
   }
+  const rankOptions = Array.from({ length: rows.length || 20 }, (_, i) => i + 1)
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 32 }}>
@@ -74,26 +75,16 @@ export default async function AdminResultsDetailPage({ params }: { params: Promi
                   <td style={{ padding: '10px 12px', color: '#EEEEF5', fontWeight: 500 }}>{row.horse_name}</td>
                   <td style={{ padding: '10px 12px', color: '#9898B0' }}>{row.jockey_name ?? '—'}</td>
                   <td style={{ padding: '10px 12px' }}>
-                    <input
-                      type="number"
-                      name={`finish_${row.horse_id}`}
-                      min={1}
-                      max={rows.length}
-                      defaultValue={row.finish_position ?? ''}
-                      placeholder="—"
-                      style={inputStyle}
-                    />
+                    <select name={`finish_${row.horse_id}`} defaultValue={row.finish_position ?? ''} style={selectStyle}>
+                      <option value="">—</option>
+                      {rankOptions.map((n) => <option key={n} value={n}>{n}</option>)}
+                    </select>
                   </td>
                   <td style={{ padding: '10px 12px' }}>
-                    <input
-                      type="number"
-                      name={`popularity_${row.horse_id}`}
-                      min={1}
-                      max={rows.length}
-                      defaultValue={row.popularity_rank ?? ''}
-                      placeholder="—"
-                      style={inputStyle}
-                    />
+                    <select name={`popularity_${row.horse_id}`} defaultValue={row.popularity_rank ?? ''} style={selectStyle}>
+                      <option value="">—</option>
+                      {rankOptions.map((n) => <option key={n} value={n}>{n}</option>)}
+                    </select>
                   </td>
                 </tr>
               ))}
