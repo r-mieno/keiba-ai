@@ -7,7 +7,8 @@ const NAV = [
   { href: '/admin',         label: 'アクセス解析', icon: '◈' },
   { href: '/admin/races',   label: 'レース管理',   icon: '◉' },
   { href: '/admin/results', label: '着順入力',     icon: '◎' },
-  { href: '/admin/horses',  label: '馬マスタ',     icon: '◆' },
+  { href: '/admin/horses',   label: '馬マスタ',     icon: '◆' },
+  { href: '/admin/jockeys',  label: '騎手マスタ',   icon: '◇' },
 ]
 
 export default function AdminSidebar() {
