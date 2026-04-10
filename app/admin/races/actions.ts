@@ -64,7 +64,7 @@ export async function addEntry(raceId: string, formData: FormData) {
     race_id:      raceId,
     horse_id:     horse.id,
     horse_number: formData.get('horse_number') ? Number(formData.get('horse_number')) : null,
-    jockey_name:  (formData.get('jockey_name') as string) || null,
+    jockey_name:  ((formData.get('jockey_name') as string) || '').replace(/\s+/g, '') || null,
     weight_kg:    formData.get('weight_kg') ? Number(formData.get('weight_kg')) : null,
   })
 
@@ -77,7 +77,7 @@ export async function updateEntry(raceId: string, horseId: string, formData: For
     .from('entries')
     .update({
       horse_number:     formData.get('horse_number') ? Number(formData.get('horse_number')) : null,
-      jockey_name:      (formData.get('jockey_name') as string) || null,
+      jockey_name:      ((formData.get('jockey_name') as string) || '').replace(/\s+/g, '') || null,
       weight_kg:        formData.get('weight_kg') ? Number(formData.get('weight_kg')) : null,
       last3f_1:         formData.get('last3f_1') ? Number(formData.get('last3f_1')) : null,
       last3f_2:         formData.get('last3f_2') ? Number(formData.get('last3f_2')) : null,

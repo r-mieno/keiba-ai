@@ -33,6 +33,13 @@ const SIRE_TO_LINE: Record<string, string> = {
   'リアルインパクト': 'sunday', 'トゥザグローリー': 'sunday', 'ショウナンマイティ': 'sunday',
   'ダノンバラード': 'sunday', 'レッドファルクス': 'sunday',
   'ファインニードル': 'sunday', 'ダノンプレミアム': 'sunday', 'シルバーステート': 'sunday',
+  // サンデー系（ディープ世代の産駒・主要母父）
+  'ダイワメジャー': 'sunday', 'アグネスタキオン': 'sunday', 'スペシャルウィーク': 'sunday',
+  'フジキセキ': 'sunday', 'ゼンノロブロイ': 'sunday', 'ネオユニヴァース': 'sunday',
+  'ミッキーアイル': 'sunday', 'スワーヴリチャード': 'sunday', 'ワグネリアン': 'sunday',
+  'コントレイル': 'sunday', 'シャフリヤール': 'sunday', 'イクイノックス': 'sunday',
+  'サリオス': 'sunday', 'マカヒキ': 'sunday', 'ロジャーバローズ': 'sunday',
+  'サトノアラジン': 'sunday', 'ヒルノダムール': 'sunday', 'ナカヤマフェスタ': 'sunday',
   'ポエティックフレア': 'northerndancer', 'ドレフォン': 'northerndancer',
   'パドトロワ': 'mrprospector',
   // ミスプロ系
@@ -40,6 +47,7 @@ const SIRE_TO_LINE: Record<string, string> = {
   'ルーラーシップ': 'mrprospector', 'ラブリーデイ': 'mrprospector', 'サートゥルナーリア': 'mrprospector',
   'ヤマカツエース': 'mrprospector', 'ホッコータルマエ': 'mrprospector', 'エスポワールシチー': 'mrprospector',
   'カネヒキリ': 'mrprospector', 'アグネスデジタル': 'mrprospector',
+  'エイシンフラッシュ': 'mrprospector', 'サトノクラウン': 'mrprospector', 'タスティエーラ': 'mrprospector',
   // ノーザンダンサー系
   'ハービンジャー': 'northerndancer', 'ブリックスアンドモルタル': 'northerndancer',
   'フランケル': 'northerndancer', 'モズアスコット': 'northerndancer',
@@ -47,12 +55,14 @@ const SIRE_TO_LINE: Record<string, string> = {
   'ダンスインザダーク': 'northerndancer', 'タニノギムレット': 'northerndancer',
   'ジャングルポケット': 'northerndancer', 'ガリレオ': 'northerndancer',
   'シーザスターズ': 'northerndancer', 'オーシャンブルー': 'northerndancer',
+  'クロフネ': 'northerndancer', 'フレンチデピュティ': 'northerndancer',
+  'ジオグリフ': 'northerndancer',
   // ロベルト系
   'エピファネイア': 'roberto', 'スクリーンヒーロー': 'roberto', 'シンボリクリスエス': 'roberto',
   'グラスワンダー': 'roberto', 'モーリス': 'roberto', 'ブライアンズタイム': 'roberto',
-  'タイキシャトル': 'roberto',
+  'タイキシャトル': 'roberto', 'エフフォーリア': 'roberto',
   // ナスルーラ系
-  'サンデーサイレンス': 'nasrullah',
+  'サンデーサイレンス': 'nasrullah', 'バゴ': 'nasrullah',
 }
 
 function guessLine(sireName: string): string {

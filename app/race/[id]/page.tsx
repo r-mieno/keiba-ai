@@ -383,14 +383,19 @@ function getBloodlineFitBonus(
     : 'long'
 
   const fKey = father_line?.toLowerCase().replace(/[\s-]/g, '') ?? 'other'
-  const dKey = damsire_line?.toLowerCase().replace(/[\s-]/g, '') ?? 'other'
 
   const fFit = (BLOODLINE_DIST_FIT[fKey] ?? BLOODLINE_DIST_FIT.other)[bucket]
-  const dFit = (BLOODLINE_DIST_FIT[dKey] ?? BLOODLINE_DIST_FIT.other)[bucket]
-  const combined = fFit * 0.6 + dFit * 0.4  // 父の影響6割・母父4割
+  let combined: number
+  let crossBonus = 0
 
-  const crossKey = `${fKey}×${dKey}`
-  const crossBonus = CROSS_BONUS[crossKey] ?? 0
+  if (damsire_line) {
+    const dKey = damsire_line.toLowerCase().replace(/[\s-]/g, '')
+    const dFit = (BLOODLINE_DIST_FIT[dKey] ?? BLOODLINE_DIST_FIT.other)[bucket]
+    combined = fFit * 0.6 + dFit * 0.4  // 父の影響6割・母父4割
+    crossBonus = CROSS_BONUS[`${fKey}×${dKey}`] ?? 0
+  } else {
+    combined = fFit  // 母父未設定時は父系統のみで評価
+  }
 
   return (combined - 0.5) * 0.12 + crossBonus  // -0.036〜+0.054 + crossBonus
 }
@@ -1870,7 +1875,7 @@ function computeFormationV8(
 
     const entry = entries.find((e) => e.horse_id === id)
     const rawJockeyName = entry?.jockey_name ?? ''
-    const jockeyScore = rawJockeyName ? (jockeyScoreMap[rawJockeyName] ?? JOCKEY_DEFAULT_SCORE) : JOCKEY_DEFAULT_SCORE
+    const jockeyScore = rawJockeyName ? (jockeyScoreMap[rawJockeyName.replace(/\s+/g, '')] ?? JOCKEY_DEFAULT_SCORE) : JOCKEY_DEFAULT_SCORE
 
     const himoScoreV7 = paceFit * 0.50 + distanceFit * 0.35 + stabilityComp * 0.15
     const himoScoreV8 = paceFit * 0.40 + distanceFit * 0.30 + jockeyScore * 0.20 + stabilityComp * 0.10
@@ -2013,7 +2018,7 @@ function computeFormationV9(
     const distanceFit = getDistanceFitScore(style, distanceM)
     const entry = entries.find((e) => e.horse_id === id)
     const rawJockeyName = entry?.jockey_name ?? ''
-    const jockeyScore = rawJockeyName ? (jockeyScoreMap[rawJockeyName] ?? JOCKEY_DEFAULT_SCORE) : JOCKEY_DEFAULT_SCORE
+    const jockeyScore = rawJockeyName ? (jockeyScoreMap[rawJockeyName.replace(/\s+/g, '')] ?? JOCKEY_DEFAULT_SCORE) : JOCKEY_DEFAULT_SCORE
 
     const himoScoreV8 = paceFit * 0.40 + distanceFit * 0.30 + jockeyScore * 0.20 + stabilityComp * 0.10
     const himoScoreV9 = paceFit * W.pace + distanceFit * W.dist + jockeyScore * W.jockey + stabilityComp * W.stability
@@ -2129,7 +2134,7 @@ function computeFormationV9_1(
     const venueAdj = getVenueStyleAdjustment(venue, style, distanceM)
     const entry = entries.find((e) => e.horse_id === id)
     const rawJockeyName = entry?.jockey_name ?? ''
-    const jockeyScore = rawJockeyName ? (jockeyScoreMap[rawJockeyName] ?? JOCKEY_DEFAULT_SCORE) : JOCKEY_DEFAULT_SCORE
+    const jockeyScore = rawJockeyName ? (jockeyScoreMap[rawJockeyName.replace(/\s+/g, '')] ?? JOCKEY_DEFAULT_SCORE) : JOCKEY_DEFAULT_SCORE
     const closingScore = getClosingSpeedScore(entry?.last3f_1 ?? null, entry?.last3f_2 ?? null, entry?.last3f_3 ?? null)
     const horse = horses.find((h) => h.id === id)
     const bloodlineBonus = getBloodlineFitBonus(horse?.father_line ?? null, horse?.damsire_line ?? null, distanceM)
@@ -2178,7 +2183,7 @@ function computeFormationV9_1(
     const distanceFit = getDistanceFitScore(style, distanceM)
     const entry = entries.find((e) => e.horse_id === id)
     const rawJockeyName = entry?.jockey_name ?? ''
-    const jockeyScore = rawJockeyName ? (jockeyScoreMap[rawJockeyName] ?? JOCKEY_DEFAULT_SCORE) : JOCKEY_DEFAULT_SCORE
+    const jockeyScore = rawJockeyName ? (jockeyScoreMap[rawJockeyName.replace(/\s+/g, '')] ?? JOCKEY_DEFAULT_SCORE) : JOCKEY_DEFAULT_SCORE
     const closingScore = getClosingSpeedScore(entry?.last3f_1 ?? null, entry?.last3f_2 ?? null, entry?.last3f_3 ?? null)
 
     const himoScoreV9   = paceFit * Wv9.pace + distanceFit * Wv9.dist + jockeyScore * Wv9.jockey + stabilityComp * Wv9.stability
@@ -2273,7 +2278,7 @@ function computeFormationV9_2(
     const venueAdj = getVenueStyleAdjustment(venue, style, distanceM)
     const entry = entries.find((e) => e.horse_id === id)
     const rawJockeyName = entry?.jockey_name ?? ''
-    const jockeyScore = rawJockeyName ? (jockeyScoreMap[rawJockeyName] ?? JOCKEY_DEFAULT_SCORE) : JOCKEY_DEFAULT_SCORE
+    const jockeyScore = rawJockeyName ? (jockeyScoreMap[rawJockeyName.replace(/\s+/g, '')] ?? JOCKEY_DEFAULT_SCORE) : JOCKEY_DEFAULT_SCORE
     const closingScore = getStyleAdjustedClosingScore(entry?.last3f_1 ?? null, entry?.last3f_2 ?? null, entry?.last3f_3 ?? null, style)
     const horse = horses.find((h) => h.id === id)
     const bloodlineBonus = getBloodlineFitBonus(horse?.father_line ?? null, horse?.damsire_line ?? null, distanceM)
@@ -2314,7 +2319,7 @@ function computeFormationV9_2(
     const distanceFit = getDistanceFitScore(style, distanceM)
     const entry = entries.find((e) => e.horse_id === id)
     const rawJockeyName = entry?.jockey_name ?? ''
-    const jockeyScore = rawJockeyName ? (jockeyScoreMap[rawJockeyName] ?? JOCKEY_DEFAULT_SCORE) : JOCKEY_DEFAULT_SCORE
+    const jockeyScore = rawJockeyName ? (jockeyScoreMap[rawJockeyName.replace(/\s+/g, '')] ?? JOCKEY_DEFAULT_SCORE) : JOCKEY_DEFAULT_SCORE
     const closingRaw = getClosingSpeedScore(entry?.last3f_1 ?? null, entry?.last3f_2 ?? null, entry?.last3f_3 ?? null)
     const closingScore = getStyleAdjustedClosingScore(entry?.last3f_1 ?? null, entry?.last3f_2 ?? null, entry?.last3f_3 ?? null, style)
     const venueAdj = getVenueStyleAdjustment(venue, style, distanceM)
@@ -2476,7 +2481,7 @@ export default async function RaceDetailPage({
     if (entriesRes.ok) entries = await entriesRes.json()
     if (jockeyStatsRes.ok) {
       const stats: JockeyStat[] = await jockeyStatsRes.json()
-      jockeyScoreMap = Object.fromEntries(stats.map((s) => [s.jockey_name, s.place3_rate]))
+      jockeyScoreMap = Object.fromEntries(stats.map((s) => [s.jockey_name.replace(/\s+/g, ''), s.place3_rate]))
     }
 
     // Fetch running style from horse_style_profiles and merge into horses array
