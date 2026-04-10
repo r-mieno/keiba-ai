@@ -22,15 +22,30 @@ const selectStyle = {
 export default async function AdminHorsesPage() {
   const supabase = await createClient()
 
-  const [{ data: horses }, { data: styles }] = await Promise.all([
+  const [{ data: horses }, { data: styles }, { data: entries }, { data: races }] = await Promise.all([
     supabase.from('horses').select('id,name,sire_name,father_line').order('name'),
     supabase.from('horse_style_profiles').select('horse_id,style'),
+    supabase.from('entries').select('horse_id,race_id'),
+    supabase.from('races').select('id,race_name'),
   ])
 
   const styleMap = new Map((styles ?? []).map((s) => [s.horse_id, s.style]))
+  const raceNameMap = new Map((races ?? []).map((r) => [r.id, r.race_name]))
+
+  // horse_id → レース名一覧
+  const horseRaceMap = new Map<string, string[]>()
+  for (const e of entries ?? []) {
+    const raceName = raceNameMap.get(e.race_id)
+    if (!raceName) continue
+    const list = horseRaceMap.get(e.horse_id) ?? []
+    list.push(raceName)
+    horseRaceMap.set(e.horse_id, list)
+  }
+
   const horseRows = (horses ?? []).map((h) => ({
     ...h,
     style: styleMap.get(h.id) ?? null,
+    raceNames: horseRaceMap.get(h.id) ?? [],
   }))
 
   return (
