@@ -1,23 +1,10 @@
 import { createClient } from '@/lib/supabase-server'
 import { notFound } from 'next/navigation'
-import { updateHorse, addPastResult, deletePastResult } from '../actions'
+import { addPastResult, deletePastResult } from '../actions'
 import SavedToast from '../../components/SavedToast'
 import SubmitButton from '../../components/SubmitButton'
+import HorseInfoForm from './HorseInfoForm'
 
-const BLOODLINE_OPTIONS = [
-  { value: 'sunday',          label: 'サンデー系' },
-  { value: 'mrprospector',    label: 'ミスプロ系' },
-  { value: 'northerndancer',  label: 'ノーザンダンサー系' },
-  { value: 'roberto',         label: 'ロベルト系' },
-  { value: 'nasrullah',       label: 'ナスルーラ系' },
-  { value: 'other',           label: 'その他' },
-]
-const STYLE_OPTIONS = [
-  { value: 'front',        label: '逃げ' },
-  { value: 'stalker',      label: '先行' },
-  { value: 'closer',       label: '差し' },
-  { value: 'deep_closer',  label: '追い込み' },
-]
 const GRADE_OPTIONS = ['G1', 'G2', 'G3']
 
 const inputStyle = {
@@ -43,7 +30,6 @@ export default async function AdminHorseDetailPage({ params }: { params: Promise
 
   if (!horse) notFound()
 
-  const updateAction = updateHorse.bind(null, id)
   const addAction = addPastResult.bind(null, id)
 
   return (
@@ -60,52 +46,7 @@ export default async function AdminHorseDetailPage({ params }: { params: Promise
         <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.10em', textTransform: 'uppercase', color: '#62627A', margin: '0 0 16px' }}>
           基本情報・血統・脚質
         </p>
-        <form action={updateAction}>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12, marginBottom: 16 }}>
-            <div>
-              <label style={{ fontSize: 11, color: '#62627A', display: 'block', marginBottom: 4 }}>馬名</label>
-              <input name="name" defaultValue={horse.name ?? ''} style={inputStyle} />
-            </div>
-            <div>
-              <label style={{ fontSize: 11, color: '#62627A', display: 'block', marginBottom: 4 }}>父</label>
-              <input name="sire_name" defaultValue={horse.sire_name ?? ''} placeholder="父名" style={inputStyle} />
-            </div>
-            <div>
-              <label style={{ fontSize: 11, color: '#62627A', display: 'block', marginBottom: 4 }}>母父</label>
-              <input name="damsire_name" defaultValue={horse.damsire_name ?? ''} placeholder="母父名" style={inputStyle} />
-            </div>
-            <div>
-              <label style={{ fontSize: 11, color: '#62627A', display: 'block', marginBottom: 4 }}>母</label>
-              <input name="dam_name" defaultValue={(horse as { dam_name?: string }).dam_name ?? ''} placeholder="母名" style={inputStyle} />
-            </div>
-            <div>
-              <label style={{ fontSize: 11, color: '#62627A', display: 'block', marginBottom: 4 }}>父系統</label>
-              <select name="father_line" defaultValue={horse.father_line ?? ''} style={inputStyle}>
-                <option value="">—</option>
-                {BLOODLINE_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
-              </select>
-            </div>
-            <div>
-              <label style={{ fontSize: 11, color: '#62627A', display: 'block', marginBottom: 4 }}>母父系統</label>
-              <select name="damsire_line" defaultValue={horse.damsire_line ?? ''} style={inputStyle}>
-                <option value="">—</option>
-                {BLOODLINE_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
-              </select>
-            </div>
-            <div>
-              <label style={{ fontSize: 11, color: '#62627A', display: 'block', marginBottom: 4 }}>3着内率</label>
-              <input name="place3_rate" type="number" step="0.001" min="0" max="1" defaultValue={(horse as { place3_rate?: number }).place3_rate ?? ''} placeholder="0.350" style={inputStyle} />
-            </div>
-            <div>
-              <label style={{ fontSize: 11, color: '#62627A', display: 'block', marginBottom: 4 }}>脚質</label>
-              <select name="style" defaultValue={styleRow?.style ?? ''} style={inputStyle}>
-                <option value="">—</option>
-                {STYLE_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
-              </select>
-            </div>
-          </div>
-          <SubmitButton label="保存" />
-        </form>
+        <HorseInfoForm horseId={id} horse={horse as { name: string; sire_name?: string | null; damsire_name?: string | null; dam_name?: string | null; father_line?: string | null; damsire_line?: string | null; place3_rate?: number | null }} style={styleRow?.style ?? null} />
       </div>
 
       {/* 過去実績 */}
