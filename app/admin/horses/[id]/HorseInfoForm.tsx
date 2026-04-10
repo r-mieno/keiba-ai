@@ -48,6 +48,10 @@ const SIRE_TO_LINE: Record<string, string> = {
   'ヤマカツエース': 'mrprospector', 'ホッコータルマエ': 'mrprospector', 'エスポワールシチー': 'mrprospector',
   'カネヒキリ': 'mrprospector', 'アグネスデジタル': 'mrprospector',
   'エイシンフラッシュ': 'mrprospector', 'サトノクラウン': 'mrprospector', 'タスティエーラ': 'mrprospector',
+  'アメリカンファラオ': 'mrprospector', 'American Pharoah': 'mrprospector',
+  'ワークフォース': 'mrprospector', 'Workforce': 'mrprospector',
+  'トゥザワールド': 'mrprospector', 'ジョーカプチーノ': 'sunday',
+  'スカイダイヤモンズ': 'sunday',
   // ノーザンダンサー系
   'ハービンジャー': 'northerndancer', 'ブリックスアンドモルタル': 'northerndancer',
   'フランケル': 'northerndancer', 'モズアスコット': 'northerndancer',
@@ -56,7 +60,8 @@ const SIRE_TO_LINE: Record<string, string> = {
   'ジャングルポケット': 'northerndancer', 'ガリレオ': 'northerndancer',
   'シーザスターズ': 'northerndancer', 'オーシャンブルー': 'northerndancer',
   'クロフネ': 'northerndancer', 'フレンチデピュティ': 'northerndancer',
-  'ジオグリフ': 'northerndancer',
+  'ジオグリフ': 'northerndancer', 'ハードスパン': 'northerndancer',
+  'スリゴーベイ': 'northerndancer', 'Sligo Bay': 'northerndancer',
   // ロベルト系
   'エピファネイア': 'roberto', 'スクリーンヒーロー': 'roberto', 'シンボリクリスエス': 'roberto',
   'グラスワンダー': 'roberto', 'モーリス': 'roberto', 'ブライアンズタイム': 'roberto',
