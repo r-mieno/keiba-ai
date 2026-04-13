@@ -42,6 +42,7 @@ export async function updateHorse(horseId: string, formData: FormData) {
     father_line:  (formData.get('father_line') as string) || null,
     damsire_line: (formData.get('damsire_line') as string) || null,
     place3_rate:  formData.get('place3_rate') ? Number(formData.get('place3_rate')) : null,
+    race_count:   formData.get('race_count')  ? Number(formData.get('race_count'))  : null,
   }).eq('id', horseId)
 
   const style = formData.get('style') as string
@@ -75,5 +76,30 @@ export async function addPastResult(horseId: string, formData: FormData) {
 export async function deletePastResult(resultId: string, horseId: string) {
   const supabase = createAdminClient()
   await supabase.from('horse_past_results').delete().eq('id', resultId)
+  revalidatePath(`/admin/horses/${horseId}`)
+}
+
+export async function upsertFormRecord(horseId: string, formData: FormData) {
+  const supabase = createAdminClient()
+
+  await supabase.from('horse_form_records').upsert(
+    {
+      horse_id:   horseId,
+      race_seq:   Number(formData.get('race_seq')),
+      race_name:  (formData.get('race_name') as string) || null,
+      last3f:     formData.get('last3f')     ? Number(formData.get('last3f'))     : null,
+      corner_pos: formData.get('corner_pos') ? Number(formData.get('corner_pos')) : null,
+      finish_pos: formData.get('finish_pos') ? Number(formData.get('finish_pos')) : null,
+    },
+    { onConflict: 'horse_id,race_seq' }
+  )
+
+  revalidatePath(`/admin/horses/${horseId}`)
+  redirect(`/admin/horses/${horseId}?saved=1`)
+}
+
+export async function deleteFormRecord(recordId: string, horseId: string) {
+  const supabase = createAdminClient()
+  await supabase.from('horse_form_records').delete().eq('id', recordId)
   revalidatePath(`/admin/horses/${horseId}`)
 }

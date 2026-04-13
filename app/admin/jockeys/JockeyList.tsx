@@ -6,6 +6,9 @@ import { updateJockey, deleteJockey } from './actions'
 type Jockey = {
   jockey_name: string
   place3_rate: number | null
+  g1_wins: number | null
+  g2_wins: number | null
+  g3_wins: number | null
 }
 
 const inputStyle = {
@@ -50,7 +53,7 @@ export default function JockeyList({ jockeys }: { jockeys: Jockey[] }) {
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
           <thead>
             <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
-              {['騎手名', '3着内率', ''].map((h) => (
+              {['騎手名', '3着内率', 'G1勝', 'G2勝', 'G3勝', ''].map((h) => (
                 <th key={h} style={{ textAlign: 'left', padding: '12px 16px', color: '#62627A', fontWeight: 600, fontSize: 11 }}>{h}</th>
               ))}
             </tr>
@@ -63,24 +66,28 @@ export default function JockeyList({ jockeys }: { jockeys: Jockey[] }) {
                   {isEditing ? (
                     <>
                       <td style={{ padding: '8px 16px', color: '#EEEEF5', fontWeight: 500 }}>{j.jockey_name}</td>
-                      <td colSpan={2} style={{ padding: '8px 16px' }}>
+                      <td colSpan={5} style={{ padding: '8px 16px' }}>
                         <form
                           action={async (fd) => { await updateJockey(fd); setEditingName(null) }}
-                          style={{ display: 'flex', gap: 8, alignItems: 'center' }}
+                          style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}
                         >
                           <input type="hidden" name="jockey_name" value={j.jockey_name} />
-                          <input
-                            name="place3_rate"
-                            type="number"
-                            step="0.001"
-                            min="0"
-                            max="1"
-                            defaultValue={j.place3_rate ?? ''}
-                            placeholder="0.350"
-                            style={inputStyle}
-                          />
-                          <button type="submit" style={{ background: '#14B8A6', color: '#fff', border: 'none', borderRadius: 6, padding: '5px 12px', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>保存</button>
-                          <button type="button" onClick={() => setEditingName(null)} style={{ background: 'rgba(255,255,255,0.08)', color: '#9898B0', border: 'none', borderRadius: 6, padding: '5px 10px', fontSize: 12, cursor: 'pointer' }}>×</button>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                            <label style={{ fontSize: 10, color: '#62627A' }}>3着内率</label>
+                            <input name="place3_rate" type="number" step="0.001" min="0" max="1" defaultValue={j.place3_rate ?? ''} placeholder="0.350" style={inputStyle} />
+                          </div>
+                          {[
+                            { name: 'g1_wins', label: 'G1勝', val: j.g1_wins },
+                            { name: 'g2_wins', label: 'G2勝', val: j.g2_wins },
+                            { name: 'g3_wins', label: 'G3勝', val: j.g3_wins },
+                          ].map(({ name, label, val }) => (
+                            <div key={name} style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                              <label style={{ fontSize: 10, color: '#62627A' }}>{label}</label>
+                              <input name={name} type="number" step="1" min="0" defaultValue={val ?? 0} style={{ ...inputStyle, width: 56 }} />
+                            </div>
+                          ))}
+                          <button type="submit" style={{ background: '#14B8A6', color: '#fff', border: 'none', borderRadius: 6, padding: '5px 12px', fontSize: 12, fontWeight: 600, cursor: 'pointer', marginTop: 14 }}>保存</button>
+                          <button type="button" onClick={() => setEditingName(null)} style={{ background: 'rgba(255,255,255,0.08)', color: '#9898B0', border: 'none', borderRadius: 6, padding: '5px 10px', fontSize: 12, cursor: 'pointer', marginTop: 14 }}>×</button>
                         </form>
                       </td>
                     </>
@@ -90,6 +97,9 @@ export default function JockeyList({ jockeys }: { jockeys: Jockey[] }) {
                       <td style={{ padding: '12px 16px', color: '#9898B0' }}>
                         {j.place3_rate != null ? j.place3_rate.toFixed(3) : '—'}
                       </td>
+                      <td style={{ padding: '12px 16px', color: '#9898B0' }}>{j.g1_wins ?? 0}</td>
+                      <td style={{ padding: '12px 16px', color: '#9898B0' }}>{j.g2_wins ?? 0}</td>
+                      <td style={{ padding: '12px 16px', color: '#9898B0' }}>{j.g3_wins ?? 0}</td>
                       <td style={{ padding: '12px 16px' }}>
                         <div style={{ display: 'flex', gap: 8 }}>
                           <button

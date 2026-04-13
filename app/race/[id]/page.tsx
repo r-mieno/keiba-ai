@@ -35,6 +35,7 @@ type Horse = {
   father_line: string | null
   damsire_line: string | null
   place3_rate: number | null
+  race_count: number | null
 }
 
 type RaceResult = {
@@ -57,6 +58,9 @@ type Entry = {
 type JockeyStat = {
   jockey_name: string
   place3_rate: number
+  g1_wins: number | null
+  g2_wins: number | null
+  g3_wins: number | null
 }
 
 type HorseFormRecord = {
@@ -65,6 +69,15 @@ type HorseFormRecord = {
   grade: string | null
   field_size: number
   distance_m: number | null
+}
+
+// horse_form_records テーブル（直近走行データ：上がり・コーナー・着順）
+type HorseRunForm = {
+  horse_id: string
+  race_seq: number       // 連番（大きいほど新しい）
+  last3f: number | null
+  corner_pos: number | null
+  finish_pos: number | null
 }
 
 // ─── 騎手スコアマスタ（複勝圏能力の初期仮説値 0〜1）──────────────────────────
@@ -427,18 +440,23 @@ function selectHimoDiverse(
   sorted: { id: string; score: number }[],
   count: number,
   getStyle: (id: string) => string | null,
+  pace: PaceType = 'balanced',
 ): string[] {
   const RESCUE_THRESHOLD = 0.05
   const styleCount: Record<string, number> = {}
   const selected: { id: string; score: number }[] = []
 
-  // Step1: 多様性ルールで選出
+  // ハイペースの逃げ馬は共倒れリスクが高いため1頭まで
+  const styleLimit = (style: string) =>
+    style === 'front' && pace === 'fast' ? 1 : 2
+
+  // Step1: 多様性ルールで選出（styleがnullの馬は制約なしで通過）
   for (const c of sorted) {
     if (selected.length >= count) break
-    const style = getStyle(c.id) ?? '_unknown'
-    if ((styleCount[style] ?? 0) < 2) {
+    const style = getStyle(c.id)
+    if (style === null || (styleCount[style] ?? 0) < styleLimit(style)) {
       selected.push(c)
-      styleCount[style] = (styleCount[style] ?? 0) + 1
+      if (style !== null) styleCount[style] = (styleCount[style] ?? 0) + 1
     }
   }
 
@@ -2071,6 +2089,9 @@ type FormationV9_1DebugRow = {
   groundStrength: number
   isHimo: boolean
   wasHimoV9: boolean     // v9 でヒモだったか
+  postPositionAdj?: number
+  horsePlace3Rate?: number
+  recentFormScore?: number
 }
 
 type AxisDebugRow = {
@@ -2084,6 +2105,9 @@ type AxisDebugRow = {
   weightAdj: number
   groundStrength: number
   isSelected: boolean  // 実際に軸として選ばれたか
+  postPositionAdj?: number   // v10以降: 枠順×会場補正
+  horsePlace3Rate?: number   // v10以降: 馬の3着内率（生値）
+  recentFormScore?: number   // v10以降: 近走グレード×着順スコア
 }
 
 type FormationV9_1Result = {
@@ -2383,6 +2407,343 @@ function computeFormationV9_2(
   }
 }
 
+// ─── v10: 枠順×会場補正 + 脚質重み縮小 + 個の力重視 ──────────────────────────────
+// v9.2からの変更点:
+//   - 脚質（pace+distance fit）: 70% → 30%（15%+15%）に縮小
+//   - 騎手: 10% → 20% に増加
+//   - 個の力（horse place3_rate）: 加算のみ → 20% の明示的重みに変更
+//   - 枠順×会場補正: 新規追加（±0.02〜0.06）
+//   - 本番表示には使用しない（デバッグ専用）
+
+// 近走グレード×着順スコア（v10用）
+// ベース0.5 + GRADE_W × finishBonus の加点方式
+// 重賞出走馬は必ず0.5以上。データなし=0.5（ニュートラル）
+// G3 2着 → 0.5 + 0.45×0.35 = 0.658、G1 1着 → 0.5 + 1.0×0.50 = 1.0
+function getRecentFormScore(horseId: string, formRecords: HorseFormRecord[]): number {
+  const GRADE_W: Record<string, number> = { 'G1': 1.0, 'G2': 0.65, 'G3': 0.45 }
+  const finishBonus = (pos: number) =>
+    pos === 1 ? 0.50 : pos === 2 ? 0.35 : pos === 3 ? 0.25 : pos <= 5 ? 0.10 : 0.02
+  const TIME_W = [0.55, 0.30, 0.15]
+
+  const records = formRecords.filter((r) => r.horse_id === horseId && r.finish_pos > 0).slice(0, 3)
+  if (records.length === 0) return 0.5
+
+  let weightedSum = 0
+  let totalWeight = 0
+  records.forEach((r, i) => {
+    const gw = GRADE_W[r.grade ?? ''] ?? 0  // 格付けなし・条件戦は加点なし
+    const bonus = gw * finishBonus(r.finish_pos)
+    const tw = TIME_W[i] ?? 0.10
+    weightedSum += (0.5 + bonus) * tw
+    totalWeight += tw
+  })
+  const rawScore = totalWeight > 0 ? Math.min(1, weightedSum / totalWeight) : 0.5
+
+  // 重賞経験数が少ない馬はニュートラル(0.5)に引き寄せる（サンプル少ない問題）
+  // 1戦: 信頼度33%、2戦: 67%、3戦以上: 100%
+  const reliability = Math.min(1, records.length / 3)
+  return rawScore * reliability + 0.5 * (1 - reliability)
+}
+
+// ── v10 データ駆動型脚質スコア ────────────────────────────────────────────
+// horse_form_records の 4角順位からペース適性を計算（手入力の脚質分類に依存しない）
+// front_tendency: 0=逃げ型, 1=追い込み型
+const DERIVED_ASSUMED_FIELD = 16
+const DERIVED_PACE_TIME_W = [0.40, 0.28, 0.18, 0.09, 0.05]
+
+// 4角順位データから前傾度(0=逃げ〜1=追い込み)を計算する共通関数
+function getFrontTendency(horseId: string, runForms: HorseRunForm[]): number | null {
+  const records = runForms
+    .filter((r) => r.horse_id === horseId && r.corner_pos != null)
+    .sort((a, b) => b.race_seq - a.race_seq)
+    .slice(0, 5)
+  if (records.length === 0) return null
+  let wSum = 0, wTotal = 0
+  records.forEach((r, i) => {
+    const normalized = Math.min(1, r.corner_pos! / DERIVED_ASSUMED_FIELD)
+    const w = DERIVED_PACE_TIME_W[i] ?? 0.02
+    wSum += normalized * w
+    wTotal += w
+  })
+  return wTotal > 0 ? wSum / wTotal : null
+}
+
+// 4角順位から脚質を自動判定（手入力不要）
+// データなし → null（多様性ルールの対象外）
+function getDerivedStyle(horseId: string, runForms: HorseRunForm[]): RunningStyle | null {
+  const ft = getFrontTendency(horseId, runForms)
+  if (ft === null) return null
+  if (ft < 0.20) return 'front'
+  if (ft < 0.45) return 'stalker'
+  if (ft < 0.70) return 'closer'
+  return 'deep_closer'
+}
+
+function getDerivedPaceFit(
+  horseId: string,
+  runForms: HorseRunForm[],
+  pace: PaceType,
+): number {
+  const ft = getFrontTendency(horseId, runForms)
+  if (ft === null) return 0.50  // データなし → ニュートラル
+
+  if (pace === 'fast') {
+    return 0.34 + ft * 0.32
+  } else if (pace === 'slow') {
+    return 0.34 + (1 - ft) * 0.32
+  }
+  return 0.50  // balanced
+}
+
+// horse_form_records の上がり3F から末脚スコアを計算（0.35〜0.65に圧縮）
+function getDerivedClosingScore(
+  horseId: string,
+  runForms: HorseRunForm[],
+): number {
+  const BEST = 33.0, WORST = 36.5
+  const records = runForms
+    .filter((r) => r.horse_id === horseId && r.last3f != null)
+    .sort((a, b) => b.race_seq - a.race_seq)
+    .slice(0, 5)
+
+  if (records.length === 0) return 0.50  // データなし → ニュートラル（非圧縮）
+
+  const TIME_W = [0.40, 0.28, 0.18, 0.09, 0.05]
+  let wSum = 0, wTotal = 0
+  records.forEach((r, i) => {
+    const raw = Math.max(0, Math.min(1, 1 - (r.last3f! - BEST) / (WORST - BEST)))
+    const w = TIME_W[i] ?? 0.02
+    wSum += raw * w
+    wTotal += w
+  })
+  const rawScore = wTotal > 0 ? wSum / wTotal : 0.50
+  return 0.35 + rawScore * 0.30  // 0.35-0.65 に圧縮
+}
+
+// 会場・距離・馬番 → 枠順有利補正
+function getPostPositionAdj(
+  venue: string | null | undefined,
+  distanceM: number | null,
+  horseNumber: number | null,
+): number {
+  if (!horseNumber) return 0
+  const v = (venue ?? '').toLowerCase()
+  const d = distanceM ?? 0
+
+  // 枠ゾーン判定
+  const zone = horseNumber <= 4 ? 'inner'
+    : horseNumber <= 9  ? 'midInner'
+    : horseNumber <= 14 ? 'midOuter'
+    : 'outer'
+
+  // 阪神マイル（桜花賞・阪神JF等）: 1コーナーまで短く内枠有利
+  if (v.includes('阪神') && d <= 1800) {
+    return zone === 'inner' ? 0.02 : zone === 'midInner' ? 0.01 : zone === 'midOuter' ? -0.01 : -0.02
+  }
+  // 阪神中距離（大阪杯・宝塚記念等）
+  if (v.includes('阪神') && d > 1800) {
+    return zone === 'inner' ? 0.015 : zone === 'midInner' ? 0.005 : zone === 'midOuter' ? -0.005 : -0.015
+  }
+  // 東京マイル（安田記念等）: 直線長く枠影響小さめ
+  if (v.includes('東京') && d <= 1800) {
+    return zone === 'inner' ? 0.01 : zone === 'midInner' ? 0.005 : zone === 'midOuter' ? -0.005 : -0.01
+  }
+  // 東京中長距離（日本ダービー・天皇賞春等）: 広いコースで枠影響最小
+  if (v.includes('東京') && d > 1800) {
+    return zone === 'inner' ? 0.005 : zone === 'midInner' ? 0 : zone === 'midOuter' ? 0 : -0.005
+  }
+  // 中山（皐月賞等）: スタート直後にコーナー、内枠大有利
+  if (v.includes('中山')) {
+    return zone === 'inner' ? 0.03 : zone === 'midInner' ? 0.01 : zone === 'midOuter' ? -0.015 : -0.025
+  }
+  // 京都・中京: 内枠やや有利
+  if (v.includes('京都') || v.includes('中京')) {
+    return zone === 'inner' ? 0.01 : zone === 'midInner' ? 0.005 : zone === 'midOuter' ? -0.005 : -0.01
+  }
+  return 0
+}
+
+function computeFormationV10(
+  formation: FormationResponse,
+  horses: Horse[],
+  entries: Entry[],
+  pace: PaceType,
+  stabilityScore: number,
+  distanceM: number | null,
+  raceName: string | null | undefined,
+  venue: string | null | undefined = null,
+  jockeyScoreMap: Record<string, number> = {},
+  horseFormRecords: HorseFormRecord[] = [],
+  horseRunForms: HorseRunForm[] = [],
+): FormationV9_1Result {
+  if (entries.length === 0) return { formation: { race_id: '', race_structure_score: 0, axis_count: 0, axis_horses: [], himo_horses: [], ticket_count: 0 }, debug: { pace, raceType: '古馬戦', jockeyWeight: 0.20, axisTypeV7: '混戦', himoCount: 6, rows: [], axisScore: 0, axisName: '—', axisRows: [] } }
+  const resolveName = (id: string) => horses.find((h) => h.id === id)?.name ?? id
+  const raceType = classifyRaceType(raceName)
+  const stabilityComp = 1 - stabilityScore / 100
+
+  const fieldRates = entries.map((e) => horses.find((h) => h.id === e.horse_id)?.place3_rate ?? null).filter((r): r is number => r !== null)
+  const place3RateBaseline = fieldRates.length > 0 ? fieldRates.reduce((a, b) => a + b, 0) / fieldRates.length : 0.35
+
+  // 出走数が少ない馬のp3rateをフィールド平均に引き寄せる（信頼性補正）
+  // 10戦未満: 徐々にベースラインへ。5戦以下なら50%ベースライン寄り
+  const getReliablePlace3Rate = (horseId: string): number => {
+    const horse = horses.find((h) => h.id === horseId)
+    const raw = horse?.place3_rate ?? place3RateBaseline
+    const n = horse?.race_count ?? null
+    if (n === null) return raw  // 出走数未入力はそのまま
+    const reliability = Math.min(1, n / 15)  // 15戦で信頼度1.0
+    return raw * reliability + 0.33 * (1 - reliability)
+  }
+
+  // v10 軸スコア計算
+  // データ駆動型脚質（コーナー順位）: 20%, 騎手: 20%, 個の力(place3_rate): 20%
+  // 近走実績: 10%, 上がり（horse_form_records）: 10%, 安定: 10%
+  // 枠順×会場・血統・ground・斤量: 加算
+  const computeAxisDetailV10 = (id: string) => {
+    // データ駆動型脚質スコア（手入力脚質分類に依存しない）
+    const paceFit = getDerivedPaceFit(id, horseRunForms, pace)
+    const distanceFit = 0  // 廃止（derived paceFitに統合）
+    const derivedStyle = getDerivedStyle(id, horseRunForms)
+    const venueAdj = getVenueStyleAdjustment(venue, derivedStyle, distanceM)
+    const entry = entries.find((e) => e.horse_id === id)
+    const rawJockeyName = entry?.jockey_name ?? ''
+    const jockeyScore = rawJockeyName ? (jockeyScoreMap[rawJockeyName.replace(/\s+/g, '')] ?? JOCKEY_DEFAULT_SCORE) : JOCKEY_DEFAULT_SCORE
+    // 上がりスコア: horse_form_records から計算（0.35〜0.65）
+    const closingScore = getDerivedClosingScore(id, horseRunForms)
+    const horse = horses.find((h) => h.id === id)
+    const bloodlineBonus = getBloodlineFitBonus(horse?.father_line ?? null, horse?.damsire_line ?? null, distanceM)
+    const weightAdj = getWeightAdjustment(entry?.weight_kg ?? null)
+    const groundStrength = getGroundStrengthScore(id, horseFormRecords, distanceM)
+    const horsePlace3Rate = getReliablePlace3Rate(id)
+    const recentFormScore = getRecentFormScore(id, horseFormRecords)
+    const postPositionAdj = getPostPositionAdj(venue, distanceM, entry?.horse_number ?? null)
+
+    // v10 重み: 脚質(derived)20%, 騎手13%, place3Rate20%, 近走17%, 上がり10%, 安定10%
+    const axisScore =
+      paceFit * 0.20
+      + jockeyScore * 0.13
+      + horsePlace3Rate * 0.20
+      + recentFormScore * 0.17
+      + closingScore * 0.10
+      + stabilityComp * 0.10
+      + postPositionAdj
+      + venueAdj
+      + bloodlineBonus
+      + groundStrength
+      + weightAdj
+
+    return { id, axisScore, paceFit, distanceFit, jockeyScore, closingScore, bloodlineBonus, weightAdj, groundStrength, postPositionAdj, horsePlace3Rate, recentFormScore }
+  }
+
+  const allSorted = entries
+    .map((e) => computeAxisDetailV10(e.horse_id))
+    .sort((a, b) => b.axisScore - a.axisScore)
+
+  const axisId    = allSorted[0]?.id ?? null
+  const top1Score = allSorted[0]?.axisScore ?? 0
+  const top2Score = allSorted[1]?.axisScore ?? 0
+  const top4Score = allSorted[3]?.axisScore ?? null
+
+  const axisConfidence = top4Score !== null
+    ? (top1Score - top2Score) * 0.7 + (top1Score - top4Score) * 0.3
+    : top1Score - top2Score
+  const axisTypeV7: AxisType =
+    axisConfidence >= 0.08 ? '軸強い' : axisConfidence >= 0.04 ? '標準' : '混戦'
+  const himoCount = axisTypeV7 === '軸強い' ? 4 : axisTypeV7 === '標準' ? 5 : 6
+
+  const axisV10 = axisId ? [axisId] : formation.axis_horses
+  const candidatePool = entries.map((e) => e.horse_id).filter((id) => id !== axisId)
+
+  // ヒモスコアも v10 の重みで計算（データ駆動型脚質20%・騎手20%・個の力30%）
+  const Wh: Record<string, number> = raceType === '3歳戦'
+    ? { pace: 0.20, jockey: 0.13, p3r: 0.26, closing: 0.12, stability: 0.06, form: 0.17 }
+    : { pace: 0.20, jockey: 0.13, p3r: 0.30, closing: 0.15, stability: 0.05, form: 0.17 }
+
+  const scored = candidatePool.map((id) => {
+    const paceFit = getDerivedPaceFit(id, horseRunForms, pace)
+    const distanceFit = 0  // 廃止
+    const derivedStyle = getDerivedStyle(id, horseRunForms)
+    const entry = entries.find((e) => e.horse_id === id)
+    const rawJockeyName = entry?.jockey_name ?? ''
+    const jockeyScore = rawJockeyName ? (jockeyScoreMap[rawJockeyName.replace(/\s+/g, '')] ?? JOCKEY_DEFAULT_SCORE) : JOCKEY_DEFAULT_SCORE
+    const closingScore = getDerivedClosingScore(id, horseRunForms)
+    const venueAdj = getVenueStyleAdjustment(venue, derivedStyle, distanceM)
+    const horse = horses.find((h) => h.id === id)
+    const bloodlineBonus = getBloodlineFitBonus(horse?.father_line ?? null, horse?.damsire_line ?? null, distanceM)
+    const weightAdj = getWeightAdjustment(entry?.weight_kg ?? null)
+    const groundStrength = getGroundStrengthScore(id, horseFormRecords, distanceM)
+    const horsePlace3Rate = getReliablePlace3Rate(id)
+    const recentFormScore = getRecentFormScore(id, horseFormRecords)
+    const postPositionAdj = getPostPositionAdj(venue, distanceM, entry?.horse_number ?? null)
+
+    const himoScore =
+      paceFit * Wh.pace
+      + jockeyScore * Wh.jockey
+      + horsePlace3Rate * Wh.p3r
+      + recentFormScore * Wh.form
+      + closingScore * Wh.closing
+      + stabilityComp * Wh.stability
+      + postPositionAdj
+      + venueAdj
+      + bloodlineBonus
+      + groundStrength
+      + weightAdj
+
+    return { id, paceFit, distanceFit, jockeyScore, closingScore, himoScoreV9: himoScore, himoScoreV9_1: himoScore, bloodlineBonus, weightAdj, groundStrength, horsePlace3Rate, recentFormScore, postPositionAdj }
+  })
+
+  scored.sort((a, b) => b.himoScoreV9_1 - a.himoScoreV9_1)
+  // v10: 4角順位から自動判定した脚質で多様性ルールを適用（データなし馬はnull=制約なし）
+  // ハイペース時は逃げ馬を1頭に制限
+  const himoV10 = selectHimoDiverse(
+    scored.map((s) => ({ id: s.id, score: s.himoScoreV9_1 })),
+    himoCount,
+    (id) => getDerivedStyle(id, horseRunForms),
+    pace,
+  )
+  const himoSet = new Set(himoV10)
+
+  const rows: FormationV9_1DebugRow[] = scored.map((s) => ({
+    horseName: resolveName(s.id),
+    paceFit: s.paceFit,
+    distanceFit: s.distanceFit,
+    jockeyScore: s.jockeyScore,
+    closingScore: s.closingScore,
+    stabilityComponent: stabilityComp,
+    himoScoreV9: s.himoScoreV9,
+    himoScoreV9_1: s.himoScoreV9_1,
+    bloodlineBonus: s.bloodlineBonus,
+    weightAdj: s.weightAdj,
+    groundStrength: s.groundStrength,
+    horsePlace3Rate: s.horsePlace3Rate,
+    recentFormScore: s.recentFormScore,
+    postPositionAdj: s.postPositionAdj,
+    isHimo: himoSet.has(s.id),
+    wasHimoV9: false,
+  }))
+
+  const axisRows: AxisDebugRow[] = allSorted.slice(0, 5).map((s) => ({
+    horseName: resolveName(s.id),
+    axisScore: s.axisScore,
+    paceFit: s.paceFit,
+    distanceFit: s.distanceFit,
+    jockeyScore: s.jockeyScore,
+    closingScore: s.closingScore,
+    bloodlineBonus: s.bloodlineBonus,
+    weightAdj: s.weightAdj,
+    groundStrength: s.groundStrength,
+    isSelected: s.id === axisId,
+    postPositionAdj: s.postPositionAdj,
+    horsePlace3Rate: s.horsePlace3Rate,
+    recentFormScore: s.recentFormScore,
+  }))
+
+  return {
+    formation: { ...formation, axis_count: 1, axis_horses: axisV10, himo_horses: himoV10 },
+    debug: { pace, raceType, jockeyWeight: 0.20, axisTypeV7, himoCount, rows, axisScore: top1Score, axisName: resolveName(axisId ?? ''), axisRows },
+  }
+}
+
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default async function RaceDetailPage({
@@ -2412,6 +2773,7 @@ export default async function RaceDetailPage({
   let entries: Entry[] = []
   let jockeyScoreMap: Record<string, number> = {}
   let horseFormRecords: HorseFormRecord[] = []
+  let horseRunForms: HorseRunForm[] = []
   let errorMessage = ''
 
   try {
@@ -2453,7 +2815,7 @@ export default async function RaceDetailPage({
     }
     formation = await rpcRes.json()
 
-    const horseRes = await fetch(`${baseUrl}/rest/v1/horses?select=id,name,father_line,damsire_line,place3_rate`, {
+    const horseRes = await fetch(`${baseUrl}/rest/v1/horses?select=id,name,father_line,damsire_line,place3_rate,race_count`, {
       headers: { apikey: key, Authorization: `Bearer ${key}` },
       cache: 'no-store',
     })
@@ -2473,7 +2835,7 @@ export default async function RaceDetailPage({
       fetch(`${baseUrl}/rest/v1/entries?race_id=eq.${id}&select=horse_id,horse_number,popularity_rank,jockey_name,last3f_1,last3f_2,last3f_3,finish_position,weight_kg`, {
         headers: { apikey: key, Authorization: `Bearer ${key}` }, cache: 'no-store',
       }),
-      fetch(`${baseUrl}/rest/v1/jockey_stats?select=jockey_name,place3_rate`, {
+      fetch(`${baseUrl}/rest/v1/jockey_stats?select=jockey_name,place3_rate,g1_wins,g2_wins,g3_wins`, {
         headers: { apikey: key, Authorization: `Bearer ${key}` }, cache: 'no-store',
       }),
     ])
@@ -2481,19 +2843,28 @@ export default async function RaceDetailPage({
     if (entriesRes.ok) entries = await entriesRes.json()
     if (jockeyStatsRes.ok) {
       const stats: JockeyStat[] = await jockeyStatsRes.json()
-      jockeyScoreMap = Object.fromEntries(stats.map((s) => [s.jockey_name.replace(/\s+/g, ''), s.place3_rate]))
+      jockeyScoreMap = Object.fromEntries(stats.map((s) => {
+        const g1Bonus = Math.min(0.06, (s.g1_wins ?? 0) * 0.02)
+        const g2Bonus = Math.min(0.03, (s.g2_wins ?? 0) * 0.01)
+        const g3Bonus = Math.min(0.02, (s.g3_wins ?? 0) * 0.005)
+        return [s.jockey_name.replace(/\s+/g, ''), Math.min(1, s.place3_rate + g1Bonus + g2Bonus + g3Bonus)]
+      }))
     }
 
     // Fetch running style from horse_style_profiles and merge into horses array
     const raceHorseIdList = entries.map((e) => e.horse_id)
     if (raceHorseIdList.length > 0) {
-      const [styleRes, formRes] = await Promise.all([
+      const [styleRes, formRes, runFormRes] = await Promise.all([
         fetch(
           `${baseUrl}/rest/v1/horse_style_profiles?horse_id=in.(${raceHorseIdList.join(',')})&select=horse_id,style`,
           { headers: { apikey: key, Authorization: `Bearer ${key}` }, cache: 'no-store' }
         ),
         fetch(
           `${baseUrl}/rest/v1/horse_past_results?horse_id=in.(${raceHorseIdList.join(',')})&select=horse_id,finish_pos,grade,distance_m,field_size`,
+          { headers: { apikey: key, Authorization: `Bearer ${key}` }, cache: 'no-store' }
+        ),
+        fetch(
+          `${baseUrl}/rest/v1/horse_form_records?horse_id=in.(${raceHorseIdList.join(',')})&select=horse_id,race_seq,last3f,corner_pos,finish_pos&order=race_seq.asc`,
           { headers: { apikey: key, Authorization: `Bearer ${key}` }, cache: 'no-store' }
         ),
       ])
@@ -2504,6 +2875,9 @@ export default async function RaceDetailPage({
       }
       if (formRes.ok) {
         horseFormRecords = await formRes.json()
+      }
+      if (runFormRes.ok) {
+        horseRunForms = await runFormRes.json()
       }
 
       // 2026-04-06以降のレースは管理画面入力済み着順も地力スコアに加算
@@ -2583,6 +2957,7 @@ export default async function RaceDetailPage({
   let formationV9Debug: FormationV9Result['debug'] | null = null
   let formationV9_1Debug: FormationV9_1Result['debug'] | null = null
   let formationV9_2Debug: FormationV9_1Result['debug'] | null = null
+  let formationV10Debug: FormationV9_1Result['debug'] | null = null
   if ((race?.is_test || showDebug) && formation) {
     const origFormation = formation  // v2〜v9.1 すべて同じ RPC 結果から計算
     const v2Result = computeFormationV2(origFormation, horses, entries, pace, earlyStabilityScore)
@@ -2607,6 +2982,8 @@ export default async function RaceDetailPage({
     formation = v9_1Result.formation  // v9.1 を実際の表示に使用
     const v9_2Result = computeFormationV9_2(origFormation, horses, entries, pace, earlyStabilityScore, race?.distance_m ?? null, race?.race_name ?? null, race?.venue ?? null, jockeyScoreMap, horseFormRecords, applyDiv)
     formationV9_2Debug = v9_2Result.debug
+    const v10Result = computeFormationV10(origFormation, horses, entries, pace, earlyStabilityScore, race?.distance_m ?? null, race?.race_name ?? null, race?.venue ?? null, jockeyScoreMap, horseFormRecords, horseRunForms)
+    formationV10Debug = v10Result.debug
   }
 
   // 本番レース（is_test=false）でも 2026-03-16 以降はv9.1を適用
@@ -3988,6 +4365,90 @@ export default async function RaceDetailPage({
                     </div>
                     <p style={{ fontSize: 10, color: '#62627A', marginTop: 10, lineHeight: 1.7 }}>
                       軸タイプ: <span style={{ color: AXIS_TYPE_COLOR[formationV9_2Debug.axisTypeV7] }}>{formationV9_2Debug.axisTypeV7}</span>　ヒモ {formationV9_2Debug.himoCount}頭
+                    </p>
+                  </div>
+                )
+              })()}
+
+              {/* ── v10 debug ── */}
+              {showDebug && formationV10Debug && (() => {
+                const AXIS_TYPE_COLOR: Record<string, string> = { '軸強い': '#14B8A6', '標準': '#60A5FA', '混戦': '#F87171' }
+                return (
+                  <div style={{ ...card, fontSize: 11, border: '1px solid rgba(251,191,36,0.20)' }}>
+                    <p style={{ ...sectionLabel, color: '#FBBF24' }}>v10 DEBUG — 枠順×会場補正 / 脚質30% / 個の力20% / 騎手20%</p>
+                    <p style={{ fontSize: 11, color: '#9898B0', margin: '0 0 10px', lineHeight: 1.7 }}>
+                      v9.2からの変更: 脚質(pace+dist) 70%→30%、騎手 10%→20%、個の力(place3_rate) 明示的20%、枠順×会場補正を新規追加。本番未反映。
+                    </p>
+                    <div style={{ marginBottom: 14 }}>
+                      <p style={{ fontSize: 10, fontWeight: 700, color: '#FBBF24', margin: '0 0 6px', letterSpacing: '0.08em' }}>AXIS CANDIDATES TOP 5</p>
+                      <div style={{ overflowX: 'auto' }}>
+                        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 11 }}>
+                          <thead>
+                            <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                              {['', '馬名', 'pace', 'dist', 'jockey', 'p3rate', 'form', 'closing', 'blood', 'ground', 'post', 'axis score'].map((h) => (
+                                <th key={h} style={{ padding: '4px 6px', color: h === 'form' ? '#A78BFA' : '#9898B0', fontWeight: 600, textAlign: 'right', whiteSpace: 'nowrap' }}>{h}</th>
+                              ))}
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {formationV10Debug.axisRows.map((r, i) => (
+                              <tr key={i} style={{ borderBottom: '1px solid rgba(255,255,255,0.04)', background: r.isSelected ? 'rgba(251,191,36,0.06)' : 'transparent' }}>
+                                <td style={{ padding: '5px 6px', textAlign: 'center', width: 20 }}>
+                                  {r.isSelected ? <span style={{ fontSize: 10, fontWeight: 700, color: '#FBBF24' }}>◎</span> : <span style={{ fontSize: 10, color: '#62627A' }}>{i + 1}</span>}
+                                </td>
+                                <td style={{ padding: '5px 6px', color: r.isSelected ? '#FBBF24' : '#9898B0', fontWeight: r.isSelected ? 700 : 400, whiteSpace: 'nowrap' }}>{r.horseName}</td>
+                                <td style={{ padding: '5px 6px', color: '#9898B0', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{r.paceFit.toFixed(3)}</td>
+                                <td style={{ padding: '5px 6px', color: '#9898B0', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{r.distanceFit.toFixed(2)}</td>
+                                <td style={{ padding: '5px 6px', color: '#9898B0', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{r.jockeyScore.toFixed(2)}</td>
+                                <td style={{ padding: '5px 6px', color: '#60A5FA', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{(r.horsePlace3Rate ?? 0).toFixed(2)}</td>
+                                <td style={{ padding: '5px 6px', color: '#A78BFA', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{(r.recentFormScore ?? 0.5).toFixed(2)}</td>
+                                <td style={{ padding: '5px 6px', color: '#9898B0', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{r.closingScore.toFixed(3)}</td>
+                                <td style={{ padding: '5px 6px', color: r.bloodlineBonus > 0 ? '#34D399' : '#62627A', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{r.bloodlineBonus > 0 ? `+${r.bloodlineBonus.toFixed(3)}` : r.bloodlineBonus.toFixed(3)}</td>
+                                <td style={{ padding: '5px 6px', color: r.groundStrength > 0 ? '#FBBF24' : r.groundStrength < 0 ? '#F87171' : '#62627A', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{r.groundStrength > 0 ? `+${r.groundStrength.toFixed(3)}` : r.groundStrength.toFixed(3)}</td>
+                                <td style={{ padding: '5px 6px', color: (r.postPositionAdj ?? 0) > 0 ? '#34D399' : (r.postPositionAdj ?? 0) < 0 ? '#F87171' : '#62627A', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{((r.postPositionAdj ?? 0) > 0 ? '+' : '') + (r.postPositionAdj ?? 0).toFixed(3)}</td>
+                                <td style={{ padding: '5px 6px', color: r.isSelected ? '#FBBF24' : '#9898B0', fontWeight: r.isSelected ? 700 : 400, textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{r.axisScore.toFixed(4)}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                    <div style={{ overflowX: 'auto' }}>
+                      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 11 }}>
+                        <thead>
+                          <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                            {['馬名', 'pace', 'dist', 'jockey', 'p3rate', 'form', 'closing', 'blood', 'ground', 'post', 'himo score'].map((h) => (
+                              <th key={h} style={{ padding: '4px 6px', color: h === 'form' ? '#A78BFA' : '#9898B0', fontWeight: 600, textAlign: 'right', whiteSpace: 'nowrap' }}>{h}</th>
+                            ))}
+                            <th style={{ padding: '4px 6px', color: '#9898B0', fontWeight: 600, textAlign: 'center' }}>採用</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {formationV10Debug.rows.map((row, i) => (
+                            <tr key={i} style={{ borderBottom: '1px solid rgba(255,255,255,0.04)', background: row.isHimo ? 'rgba(251,191,36,0.04)' : 'transparent' }}>
+                              <td style={{ padding: '5px 6px', color: row.isHimo ? '#FBBF24' : '#9898B0', fontWeight: row.isHimo ? 700 : 400, whiteSpace: 'nowrap' }}>{row.horseName}</td>
+                              <td style={{ padding: '5px 6px', color: '#9898B0', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{row.paceFit.toFixed(3)}</td>
+                              <td style={{ padding: '5px 6px', color: '#9898B0', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{row.distanceFit.toFixed(2)}</td>
+                              <td style={{ padding: '5px 6px', color: '#9898B0', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{row.jockeyScore.toFixed(2)}</td>
+                              <td style={{ padding: '5px 6px', color: '#60A5FA', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{(row.horsePlace3Rate ?? 0).toFixed(2)}</td>
+                              <td style={{ padding: '5px 6px', color: '#A78BFA', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{(row.recentFormScore ?? 0.5).toFixed(2)}</td>
+                              <td style={{ padding: '5px 6px', color: '#9898B0', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{row.closingScore.toFixed(3)}</td>
+                              <td style={{ padding: '5px 6px', color: row.bloodlineBonus > 0 ? '#34D399' : '#62627A', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{row.bloodlineBonus > 0 ? `+${row.bloodlineBonus.toFixed(3)}` : row.bloodlineBonus.toFixed(3)}</td>
+                              <td style={{ padding: '5px 6px', color: row.groundStrength > 0 ? '#FBBF24' : row.groundStrength < 0 ? '#F87171' : '#62627A', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{row.groundStrength > 0 ? `+${row.groundStrength.toFixed(3)}` : row.groundStrength.toFixed(3)}</td>
+                              <td style={{ padding: '5px 6px', color: (row.postPositionAdj ?? 0) > 0 ? '#34D399' : (row.postPositionAdj ?? 0) < 0 ? '#F87171' : '#62627A', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{((row.postPositionAdj ?? 0) > 0 ? '+' : '') + (row.postPositionAdj ?? 0).toFixed(3)}</td>
+                              <td style={{ padding: '5px 6px', color: row.isHimo ? '#FBBF24' : '#9898B0', fontWeight: row.isHimo ? 700 : 400, textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{row.himoScoreV9_1.toFixed(4)}</td>
+                              <td style={{ padding: '5px 6px', textAlign: 'center' }}>
+                                {row.isHimo && (
+                                  <span style={{ fontSize: 10, fontWeight: 700, padding: '1px 6px', borderRadius: 6, background: 'rgba(251,191,36,0.18)', color: '#D97706', border: '1px solid rgba(251,191,36,0.35)' }}>◎ヒモ</span>
+                                )}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                    <p style={{ fontSize: 10, color: '#62627A', marginTop: 10, lineHeight: 1.7 }}>
+                      軸タイプ: <span style={{ color: AXIS_TYPE_COLOR[formationV10Debug.axisTypeV7] }}>{formationV10Debug.axisTypeV7}</span>　ヒモ {formationV10Debug.himoCount}頭　jockey重み=0.20　place3_rate重み=0.20
                     </p>
                   </div>
                 )

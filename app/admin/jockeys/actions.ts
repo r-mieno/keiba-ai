@@ -25,6 +25,9 @@ export async function updateJockey(formData: FormData) {
 
   await supabase.from('jockey_stats').update({
     place3_rate: formData.get('place3_rate') ? Number(formData.get('place3_rate')) : 0,
+    g1_wins:     formData.get('g1_wins')     ? Number(formData.get('g1_wins'))     : 0,
+    g2_wins:     formData.get('g2_wins')     ? Number(formData.get('g2_wins'))     : 0,
+    g3_wins:     formData.get('g3_wins')     ? Number(formData.get('g3_wins'))     : 0,
   }).eq('jockey_name', name)
 
   revalidatePath('/admin/jockeys')

@@ -18,7 +18,7 @@ export default async function AdminJockeysPage() {
   const supabase = await createClient()
   const { data: jockeys } = await supabase
     .from('jockey_stats')
-    .select('jockey_name,place3_rate')
+    .select('jockey_name,place3_rate,g1_wins,g2_wins,g3_wins')
     .order('jockey_name')
 
   return (

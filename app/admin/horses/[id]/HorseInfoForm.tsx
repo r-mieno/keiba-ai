@@ -13,13 +13,6 @@ const BLOODLINE_OPTIONS = [
   { value: 'other',          label: 'その他' },
 ]
 
-const STYLE_OPTIONS = [
-  { value: 'front',       label: '逃げ' },
-  { value: 'stalker',     label: '先行' },
-  { value: 'closer',      label: '差し' },
-  { value: 'deep_closer', label: '追い込み' },
-]
-
 // 父名 → 系統マッピング
 const SIRE_TO_LINE: Record<string, string> = {
   // サンデー系
@@ -85,8 +78,9 @@ type Props = {
     father_line?: string | null
     damsire_line?: string | null
     place3_rate?: number | null
+    race_count?: number | null
   }
-  style: string | null
+  derivedStyle: string | null
 }
 
 const inputStyle = {
@@ -100,7 +94,7 @@ const inputStyle = {
   width: '100%',
 }
 
-export default function HorseInfoForm({ horseId, horse, style }: Props) {
+export default function HorseInfoForm({ horseId, horse, derivedStyle }: Props) {
   const [fatherLine, setFatherLine] = useState(horse.father_line ?? '')
   const [damsireLine, setDamsireLine] = useState(horse.damsire_line ?? '')
 
@@ -158,11 +152,16 @@ export default function HorseInfoForm({ horseId, horse, style }: Props) {
           <input name="place3_rate" type="number" step="0.001" min="0" max="1" defaultValue={horse.place3_rate ?? ''} placeholder="0.350" style={inputStyle} />
         </div>
         <div>
-          <label style={{ fontSize: 11, color: '#62627A', display: 'block', marginBottom: 4 }}>脚質</label>
-          <select name="style" defaultValue={style ?? ''} style={{ ...inputStyle, cursor: 'pointer' }}>
-            <option value="">—</option>
-            {STYLE_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
-          </select>
+          <label style={{ fontSize: 11, color: '#62627A', display: 'block', marginBottom: 4 }}>出走数</label>
+          <input name="race_count" type="number" step="1" min="0" defaultValue={horse.race_count ?? ''} placeholder="20" style={inputStyle} />
+        </div>
+        <div>
+          <label style={{ fontSize: 11, color: '#62627A', display: 'block', marginBottom: 4 }}>
+            脚質 {derivedStyle && <span style={{ color: '#14B8A6', fontSize: 10 }}>✓ 自動判定</span>}
+          </label>
+          <div style={{ ...inputStyle, color: derivedStyle ? '#14B8A6' : '#62627A', display: 'flex', alignItems: 'center' }}>
+            {derivedStyle ?? '走行データなし'}
+          </div>
         </div>
       </div>
       <SubmitButton label="保存" />
