@@ -3271,6 +3271,22 @@ export default async function RaceDetailPage({
             }
           })
 
+          // 2頭軸候補: ヒモ1位馬の軸詳細を構築（BetPlanPanelの2頭軸モード用）
+          const axis2HorseId = himoHorses[0]?.id ?? null
+          const axis2Details = axis2HorseId ? (() => {
+            const horse = horses.find((h) => h.id === axis2HorseId)
+            const style = horse?.style ?? null
+            const distanceFitScore = getDistanceFitScore(style, race?.distance_m ?? null)
+            return {
+              name: horse?.name ?? axis2HorseId,
+              horseNumber: entries.find((e) => e.horse_id === axis2HorseId)?.horse_number ?? null,
+              styleLabel: style ? STYLE_LABELS[style] : null,
+              styleColor: style ? STYLE_COLORS[style] : null,
+              aiEval: Math.max(13, Math.round(25 + pct * 0.15 - 3)),
+              reason: buildAxisReason(style, pace, raceStabilityScore, 1, distanceFitScore, axisConfLevel),
+            }
+          })() : undefined
+
           const advantageHorses = getPaceAdvantageHorses(raceHorseIds, horses, pace)
           const { candidate: valueHorse, nextBest: valueNextBest } = getValueOpportunity(formation, horses, pace, allRankedHorses, entries)
           const aiSummaryLines = buildAiSummary(
@@ -3297,6 +3313,7 @@ export default async function RaceDetailPage({
                 axisHorseIds={formation.axis_horses}
                 top3HorseIds={top3HorseIds}
                 isDrawComplete={isDrawComplete}
+                axis2Details={axis2Details}
               />
 
               {/* ── DEBUGパネル（?debug=1 で表示） ──────────────────────── */}

@@ -3,8 +3,10 @@
 import { useState } from 'react'
 import { motion } from 'framer-motion'
 
-const HIMO_OPTIONS = [3, 4, 5]
-const AI_RECOMMENDED = 5
+const HIMO_OPTIONS_1 = [3, 4, 5]
+const HIMO_OPTIONS_2 = [3, 4]
+const AI_RECOMMENDED_1 = 5
+const AI_RECOMMENDED_2 = 4
 
 function computeCombinations(axisCount: number, himoCount: number): number {
   if (axisCount >= 3) return 1
@@ -30,7 +32,7 @@ function buildComment(axisCount: number, himoCount: number, stabilityScore: numb
       return `荒れやすいレースのため、相手を${himoCount}頭に広げてミスリスクを最小化する。穴馬の台頭に備えたカバー範囲を優先した構成。`
     }
   } else if (axisCount === 2) {
-    return `2頭の軸を並立させることで単軸リスクを排除。どちらかが来れば的中圏内に入る安全志向の構成。相手${himoCount}頭との組み合わせで十分なカバー力を確保している。`
+    return `軸1頭目が外れても軸2頭目が3着内に来れば的中圏内。単軸リスクを分散した安全志向の構成。相手${himoCount}頭との組み合わせで${himoCount}点買い。`
   } else {
     return `AIが高く評価した${axisCount}頭を軸に、相手${himoCount}頭を組み合わせた網羅的なフォーメーション。高配当圏を狙いつつ、複数の的中パターンを確保する積極的な構成。`
   }
@@ -62,6 +64,7 @@ type Props = {
   axisHorseIds: string[]
   top3HorseIds: string[]    // 空配列 = 結果未投入
   isDrawComplete: boolean   // false = 馬番未確定（枠順確定前の暫定予想）
+  axis2Details?: AxisDetail // 2頭軸モード用の軸2位情報
 }
 
 // 三連複フォーメーションの的中チェック
@@ -81,17 +84,14 @@ function checkFormationHit(
 
   if (axisCount === 1) {
     if (axisInTop3.length < 1) return false
-    // 軸以外の上位2頭がヒモにすべて含まれているか
     const nonAxis = top3.filter((id) => !axisSet.has(id))
     return nonAxis.every((id) => himoSet.has(id))
   }
   if (axisCount === 2) {
     if (axisInTop3.length < Math.min(2, axisIds.length)) return false
-    // 軸以外の上位1頭がヒモに含まれているか
     const nonAxis = top3.filter((id) => !axisSet.has(id))
     return nonAxis.every((id) => himoSet.has(id))
   }
-  // axisCount >= 3: 全馬軸扱い、top3が全て軸なら的中
   return top3.every((id) => axisSet.has(id))
 }
 
@@ -120,51 +120,54 @@ function NumBadge({ num, isAxis }: { num: number | null; isAxis: boolean }) {
 export default function BetPlanPanel({
   betType,
   allHimoHorses,
-  axisCount,
+  axisCount: _axisCount,
   stabilityScore,
   axisDetails,
   axisHorseIds,
   top3HorseIds,
   isDrawComplete,
+  axis2Details,
 }: Props) {
-  const [himoCount, setHimoCount] = useState(Math.min(AI_RECOMMENDED, allHimoHorses.length))
+  const [axisMode, setAxisMode] = useState<'1' | '2'>('1')
+  const [himo1Count, setHimo1Count] = useState(Math.min(AI_RECOMMENDED_1, allHimoHorses.length))
+  const [himo2Count, setHimo2Count] = useState(Math.min(AI_RECOMMENDED_2, Math.max(0, allHimoHorses.length - 1)))
   const [showBetInfo, setShowBetInfo] = useState(false)
 
-  const openModal = () => {
-    document.body.style.overflow = 'hidden'
-    setShowBetInfo(true)
-  }
-  const closeModal = () => {
-    document.body.style.overflow = ''
-    setShowBetInfo(false)
-  }
+  const can2Axis = !!axis2Details && allHimoHorses.length >= 2
+  const is2Axis = axisMode === '2' && can2Axis
 
-  const selectedHimo = allHimoHorses.slice(0, himoCount)
+  // 実効値: モードによって切り替え
+  const effectiveAxisCount = is2Axis ? 2 : 1
+  const effectiveAxisDetails = is2Axis ? [axisDetails[0], axis2Details!] : axisDetails
+  const effectiveAxisHorseIds = is2Axis ? [axisHorseIds[0], allHimoHorses[0].id] : axisHorseIds
+  const himoPool = is2Axis ? allHimoHorses.slice(1) : allHimoHorses
+  const himoCount = is2Axis ? himo2Count : himo1Count
+  const setHimoCount = is2Axis ? setHimo2Count : setHimo1Count
+  const HIMO_OPTIONS = is2Axis ? HIMO_OPTIONS_2 : HIMO_OPTIONS_1
+  const AI_RECOMMENDED = is2Axis ? AI_RECOMMENDED_2 : AI_RECOMMENDED_1
+
+  const openModal = () => { document.body.style.overflow = 'hidden'; setShowBetInfo(true) }
+  const closeModal = () => { document.body.style.overflow = ''; setShowBetInfo(false) }
+
+  const selectedHimo = himoPool.slice(0, himoCount)
 
   const hasResult = top3HorseIds.length === 3
   const isHit = hasResult && checkFormationHit(
     top3HorseIds,
-    axisHorseIds,
+    effectiveAxisHorseIds,
     selectedHimo.map((h) => h.id),
-    axisCount,
+    effectiveAxisCount,
   )
-  const combinations = computeCombinations(axisCount, himoCount)
-  const comment = buildComment(axisCount, himoCount, stabilityScore)
+  const combinations = computeCombinations(effectiveAxisCount, himoCount)
+  const comment = buildComment(effectiveAxisCount, himoCount, stabilityScore)
 
-  const axisNums = axisDetails.map((d) => d.horseNumber)
+  const axisNums = effectiveAxisDetails.map((d) => d.horseNumber)
   const himoNums = selectedHimo.map((h) => h.number)
-  const formationRows =
-    axisCount >= 3
-      ? [
-          { label: '1頭目', nums: axisNums, numAxisItems: axisNums.length },
-          { label: '2頭目', nums: [...axisNums, ...himoNums], numAxisItems: axisNums.length },
-          { label: '3頭目', nums: [...axisNums, ...himoNums], numAxisItems: axisNums.length },
-        ]
-      : [
-          { label: '1頭目', nums: axisNums, numAxisItems: axisNums.length },
-          { label: '2頭目', nums: himoNums, numAxisItems: 0 },
-          { label: '3頭目', nums: himoNums, numAxisItems: 0 },
-        ]
+  const formationRows = [
+    { label: '1頭目', nums: axisNums, numAxisItems: axisNums.length },
+    { label: '2頭目', nums: himoNums, numAxisItems: 0 },
+    { label: '3頭目', nums: himoNums, numAxisItems: 0 },
+  ]
 
   return (
     <div
@@ -209,6 +212,38 @@ export default function BetPlanPanel({
           </span>
         )}
       </div>
+
+      {/* 軸モード切替 */}
+      {can2Axis && (
+        <div style={{ display: 'flex', gap: 6, marginBottom: 16 }}>
+          {(['1', '2'] as const).map((mode) => {
+            const active = axisMode === mode
+            const label = mode === '1' ? '1頭軸（10点）' : '2頭軸（5点）'
+            return (
+              <motion.button
+                key={mode}
+                onClick={() => setAxisMode(mode)}
+                whileTap={{ scale: 0.95 }}
+                transition={{ type: 'spring', stiffness: 500, damping: 30 }}
+                style={{
+                  flex: 1,
+                  padding: '7px 0',
+                  borderRadius: 8,
+                  fontSize: 12,
+                  fontWeight: active ? 700 : 400,
+                  cursor: 'pointer',
+                  border: active ? '1px solid rgba(20,184,166,0.50)' : '1px solid rgba(255,255,255,0.08)',
+                  background: active ? 'rgba(20,184,166,0.12)' : 'rgba(255,255,255,0.04)',
+                  color: active ? '#14B8A6' : '#9898B0',
+                  transition: 'all 0.15s',
+                }}
+              >
+                {label}
+              </motion.button>
+            )
+          })}
+        </div>
+      )}
 
       {/* 枠順未確定バナー */}
       {!isDrawComplete && (
@@ -274,7 +309,7 @@ export default function BetPlanPanel({
         <p style={{ color: '#62627A', fontSize: 11, marginBottom: 8 }}>軸馬に対する相手の頭数を選択</p>
         <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
           {HIMO_OPTIONS.map((n) => {
-            const disabled = n > allHimoHorses.length
+            const disabled = n > himoPool.length
             const active = himoCount === n
             const isRecommended = n === AI_RECOMMENDED
             return (
@@ -381,12 +416,12 @@ export default function BetPlanPanel({
       >
         <p style={{ color: '#14B8A6', fontSize: 11, fontWeight: 700, marginBottom: 12 }}>◎ 軸</p>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-          {axisDetails.map((detail, i) => (
+          {effectiveAxisDetails.map((detail, i) => (
             <div
               key={detail.name}
               style={{
-                paddingBottom: i < axisDetails.length - 1 ? 14 : 0,
-                borderBottom: i < axisDetails.length - 1 ? '1px solid rgba(20,184,166,0.12)' : 'none',
+                paddingBottom: i < effectiveAxisDetails.length - 1 ? 14 : 0,
+                borderBottom: i < effectiveAxisDetails.length - 1 ? '1px solid rgba(20,184,166,0.12)' : 'none',
               }}
             >
               {/* Horse number + name */}
@@ -412,6 +447,20 @@ export default function BetPlanPanel({
                   </span>
                 )}
                 <span style={{ color: '#EEEEF5', fontSize: 15, fontWeight: 700 }}>{detail.name}</span>
+                {is2Axis && (
+                  <span style={{
+                    fontSize: 9,
+                    fontWeight: 700,
+                    color: '#62627A',
+                    background: 'rgba(255,255,255,0.06)',
+                    border: '1px solid rgba(255,255,255,0.10)',
+                    borderRadius: 4,
+                    padding: '1px 6px',
+                    marginLeft: 2,
+                  }}>
+                    軸{i + 1}
+                  </span>
+                )}
               </div>
 
               {/* AI eval stars + style */}
