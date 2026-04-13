@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase-server'
 import Link from 'next/link'
 import { createRace } from './actions'
+import DeleteRaceButton from './DeleteRaceButton'
 
 const GRADE_COLOR: Record<string, string> = {
   G1: '#F59E0B', G2: '#9898B0', G3: '#78716C',
@@ -131,11 +132,14 @@ export default async function AdminRacesPage() {
                 </td>
                 <td style={{ padding: '12px 16px', color: '#9898B0' }}>{countMap[race.id] ?? 0}頭</td>
                 <td style={{ padding: '12px 16px' }}>
-                  <Link href={`/admin/races/${race.id}`} style={{
-                    fontSize: 12, color: '#14B8A6', textDecoration: 'none', fontWeight: 600,
-                  }}>
-                    編集 →
-                  </Link>
+                  <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                    <Link href={`/admin/races/${race.id}`} style={{
+                      fontSize: 12, color: '#14B8A6', textDecoration: 'none', fontWeight: 600,
+                    }}>
+                      編集 →
+                    </Link>
+                    <DeleteRaceButton raceId={race.id} raceName={race.race_name} />
+                  </div>
                 </td>
               </tr>
             ))}

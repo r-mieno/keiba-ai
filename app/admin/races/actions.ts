@@ -46,6 +46,15 @@ export async function updateRace(raceId: string, formData: FormData) {
   redirect(`/admin/races/${raceId}?saved=1`)
 }
 
+export async function deleteRace(raceId: string) {
+  const supabase = createAdminClient()
+  // entries も cascade で消えるが念のため先に削除
+  await supabase.from('entries').delete().eq('race_id', raceId)
+  await supabase.from('races').delete().eq('id', raceId)
+  revalidatePath('/admin/races')
+  redirect('/admin/races')
+}
+
 // ── エントリー ──────────────────────────────────────────────────────
 
 export async function addEntry(raceId: string, formData: FormData) {
