@@ -194,12 +194,15 @@ function computePaceOutlook(
   raceHorseIds: string[],
   horses: Horse[],
   distanceM: number | null = null,
+  horseRunForms: HorseRunForm[] = [],
 ): { pace: PaceType; frontCount: number; stalkerCount: number; closerCount: number; deepCloserCount: number } {
-  const raceHorses = raceHorseIds.map((hid) => horses.find((h) => h.id === hid)).filter(Boolean) as Horse[]
-  const frontCount = raceHorses.filter((h) => h.style === 'front').length
-  const stalkerCount = raceHorses.filter((h) => h.style === 'stalker').length
-  const closerCount = raceHorses.filter((h) => h.style === 'closer').length
-  const deepCloserCount = raceHorses.filter((h) => h.style === 'deep_closer').length
+  // horse_form_records（4角順位）から自動判定、データなしは手動設定にフォールバック
+  const getEffectiveStyle = (hid: string): RunningStyle | null =>
+    getDerivedStyle(hid, horseRunForms) ?? (horses.find((h) => h.id === hid)?.style ?? null)
+  const frontCount = raceHorseIds.filter((hid) => getEffectiveStyle(hid) === 'front').length
+  const stalkerCount = raceHorseIds.filter((hid) => getEffectiveStyle(hid) === 'stalker').length
+  const closerCount = raceHorseIds.filter((hid) => getEffectiveStyle(hid) === 'closer').length
+  const deepCloserCount = raceHorseIds.filter((hid) => getEffectiveStyle(hid) === 'deep_closer').length
   let pace: PaceType
   const d = distanceM ?? 0
   if (d <= 1400) {
@@ -262,19 +265,25 @@ function getPaceAdvantageHorses(
   raceHorseIds: string[],
   horses: Horse[],
   pace: PaceType,
+  horseRunForms: HorseRunForm[] = [],
 ): { name: string; style: RunningStyle; comment: string }[] {
   if (pace === 'balanced') return []
   return raceHorseIds
-    .map((hid) => horses.find((h) => h.id === hid))
-    .filter((h): h is Horse & { style: RunningStyle } => h !== undefined && h.style !== null)
-    .map((h) => ({ h, adj: getPaceAdjustment(h.style, pace) }))
+    .map((hid) => {
+      const horse = horses.find((h) => h.id === hid)
+      if (!horse) return null
+      const style = getDerivedStyle(hid, horseRunForms) ?? horse.style
+      return style ? { horse, style } : null
+    })
+    .filter((x): x is { horse: Horse; style: RunningStyle } => x !== null)
+    .map(({ horse, style }) => ({ horse, style, adj: getPaceAdjustment(style, pace) }))
     .filter(({ adj }) => adj > 0)
     .sort((a, b) => b.adj - a.adj)
     .slice(0, 3)
-    .map(({ h }) => ({
-      name: h.name,
-      style: h.style,
-      comment: PACE_ADV_COMMENTS[pace]?.[h.style] ?? 'この展開で恩恵を受けやすい',
+    .map(({ horse, style }) => ({
+      name: horse.name,
+      style,
+      comment: PACE_ADV_COMMENTS[pace]?.[style] ?? 'この展開で恩恵を受けやすい',
     }))
 }
 
@@ -2938,7 +2947,7 @@ export default async function RaceDetailPage({
     : [...(formation?.axis_horses ?? []), ...(formation?.himo_horses ?? [])]
 
   // Compute pace and stability once so they can be shared across ranking, v2 logic, etc.
-  const paceInfo = computePaceOutlook(raceHorseIds, horses, race?.distance_m ?? null)
+  const paceInfo = computePaceOutlook(raceHorseIds, horses, race?.distance_m ?? null, horseRunForms)
   const computedPace: PaceType = formation ? paceInfo.pace : 'balanced'
   const pace: PaceType = (race?.pace_override as PaceType | null) ?? computedPace
   const earlyStabilityScore = computeRaceStabilityScore(
@@ -3207,7 +3216,7 @@ export default async function RaceDetailPage({
           )
 
           // ── Pre-computed shared values ──────────────────────────────────────
-          const paceInfo = computePaceOutlook(raceHorseIds, horses, race?.distance_m ?? null)
+          const paceInfo = computePaceOutlook(raceHorseIds, horses, race?.distance_m ?? null, horseRunForms)
           const paceMeta = PACE_INFO[paceInfo.pace]
           const paceCounts: { label: string; count: number; style: RunningStyle }[] = [
             { label: '逃げ', count: paceInfo.frontCount,      style: 'front' },
@@ -3287,7 +3296,7 @@ export default async function RaceDetailPage({
             }
           })() : undefined
 
-          const advantageHorses = getPaceAdvantageHorses(raceHorseIds, horses, pace)
+          const advantageHorses = getPaceAdvantageHorses(raceHorseIds, horses, pace, horseRunForms)
           const { candidate: valueHorse, nextBest: valueNextBest } = getValueOpportunity(formation, horses, pace, allRankedHorses, entries)
           const aiSummaryLines = buildAiSummary(
             raceStabilityScore, pace, advantageHorses, valueHorse,
