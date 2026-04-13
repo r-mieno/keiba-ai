@@ -203,27 +203,29 @@ function computePaceOutlook(
   const stalkerCount = raceHorseIds.filter((hid) => getEffectiveStyle(hid) === 'stalker').length
   const closerCount = raceHorseIds.filter((hid) => getEffectiveStyle(hid) === 'closer').length
   const deepCloserCount = raceHorseIds.filter((hid) => getEffectiveStyle(hid) === 'deep_closer').length
+  // 先行馬のプレッシャーを0.4係数で加算した実効前圧力
+  const effectivePressure = frontCount + stalkerCount * 0.4
   let pace: PaceType
   const d = distanceM ?? 0
   if (d <= 1400) {
-    // スプリント〜短距離：逃げ2頭でfast（従来通り）
-    if (frontCount >= 2) pace = 'fast'
+    // スプリント〜短距離：逃げ2頭相当以上でfast
+    if (effectivePressure >= 2.0) pace = 'fast'
     else if (frontCount === 1 && stalkerCount <= 2) pace = 'slow'
     else pace = 'balanced'
   } else if (d <= 1999) {
     // マイル〜中距離前半（1401〜1999m）
     // 逃げ5頭以上：お見合いが起きやすくbalanced（多すぎる逃げ馬は互いに控える）
-    // 逃げ3〜4頭：fast
-    // 逃げ2頭：balanced
+    // 実効圧力3.0以上（逃げ3頭 or 逃げ2頭+先行3頭 など）：fast
+    // 実効圧力2.0以上：balanced
     // 逃げ1頭・先行少：slow
     if (frontCount >= 5) pace = 'balanced'
-    else if (frontCount >= 3) pace = 'fast'
-    else if (frontCount >= 2) pace = 'balanced'
+    else if (effectivePressure >= 3.0) pace = 'fast'
+    else if (effectivePressure >= 2.0) pace = 'balanced'
     else if (frontCount === 1 && stalkerCount <= 2) pace = 'slow'
     else pace = 'balanced'
   } else {
-    // 長距離（2000m〜）：逃げが多くてもbalancedまで、1頭以下はslow
-    if (frontCount >= 2) pace = 'balanced'
+    // 長距離（2000m〜）：逃げが多くてもbalancedまで、圧力低ければslow
+    if (effectivePressure >= 2.0) pace = 'balanced'
     else if (frontCount === 1 && stalkerCount <= 2) pace = 'slow'
     else pace = 'slow'
   }
@@ -687,19 +689,23 @@ function computeRaceStabilityScore(
   deepCloserCount: number,
   totalCount: number,
 ): number {
+  // 逃げ1頭が最安定。0頭は読みにくく2頭より低め、3頭以上は乱戦
   const frontClarityScore =
     frontCount === 1 ? 1.0 :
-    frontCount === 0 ? 0.60 :
-    frontCount === 2 ? 0.70 :
-    0.35
+    frontCount === 2 ? 0.65 :
+    frontCount === 0 ? 0.55 :
+    0.30
 
+  // 頭数で正規化（18頭立て基準と同じスケール感を維持しつつ少頭数に対応）
   const pacePressure = frontCount * 1.0 + stalkerCount * 0.45
-  const pressureScore = 1 - Math.min(pacePressure / 6.0, 1.0)
+  const pressureScore = 1 - Math.min(pacePressure / (totalCount * 0.35), 1.0)
 
   const frontGroup = frontCount + stalkerCount
   const rearGroup = closerCount + deepCloserCount
   const balanceGap = totalCount === 0 ? 0 : Math.abs(frontGroup - rearGroup) / totalCount
-  const balanceScore = 0.4 + 0.6 * balanceGap
+  // 差し追込優勢（スロー寄り）は安定しやすい。逃げ先行優勢は圧力があり不安定寄り
+  const balanceFactor = rearGroup >= frontGroup ? 0.6 : 0.3
+  const balanceScore = 0.4 + balanceFactor * balanceGap
 
   return Math.round(
     100 * (0.45 * frontClarityScore + 0.35 * pressureScore + 0.20 * balanceScore)
