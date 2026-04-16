@@ -2996,18 +2996,17 @@ export default async function RaceDetailPage({
     const applyDiv = (race?.date ?? '') >= DIVERSITY_RULE_START_DATE
     const v9_1Result = computeFormationV9_1(origFormation, horses, entries, pace, earlyStabilityScore, race?.distance_m ?? null, race?.race_name ?? null, race?.venue ?? null, jockeyScoreMap, horseFormRecords, applyDiv)
     formationV9_1Debug = v9_1Result.debug
-    formation = v9_1Result.formation  // v9.1 を実際の表示に使用
     const v9_2Result = computeFormationV9_2(origFormation, horses, entries, pace, earlyStabilityScore, race?.distance_m ?? null, race?.race_name ?? null, race?.venue ?? null, jockeyScoreMap, horseFormRecords, applyDiv)
     formationV9_2Debug = v9_2Result.debug
     const v10Result = computeFormationV10(origFormation, horses, entries, pace, earlyStabilityScore, race?.distance_m ?? null, race?.race_name ?? null, race?.venue ?? null, jockeyScoreMap, horseFormRecords, horseRunForms)
     formationV10Debug = v10Result.debug
+    formation = v10Result.formation  // v10 を実際の表示に使用
   }
 
-  // 本番レース（is_test=false）でも 2026-03-16 以降はv9.1を適用
-  if (!race?.is_test && race?.date != null && race.date >= '2026-03-16' && formation) {
-    const applyDiv = race.date >= DIVERSITY_RULE_START_DATE
-    const v9_1Result = computeFormationV9_1(formation, horses, entries, pace, earlyStabilityScore, race.distance_m ?? null, race.race_name ?? null, race.venue ?? null, jockeyScoreMap, horseFormRecords, applyDiv)
-    formation = v9_1Result.formation
+  // 本番レース（is_test=false）でも 2026-04-19 以降はv10を適用
+  if (!race?.is_test && race?.date != null && race.date >= '2026-04-19' && formation) {
+    const v10Result = computeFormationV10(formation, horses, entries, pace, earlyStabilityScore, race.distance_m ?? null, race.race_name ?? null, race.venue ?? null, jockeyScoreMap, horseFormRecords, horseRunForms)
+    formation = v10Result.formation
   }
 
   // みんなの予想ピックを取得
