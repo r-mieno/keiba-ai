@@ -224,8 +224,10 @@ function computePaceOutlook(
     else if (frontCount === 1 && stalkerCount <= 2) pace = 'slow'
     else pace = 'balanced'
   } else {
-    // 長距離（2000m〜）：逃げが多くてもbalancedまで、圧力低ければslow
-    if (effectivePressure >= 2.0) pace = 'balanced'
+    // 長距離（2000m〜）：先行圧力が非常に高い場合はfast、普通はbalanced、少なければslow
+    // 実効圧力4.0以上（逃げ2頭+先行5頭相当以上）：位置争いが激しくfast
+    if (effectivePressure >= 4.0) pace = 'fast'
+    else if (effectivePressure >= 2.0) pace = 'balanced'
     else if (frontCount === 1 && stalkerCount <= 2) pace = 'slow'
     else pace = 'slow'
   }
