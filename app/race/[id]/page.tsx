@@ -3274,7 +3274,8 @@ export default async function RaceDetailPage({
 
           const axisDetails = formation.axis_horses.map((id, i) => {
             const horse = horses.find((h) => h.id === id)
-            const style = horse?.style ?? null
+            // 4角順位から自動判定、データなしは手動設定にフォールバック
+            const style = getDerivedStyle(id, horseRunForms) ?? horse?.style ?? null
             const distanceFitScore = getDistanceFitScore(style, race?.distance_m ?? null)
             return {
               name: horse?.name ?? id,
@@ -3290,7 +3291,7 @@ export default async function RaceDetailPage({
           const axis2HorseId = himoHorses[0]?.id ?? null
           const axis2Details = axis2HorseId ? (() => {
             const horse = horses.find((h) => h.id === axis2HorseId)
-            const style = horse?.style ?? null
+            const style = getDerivedStyle(axis2HorseId, horseRunForms) ?? horse?.style ?? null
             const distanceFitScore = getDistanceFitScore(style, race?.distance_m ?? null)
             return {
               name: horse?.name ?? axis2HorseId,

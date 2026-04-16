@@ -22,15 +22,36 @@ const selectStyle = {
 export default async function AdminHorsesPage() {
   const supabase = await createClient()
 
-  const [{ data: horses }, { data: styles }, { data: entries }, { data: races }] = await Promise.all([
+  const [{ data: horses }, { data: styles }, { data: entries }, { data: races }, { data: runForms }] = await Promise.all([
     supabase.from('horses').select('id,name,sire_name,father_line').order('name'),
     supabase.from('horse_style_profiles').select('horse_id,style'),
     supabase.from('entries').select('horse_id,race_id'),
     supabase.from('races').select('id,race_name'),
+    supabase.from('horse_form_records').select('horse_id,race_seq,corner_pos'),
   ])
 
   const styleMap = new Map((styles ?? []).map((s) => [s.horse_id, s.style]))
   const raceNameMap = new Map((races ?? []).map((r) => [r.id, r.race_name]))
+
+  // horse_form_recordsから脚質を自動判定（4角順位の平均から算出）
+  const runFormsByHorse = new Map<string, { race_seq: number; corner_pos: number | null }[]>()
+  for (const r of runForms ?? []) {
+    const list = runFormsByHorse.get(r.horse_id) ?? []
+    list.push(r)
+    runFormsByHorse.set(r.horse_id, list)
+  }
+  function derivedStyleFromForms(horseId: string): string | null {
+    const forms = (runFormsByHorse.get(horseId) ?? [])
+      .filter((r) => r.corner_pos !== null)
+      .sort((a, b) => b.race_seq - a.race_seq)
+      .slice(0, 5)
+    if (forms.length === 0) return null
+    const avg = forms.reduce((s, r) => s + (r.corner_pos! / 16), 0) / forms.length
+    if (avg <= 0.15) return 'front'
+    if (avg <= 0.35) return 'stalker'
+    if (avg <= 0.65) return 'closer'
+    return 'deep_closer'
+  }
 
   // horse_id → レース名一覧
   const horseRaceMap = new Map<string, string[]>()
@@ -44,7 +65,8 @@ export default async function AdminHorsesPage() {
 
   const horseRows = (horses ?? []).map((h) => ({
     ...h,
-    style: styleMap.get(h.id) ?? null,
+    // 自動判定を優先、なければ手動設定
+    style: derivedStyleFromForms(h.id) ?? styleMap.get(h.id) ?? null,
     raceNames: horseRaceMap.get(h.id) ?? [],
   }))
 
