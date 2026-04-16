@@ -2139,6 +2139,7 @@ type FormationV9_1Result = {
     axisScore: number
     axisName: string
     axisRows: AxisDebugRow[]
+    axis2Id?: string | null  // 軸スコア2位の馬ID（2頭軸モード用）
   }
 }
 
@@ -2755,9 +2756,11 @@ function computeFormationV10(
     recentFormScore: s.recentFormScore,
   }))
 
+  const axis2Id = allSorted[1]?.id ?? null
+
   return {
     formation: { ...formation, axis_count: 1, axis_horses: axisV10, himo_horses: himoV10 },
-    debug: { pace, raceType, jockeyWeight: 0.20, axisTypeV7, himoCount, rows, axisScore: top1Score, axisName: resolveName(axisId ?? ''), axisRows },
+    debug: { pace, raceType, jockeyWeight: 0.20, axisTypeV7, himoCount, rows, axisScore: top1Score, axisName: resolveName(axisId ?? ''), axisRows, axis2Id },
   }
 }
 
@@ -2975,6 +2978,7 @@ export default async function RaceDetailPage({
   let formationV9_1Debug: FormationV9_1Result['debug'] | null = null
   let formationV9_2Debug: FormationV9_1Result['debug'] | null = null
   let formationV10Debug: FormationV9_1Result['debug'] | null = null
+  let formationV10Axis2Id: string | null = null
   if ((race?.is_test || showDebug) && formation) {
     const origFormation = formation  // v2〜v9.1 すべて同じ RPC 結果から計算
     const v2Result = computeFormationV2(origFormation, horses, entries, pace, earlyStabilityScore)
@@ -3001,12 +3005,14 @@ export default async function RaceDetailPage({
     const v10Result = computeFormationV10(origFormation, horses, entries, pace, earlyStabilityScore, race?.distance_m ?? null, race?.race_name ?? null, race?.venue ?? null, jockeyScoreMap, horseFormRecords, horseRunForms)
     formationV10Debug = v10Result.debug
     formation = v10Result.formation  // v10 を実際の表示に使用
+    formationV10Axis2Id = v10Result.debug.axis2Id ?? null
   }
 
   // 本番レース（is_test=false）でも 2026-04-19 以降はv10を適用
   if (!race?.is_test && race?.date != null && race.date >= '2026-04-19' && formation) {
     const v10Result = computeFormationV10(formation, horses, entries, pace, earlyStabilityScore, race.distance_m ?? null, race.race_name ?? null, race.venue ?? null, jockeyScoreMap, horseFormRecords, horseRunForms)
     formation = v10Result.formation
+    formationV10Axis2Id = v10Result.debug.axis2Id ?? null
   }
 
   // みんなの予想ピックを取得
@@ -3299,8 +3305,8 @@ export default async function RaceDetailPage({
             }
           })
 
-          // 2頭軸候補: ヒモ1位馬の軸詳細を構築（BetPlanPanelの2頭軸モード用）
-          const axis2HorseId = himoHorses[0]?.id ?? null
+          // 2頭軸候補: v10軸スコア2位の馬（なければヒモ1位）を使用
+          const axis2HorseId = formationV10Axis2Id ?? himoHorses[0]?.id ?? null
           const axis2Details = axis2HorseId ? (() => {
             const horse = horses.find((h) => h.id === axis2HorseId)
             const style = getDerivedStyle(axis2HorseId, horseRunForms) ?? horse?.style ?? null
