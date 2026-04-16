@@ -3223,7 +3223,18 @@ export default async function RaceDetailPage({
 
           // ── Pre-computed shared values ──────────────────────────────────────
           const paceInfo = computePaceOutlook(raceHorseIds, horses, race?.distance_m ?? null, horseRunForms)
-          const paceMeta = PACE_INFO[paceInfo.pace]
+          const paceMeta = (() => {
+            const base = PACE_INFO[paceInfo.pace]
+            if (paceInfo.pace !== 'balanced') return base
+            // balanced の説明文を実際の脚質構成に基づいて動的生成
+            const parts: string[] = []
+            if (paceInfo.frontCount > 0) parts.push(`逃げ${paceInfo.frontCount}頭`)
+            if (paceInfo.stalkerCount > 0) parts.push(`先行${paceInfo.stalkerCount}頭`)
+            if (paceInfo.closerCount > 0) parts.push(`差し${paceInfo.closerCount}頭`)
+            if (paceInfo.deepCloserCount > 0) parts.push(`追込${paceInfo.deepCloserCount}頭`)
+            const composition = parts.length > 0 ? parts.join('・') + 'の構成で、' : ''
+            return { ...base, explanation: `${composition}平均的な流れが予想される。` }
+          })()
           const paceCounts: { label: string; count: number; style: RunningStyle }[] = [
             { label: '逃げ', count: paceInfo.frontCount,      style: 'front' },
             { label: '先行', count: paceInfo.stalkerCount,    style: 'stalker' },
