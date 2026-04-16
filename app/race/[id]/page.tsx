@@ -4733,10 +4733,12 @@ export default async function RaceDetailPage({
                 <p style={sectionLabel}>AI着順予測ランキング</p>
                 {allRankedHorses.slice(0, 10).map(({ id: horseId, role }, index) => {
                   const horse = horses.find((h) => h.id === horseId)
-                  const adj = getPaceAdjustment(horse?.style ?? null, pace)
+                  // 4角順位から自動判定、データなしは手動設定にフォールバック
+                  const effectiveStyle = getDerivedStyle(horseId, horseRunForms) ?? horse?.style ?? null
+                  const adj = getPaceAdjustment(effectiveStyle, pace)
                   const paceTag = adj > 0 ? 'up' : adj < 0 ? 'down' : null
-                  const styleTag = horse?.style
-                    ? { label: STYLE_LABELS[horse.style], color: STYLE_COLORS[horse.style] }
+                  const styleTag = effectiveStyle
+                    ? { label: STYLE_LABELS[effectiveStyle], color: STYLE_COLORS[effectiveStyle] }
                     : null
                   // AI評価 vs 市場人気
                   const entry = entries.find((e) => e.horse_id === horseId)
