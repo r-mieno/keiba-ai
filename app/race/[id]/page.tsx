@@ -3348,6 +3348,7 @@ export default async function RaceDetailPage({
                 top3HorseIds={top3HorseIds}
                 isDrawComplete={isDrawComplete}
                 axis2Details={axis2Details}
+                axis2HorseId={formationV10Axis2Id}
               />
 
               {/* ── DEBUGパネル（?debug=1 で表示） ──────────────────────── */}

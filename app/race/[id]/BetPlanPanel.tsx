@@ -65,6 +65,7 @@ type Props = {
   top3HorseIds: string[]    // 空配列 = 結果未投入
   isDrawComplete: boolean   // false = 馬番未確定（枠順確定前の暫定予想）
   axis2Details?: AxisDetail // 2頭軸モード用の軸2位情報
+  axis2HorseId?: string | null // 軸2位の馬ID（ヒモプールから除外するため）
 }
 
 // 三連複フォーメーションの的中チェック
@@ -127,6 +128,7 @@ export default function BetPlanPanel({
   top3HorseIds,
   isDrawComplete,
   axis2Details,
+  axis2HorseId,
 }: Props) {
   const [axisMode, setAxisMode] = useState<'1' | '2'>('1')
   const [himo1Count, setHimo1Count] = useState(Math.min(AI_RECOMMENDED_1, allHimoHorses.length))
@@ -139,8 +141,11 @@ export default function BetPlanPanel({
   // 実効値: モードによって切り替え
   const effectiveAxisCount = is2Axis ? 2 : 1
   const effectiveAxisDetails = is2Axis ? [axisDetails[0], axis2Details!] : axisDetails
-  const effectiveAxisHorseIds = is2Axis ? [axisHorseIds[0], allHimoHorses[0].id] : axisHorseIds
-  const himoPool = is2Axis ? allHimoHorses.slice(1) : allHimoHorses
+  const effectiveAxisHorseIds = is2Axis ? [axisHorseIds[0], ...(axis2HorseId ? [axis2HorseId] : [])] : axisHorseIds
+  // 2頭軸モードではaxis2の馬をヒモプールから除外
+  const himoPool = is2Axis
+    ? allHimoHorses.filter((h) => h.id !== axis2HorseId)
+    : allHimoHorses
   const himoCount = is2Axis ? himo2Count : himo1Count
   const setHimoCount = is2Axis ? setHimo2Count : setHimo1Count
   const HIMO_OPTIONS = is2Axis ? HIMO_OPTIONS_2 : HIMO_OPTIONS_1
