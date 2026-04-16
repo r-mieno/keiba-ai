@@ -33,6 +33,7 @@ const SIRE_TO_LINE: Record<string, string> = {
   'コントレイル': 'sunday', 'シャフリヤール': 'sunday', 'イクイノックス': 'sunday',
   'サリオス': 'sunday', 'マカヒキ': 'sunday', 'ロジャーバローズ': 'sunday',
   'サトノアラジン': 'sunday', 'ヒルノダムール': 'sunday', 'ナカヤマフェスタ': 'sunday',
+  'イスラボニータ': 'sunday', 'フィエールマン': 'sunday', 'ワールドプレミア': 'sunday',
   'ポエティックフレア': 'northerndancer', 'ドレフォン': 'northerndancer',
   'パドトロワ': 'mrprospector',
   // ミスプロ系
@@ -45,6 +46,8 @@ const SIRE_TO_LINE: Record<string, string> = {
   'ワークフォース': 'mrprospector', 'Workforce': 'mrprospector',
   'トゥザワールド': 'mrprospector', 'ジョーカプチーノ': 'sunday',
   'スカイダイヤモンズ': 'sunday',
+  'ベンバトル': 'mrprospector', 'Benbatl': 'mrprospector',
+  'Makfi': 'mrprospector', 'Candy Ride': 'mrprospector',
   // ノーザンダンサー系
   'ハービンジャー': 'northerndancer', 'ブリックスアンドモルタル': 'northerndancer',
   'フランケル': 'northerndancer', 'モズアスコット': 'northerndancer',
@@ -55,12 +58,15 @@ const SIRE_TO_LINE: Record<string, string> = {
   'クロフネ': 'northerndancer', 'フレンチデピュティ': 'northerndancer',
   'ジオグリフ': 'northerndancer', 'ハードスパン': 'northerndancer',
   'スリゴーベイ': 'northerndancer', 'Sligo Bay': 'northerndancer',
+  'Singspiel': 'northerndancer', 'Giant\'s Causeway': 'northerndancer',
   // ロベルト系
   'エピファネイア': 'roberto', 'スクリーンヒーロー': 'roberto', 'シンボリクリスエス': 'roberto',
   'グラスワンダー': 'roberto', 'モーリス': 'roberto', 'ブライアンズタイム': 'roberto',
   'タイキシャトル': 'roberto', 'エフフォーリア': 'roberto',
   // ナスルーラ系
   'サンデーサイレンス': 'nasrullah', 'バゴ': 'nasrullah',
+  // その他
+  'Dark Angel': 'other',
 }
 
 function guessLine(sireName: string): string {
