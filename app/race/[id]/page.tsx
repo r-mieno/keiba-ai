@@ -2460,7 +2460,10 @@ function getRecentFormScore(horseId: string, formRecords: HorseFormRecord[]): nu
   // 重賞経験数が少ない馬はニュートラル(0.5)に引き寄せる（サンプル少ない問題）
   // 1戦: 信頼度33%、2戦: 67%、3戦以上: 100%
   const reliability = Math.min(1, records.length / 3)
-  return rawScore * reliability + 0.5 * (1 - reliability)
+  const score = rawScore * reliability + 0.5 * (1 - reliability)
+  // G1勝ち実績がある馬は最低0.75を保証（出走数少なくても実力を過小評価しない）
+  const hasG1Win = records.some((r) => r.grade === 'G1' && r.finish_pos === 1)
+  return hasG1Win ? Math.max(0.75, score) : score
 }
 
 // ── v10 データ駆動型脚質スコア ────────────────────────────────────────────
@@ -2492,7 +2495,7 @@ function getDerivedStyle(horseId: string, runForms: HorseRunForm[]): RunningStyl
   const ft = getFrontTendency(horseId, runForms)
   if (ft === null) return null
   if (ft < 0.20) return 'front'
-  if (ft < 0.45) return 'stalker'
+  if (ft < 0.40) return 'stalker'
   if (ft < 0.70) return 'closer'
   return 'deep_closer'
 }

@@ -24,7 +24,7 @@ function computeDerivedStyle(records: { race_seq: number; corner_pos: number | n
   })
   const ft = wSum / wTotal
   if (ft < 0.20) return '逃げ'
-  if (ft < 0.45) return '先行'
+  if (ft < 0.40) return '先行'
   if (ft < 0.70) return '差し'
   return '追い込み'
 }

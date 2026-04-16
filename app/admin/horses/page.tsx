@@ -57,7 +57,7 @@ export default async function AdminHorsesPage() {
     })
     const ft = wTotal > 0 ? wSum / wTotal : 0
     if (ft < 0.20) return 'front'
-    if (ft < 0.45) return 'stalker'
+    if (ft < 0.40) return 'stalker'
     if (ft < 0.70) return 'closer'
     return 'deep_closer'
   }
