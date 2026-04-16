@@ -33,7 +33,9 @@ export default async function AdminHorsesPage() {
   const styleMap = new Map((styles ?? []).map((s) => [s.horse_id, s.style]))
   const raceNameMap = new Map((races ?? []).map((r) => [r.id, r.race_name]))
 
-  // horse_form_recordsから脚質を自動判定（4角順位の平均から算出）
+  // horse_form_recordsから脚質を自動判定
+  // レースページのgetDerivedStyle/getFrontTendencyと同一ロジック（加重平均・直近重視）
+  const TIME_W = [0.40, 0.28, 0.18, 0.09, 0.05]
   const runFormsByHorse = new Map<string, { race_seq: number; corner_pos: number | null }[]>()
   for (const r of runForms ?? []) {
     const list = runFormsByHorse.get(r.horse_id) ?? []
@@ -46,10 +48,17 @@ export default async function AdminHorsesPage() {
       .sort((a, b) => b.race_seq - a.race_seq)
       .slice(0, 5)
     if (forms.length === 0) return null
-    const avg = forms.reduce((s, r) => s + (r.corner_pos! / 16), 0) / forms.length
-    if (avg <= 0.15) return 'front'
-    if (avg <= 0.35) return 'stalker'
-    if (avg <= 0.65) return 'closer'
+    let wSum = 0, wTotal = 0
+    forms.forEach((r, i) => {
+      const normalized = Math.min(1, r.corner_pos! / 16)
+      const w = TIME_W[i] ?? 0.02
+      wSum += normalized * w
+      wTotal += w
+    })
+    const ft = wTotal > 0 ? wSum / wTotal : 0
+    if (ft < 0.20) return 'front'
+    if (ft < 0.45) return 'stalker'
+    if (ft < 0.70) return 'closer'
     return 'deep_closer'
   }
 
