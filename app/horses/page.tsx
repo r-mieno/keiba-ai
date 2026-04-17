@@ -15,6 +15,33 @@ type StyleProfile = {
   style: string | null
 }
 
+type RunForm = {
+  horse_id: string
+  race_seq: number
+  corner_pos: number | null
+}
+
+const TIME_W = [0.40, 0.28, 0.18, 0.09, 0.05]
+
+function derivedStyle(horseId: string, runForms: RunForm[]): string | null {
+  const records = runForms
+    .filter((r) => r.horse_id === horseId && r.corner_pos !== null)
+    .sort((a, b) => b.race_seq - a.race_seq)
+    .slice(0, 5)
+  if (records.length === 0) return null
+  let wSum = 0, wTotal = 0
+  records.forEach((r, i) => {
+    const w = TIME_W[i] ?? 0.02
+    wSum += Math.min(1, r.corner_pos! / 16) * w
+    wTotal += w
+  })
+  const ft = wSum / wTotal
+  if (ft < 0.20) return 'front'
+  if (ft < 0.40) return 'stalker'
+  if (ft < 0.70) return 'closer'
+  return 'deep_closer'
+}
+
 // 脚質ラベル・カラー
 const STYLE_LABELS: Record<string, string> = {
   front:       '逃げ',
@@ -86,14 +113,18 @@ export default async function HorsesPage() {
 
   let horses: Horse[] = []
   let styleProfiles: StyleProfile[] = []
+  let runForms: RunForm[] = []
   let errorMessage = ''
 
   try {
-    const [horsesRes, stylesRes] = await Promise.all([
+    const [horsesRes, stylesRes, runFormsRes] = await Promise.all([
       fetch(`${base}/rest/v1/horses?select=id,name,sire_name,dam_name,damsire_name,father_line,damsire_line&order=name.asc`, {
         headers, cache: 'no-store',
       }),
       fetch(`${base}/rest/v1/horse_style_profiles?select=horse_id,style`, {
+        headers, cache: 'no-store',
+      }),
+      fetch(`${base}/rest/v1/horse_form_records?select=horse_id,race_seq,corner_pos`, {
         headers, cache: 'no-store',
       }),
     ])
@@ -103,18 +134,20 @@ export default async function HorsesPage() {
     } else {
       horses = await horsesRes.json()
     }
-    if (stylesRes.ok) {
-      styleProfiles = await stylesRes.json()
-    }
+    if (stylesRes.ok) styleProfiles = await stylesRes.json()
+    if (runFormsRes.ok) runForms = await runFormsRes.json()
   } catch (e) {
     errorMessage = e instanceof Error ? e.message : 'unknown error'
   }
 
   const styleMap = new Map(styleProfiles.map((p) => [p.horse_id, p.style]))
 
+  // 自動判定を優先、なければ手動設定にフォールバック
+  const getStyle = (horseId: string) => derivedStyle(horseId, runForms) ?? styleMap.get(horseId) ?? null
+
   // 脚質ごとの集計
   const styleCounts = horses.reduce<Record<string, number>>((acc, h) => {
-    const s = styleMap.get(h.id) ?? 'unknown'
+    const s = getStyle(h.id) ?? 'unknown'
     acc[s] = (acc[s] ?? 0) + 1
     return acc
   }, {})
@@ -274,7 +307,7 @@ export default async function HorsesPage() {
             </p>
           )}
           {horses.map((horse, i) => {
-            const style = styleMap.get(horse.id) ?? null
+            const style = getStyle(horse.id)
             return (
               <div
                 key={horse.id}
