@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { addEntry, updateEntry, deleteEntry } from '../actions'
+import { addEntry, updateEntry, deleteEntry, toggleScratched } from '../actions'
 
 type Entry = {
   horse_id: string
@@ -14,6 +14,7 @@ type Entry = {
   last3f_3: number | null
   finish_position: number | null
   popularity_rank: number | null
+  scratched: boolean | null
 }
 
 const inputStyle = {
@@ -81,9 +82,10 @@ export default function EntryManager({
               .sort((a, b) => (a.horse_number ?? 99) - (b.horse_number ?? 99))
               .map((entry) => {
                 const isEditing = editingId === entry.horse_id
+                const isScratched = entry.scratched === true
                 const updateAction = updateEntry.bind(null, raceId, entry.horse_id)
                 return (
-                  <tr key={entry.horse_id} style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+                  <tr key={entry.horse_id} style={{ borderBottom: '1px solid rgba(255,255,255,0.04)', opacity: isScratched ? 0.45 : 1 }}>
                     {isEditing ? (
                       <td colSpan={9} style={{ padding: '10px' }}>
                         <form
@@ -114,7 +116,10 @@ export default function EntryManager({
                     ) : (
                       <>
                         <td style={{ padding: '10px', color: '#EEEEF5' }}>{entry.horse_number ?? '—'}</td>
-                        <td style={{ padding: '10px', color: '#EEEEF5', fontWeight: 500 }}>{entry.horse_name}</td>
+                        <td style={{ padding: '10px', color: '#EEEEF5', fontWeight: 500 }}>
+                          {entry.horse_name}
+                          {isScratched && <span style={{ fontSize: 10, color: '#F87171', marginLeft: 6, fontWeight: 700 }}>取消</span>}
+                        </td>
                         <td style={{ padding: '10px', color: '#9898B0' }}>{entry.jockey_name ?? '—'}</td>
                         <td style={{ padding: '10px', color: '#9898B0' }}>{entry.weight_kg ?? '—'}</td>
                         <td style={{ padding: '10px', color: '#9898B0' }}>{entry.last3f_1 ?? '—'}</td>
@@ -125,6 +130,11 @@ export default function EntryManager({
                         <td style={{ padding: '10px' }}>
                           <div style={{ display: 'flex', gap: 8 }}>
                             <button onClick={() => setEditingId(entry.horse_id)} style={{ background: 'rgba(255,255,255,0.07)', color: '#9898B0', border: 'none', borderRadius: 6, padding: '4px 10px', fontSize: 11, cursor: 'pointer' }}>編集</button>
+                            <form action={toggleScratched.bind(null, raceId, entry.horse_id, !isScratched)}>
+                              <button type="submit" style={{ background: isScratched ? 'rgba(20,184,166,0.1)' : 'rgba(251,191,36,0.1)', color: isScratched ? '#14B8A6' : '#FBBF24', border: 'none', borderRadius: 6, padding: '4px 10px', fontSize: 11, cursor: 'pointer' }}>
+                                {isScratched ? '取消解除' : '取消'}
+                              </button>
+                            </form>
                             <form action={deleteEntry.bind(null, raceId, entry.horse_id)}>
                               <button type="submit" style={{ background: 'rgba(248,113,113,0.1)', color: '#F87171', border: 'none', borderRadius: 6, padding: '4px 10px', fontSize: 11, cursor: 'pointer' }}>削除</button>
                             </form>

@@ -53,6 +53,7 @@ type Entry = {
   last3f_3: number | null
   finish_position: number | null
   weight_kg: number | null
+  scratched: boolean | null
 }
 
 type JockeyStat = {
@@ -2855,7 +2856,7 @@ export default async function RaceDetailPage({
       fetch(`${baseUrl}/rest/v1/race_results?race_id=eq.${id}&select=horse_id,finish_pos`, {
         headers: { apikey: key, Authorization: `Bearer ${key}` }, cache: 'no-store',
       }),
-      fetch(`${baseUrl}/rest/v1/entries?race_id=eq.${id}&select=horse_id,horse_number,popularity_rank,jockey_name,last3f_1,last3f_2,last3f_3,finish_position,weight_kg`, {
+      fetch(`${baseUrl}/rest/v1/entries?race_id=eq.${id}&select=horse_id,horse_number,popularity_rank,jockey_name,last3f_1,last3f_2,last3f_3,finish_position,weight_kg,scratched&scratched=neq.true`, {
         headers: { apikey: key, Authorization: `Bearer ${key}` }, cache: 'no-store',
       }),
       fetch(`${baseUrl}/rest/v1/jockey_stats?select=jockey_name,place3_rate,g1_wins,g2_wins,g3_wins`, {

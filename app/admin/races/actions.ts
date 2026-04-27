@@ -110,3 +110,14 @@ export async function deleteEntry(raceId: string, horseId: string) {
 
   revalidatePath(`/admin/races/${raceId}`)
 }
+
+export async function toggleScratched(raceId: string, horseId: string, scratched: boolean) {
+  const supabase = createAdminClient()
+  await supabase
+    .from('entries')
+    .update({ scratched })
+    .eq('race_id', raceId)
+    .eq('horse_id', horseId)
+
+  revalidatePath(`/admin/races/${raceId}`)
+}

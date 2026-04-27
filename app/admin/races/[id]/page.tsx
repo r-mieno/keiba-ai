@@ -22,7 +22,7 @@ export default async function AdminRaceDetailPage({ params }: { params: Promise<
 
   const [{ data: race }, { data: entries }, { data: horses }] = await Promise.all([
     supabase.from('races').select('*').eq('id', id).single(),
-    supabase.from('entries').select('horse_id,horse_number,jockey_name,weight_kg,last3f_1,last3f_2,last3f_3,finish_position,popularity_rank').eq('race_id', id),
+    supabase.from('entries').select('horse_id,horse_number,jockey_name,weight_kg,last3f_1,last3f_2,last3f_3,finish_position,popularity_rank,scratched').eq('race_id', id),
     supabase.from('horses').select('id,name'),
   ])
 
