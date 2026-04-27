@@ -2827,7 +2827,7 @@ export default async function RaceDetailPage({
       `${baseUrl}/rest/v1/rpc/compute_formation_for_race`,
       {
         method: 'POST',
-        headers: { apikey: key, Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
+        headers: { apikey: serviceKey, Authorization: `Bearer ${serviceKey}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({ target_race_id: id }),
         cache: 'no-store',
       }
