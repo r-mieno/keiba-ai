@@ -53,18 +53,22 @@ const SIRE_TO_LINE: Record<string, string> = {
   'フランケル': 'northerndancer', 'モズアスコット': 'northerndancer',
   'オペラハウス': 'northerndancer', 'メイショウサムソン': 'northerndancer',
   'ダンスインザダーク': 'northerndancer', 'タニノギムレット': 'northerndancer',
-  'ジャングルポケット': 'northerndancer', 'ガリレオ': 'northerndancer',
+  'ジャングルポケット': 'northerndancer', 'ガリレオ': 'northerndancer', 'Galileo': 'northerndancer',
   'シーザスターズ': 'northerndancer', 'オーシャンブルー': 'northerndancer',
   'クロフネ': 'northerndancer', 'フレンチデピュティ': 'northerndancer',
   'ジオグリフ': 'northerndancer', 'ハードスパン': 'northerndancer',
   'スリゴーベイ': 'northerndancer', 'Sligo Bay': 'northerndancer',
   'Singspiel': 'northerndancer', 'Giant\'s Causeway': 'northerndancer',
+  'Siyouni': 'northerndancer', 'Cape Cross': 'northerndancer',
+  'コンデュイット': 'northerndancer', 'Conduit': 'northerndancer',
   // ロベルト系
   'エピファネイア': 'roberto', 'スクリーンヒーロー': 'roberto', 'シンボリクリスエス': 'roberto',
   'グラスワンダー': 'roberto', 'モーリス': 'roberto', 'ブライアンズタイム': 'roberto',
   'タイキシャトル': 'roberto', 'エフフォーリア': 'roberto',
   // ナスルーラ系
-  'サンデーサイレンス': 'nasrullah', 'バゴ': 'nasrullah',
+  'サンデーサイレンス': 'nasrullah', 'バゴ': 'nasrullah', 'Linamix': 'nasrullah',
+  // ミスプロ系追加
+  'ニューイヤーズデイ': 'mrprospector', 'エンパイアメーカー': 'mrprospector',
   // その他
   'Dark Angel': 'other',
 }
