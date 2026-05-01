@@ -8,6 +8,8 @@ type Horse = {
   name: string
   sire_name: string | null
   father_line: string | null
+  damsire_name: string | null
+  damsire_line: string | null
   style: string | null
   raceNames: string[]
 }
@@ -65,7 +67,7 @@ export default function HorseList({ horses }: { horses: Horse[] }) {
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
           <thead>
             <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
-              {['馬名', '父', '父系統', '脚質', '出走レース', ''].map((h) => (
+              {['馬名', '父', '父系統', '母父', '母父系統', '脚質', '出走レース', ''].map((h) => (
                 <th key={h} style={{ textAlign: 'left', padding: '12px 16px', color: '#62627A', fontWeight: 600, fontSize: 11 }}>{h}</th>
               ))}
             </tr>
@@ -77,6 +79,10 @@ export default function HorseList({ horses }: { horses: Horse[] }) {
                 <td style={{ padding: '11px 16px', color: '#9898B0' }}>{horse.sire_name ?? '—'}</td>
                 <td style={{ padding: '11px 16px', color: '#9898B0', fontSize: 12 }}>
                   {horse.father_line ? (LINE_LABELS[horse.father_line] ?? horse.father_line) : '—'}
+                </td>
+                <td style={{ padding: '11px 16px', color: '#9898B0' }}>{horse.damsire_name ?? '—'}</td>
+                <td style={{ padding: '11px 16px', color: '#9898B0', fontSize: 12 }}>
+                  {horse.damsire_line ? (LINE_LABELS[horse.damsire_line] ?? horse.damsire_line) : '—'}
                 </td>
                 <td style={{ padding: '11px 16px', color: '#9898B0', fontSize: 12 }}>
                   {horse.style ? (STYLE_LABELS[horse.style] ?? horse.style) : '—'}

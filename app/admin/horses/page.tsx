@@ -6,7 +6,7 @@ export default async function AdminHorsesPage() {
   const supabase = await createClient()
 
   const [{ data: horses }, { data: styles }, { data: entries }, { data: races }, { data: runForms }] = await Promise.all([
-    supabase.from('horses').select('id,name,sire_name,father_line').order('name'),
+    supabase.from('horses').select('id,name,sire_name,father_line,damsire_name,damsire_line').order('name'),
     supabase.from('horse_style_profiles').select('horse_id,style'),
     supabase.from('entries').select('horse_id,race_id'),
     supabase.from('races').select('id,race_name'),
