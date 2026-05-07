@@ -102,6 +102,7 @@ export async function upsertFormRecord(horseId: string, formData: FormData) {
       last3f:     formData.get('last3f')     ? Number(formData.get('last3f'))     : null,
       corner_pos: formData.get('corner_pos') ? Number(formData.get('corner_pos')) : null,
       finish_pos: formData.get('finish_pos') ? Number(formData.get('finish_pos')) : null,
+      field_size: formData.get('field_size') ? Number(formData.get('field_size')) : null,
     },
     { onConflict: 'horse_id,race_seq' }
   )

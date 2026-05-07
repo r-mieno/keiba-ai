@@ -10,7 +10,7 @@ export default async function AdminHorsesPage() {
     supabase.from('horse_style_profiles').select('horse_id,style'),
     supabase.from('entries').select('horse_id,race_id'),
     supabase.from('races').select('id,race_name'),
-    supabase.from('horse_form_records').select('horse_id,race_seq,corner_pos'),
+    supabase.from('horse_form_records').select('horse_id,race_seq,corner_pos,field_size'),
   ])
 
   const styleMap = new Map((styles ?? []).map((s) => [s.horse_id, s.style]))
@@ -19,7 +19,7 @@ export default async function AdminHorsesPage() {
   // horse_form_recordsから脚質を自動判定
   // レースページのgetDerivedStyle/getFrontTendencyと同一ロジック（加重平均・直近重視）
   const TIME_W = [0.40, 0.28, 0.18, 0.09, 0.05]
-  const runFormsByHorse = new Map<string, { race_seq: number; corner_pos: number | null }[]>()
+  const runFormsByHorse = new Map<string, { race_seq: number; corner_pos: number | null; field_size?: number | null }[]>()
   for (const r of runForms ?? []) {
     const list = runFormsByHorse.get(r.horse_id) ?? []
     list.push(r)
@@ -33,7 +33,8 @@ export default async function AdminHorsesPage() {
     if (forms.length === 0) return null
     let wSum = 0, wTotal = 0
     forms.forEach((r, i) => {
-      const normalized = Math.min(1, r.corner_pos! / 16)
+      const fieldSize = r.field_size ?? 16
+      const normalized = Math.min(1, r.corner_pos! / fieldSize)
       const w = TIME_W[i] ?? 0.02
       wSum += normalized * w
       wTotal += w

@@ -80,6 +80,7 @@ type HorseRunForm = {
   last3f: number | null
   corner_pos: number | null
   finish_pos: number | null
+  field_size?: number | null
 }
 
 // ─── 騎手スコアマスタ（複勝圏能力の初期仮説値 0〜1）──────────────────────────
@@ -2483,7 +2484,8 @@ function getFrontTendency(horseId: string, runForms: HorseRunForm[]): number | n
   if (records.length === 0) return null
   let wSum = 0, wTotal = 0
   records.forEach((r, i) => {
-    const normalized = Math.min(1, r.corner_pos! / DERIVED_ASSUMED_FIELD)
+    const fieldSize = r.field_size ?? DERIVED_ASSUMED_FIELD
+    const normalized = Math.min(1, r.corner_pos! / fieldSize)
     const w = DERIVED_PACE_TIME_W[i] ?? 0.02
     wSum += normalized * w
     wTotal += w
@@ -2906,7 +2908,7 @@ export default async function RaceDetailPage({
           { headers: { apikey: key, Authorization: `Bearer ${key}` }, cache: 'no-store' }
         ),
         fetch(
-          `${baseUrl}/rest/v1/horse_form_records?horse_id=in.(${raceHorseIdList.join(',')})&select=horse_id,race_seq,last3f,corner_pos,finish_pos&order=race_seq.asc`,
+          `${baseUrl}/rest/v1/horse_form_records?horse_id=in.(${raceHorseIdList.join(',')})&select=horse_id,race_seq,last3f,corner_pos,finish_pos,field_size&order=race_seq.asc`,
           { headers: { apikey: key, Authorization: `Bearer ${key}` }, cache: 'no-store' }
         ),
       ])

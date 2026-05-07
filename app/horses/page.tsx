@@ -19,6 +19,7 @@ type RunForm = {
   horse_id: string
   race_seq: number
   corner_pos: number | null
+  field_size?: number | null
 }
 
 const TIME_W = [0.40, 0.28, 0.18, 0.09, 0.05]
@@ -32,7 +33,7 @@ function derivedStyle(horseId: string, runForms: RunForm[]): string | null {
   let wSum = 0, wTotal = 0
   records.forEach((r, i) => {
     const w = TIME_W[i] ?? 0.02
-    wSum += Math.min(1, r.corner_pos! / 16) * w
+    wSum += Math.min(1, r.corner_pos! / (r.field_size ?? 16)) * w
     wTotal += w
   })
   const ft = wSum / wTotal
@@ -124,7 +125,7 @@ export default async function HorsesPage() {
       fetch(`${base}/rest/v1/horse_style_profiles?select=horse_id,style`, {
         headers, cache: 'no-store',
       }),
-      fetch(`${base}/rest/v1/horse_form_records?select=horse_id,race_seq,corner_pos`, {
+      fetch(`${base}/rest/v1/horse_form_records?select=horse_id,race_seq,corner_pos,field_size`, {
         headers, cache: 'no-store',
       }),
     ])
