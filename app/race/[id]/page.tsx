@@ -36,6 +36,7 @@ type Horse = {
   damsire_line: string | null
   place3_rate: number | null
   race_count: number | null
+  birth_date: string | null
 }
 
 type RaceResult = {
@@ -2597,6 +2598,7 @@ function computeFormationV10(
   jockeyScoreMap: Record<string, number> = {},
   horseFormRecords: HorseFormRecord[] = [],
   horseRunForms: HorseRunForm[] = [],
+  raceDate: string | null = null,
 ): FormationV9_1Result {
   if (entries.length === 0) return { formation: { race_id: '', race_structure_score: 0, axis_count: 0, axis_horses: [], himo_horses: [], ticket_count: 0 }, debug: { pace, raceType: '古馬戦', jockeyWeight: 0.20, axisTypeV7: '混戦', himoCount: 6, rows: [], axisScore: 0, axisName: '—', axisRows: [] } }
   const resolveName = (id: string) => horses.find((h) => h.id === id)?.name ?? id
@@ -2615,6 +2617,20 @@ function computeFormationV10(
     if (n === null) return raw  // 出走数未入力はそのまま
     const reliability = Math.min(1, n / 15)  // 15戦で信頼度1.0
     return raw * reliability + 0.33 * (1 - reliability)
+  }
+
+  // 年齢ペナルティ: 7歳以上の古馬に適用（天皇賞春等の長距離古馬戦データより）
+  const getAgePenalty = (horseId: string): number => {
+    const horse = horses.find((h) => h.id === horseId)
+    if (!horse?.birth_date || !raceDate) return 0
+    const birth = new Date(horse.birth_date)
+    const race = new Date(raceDate)
+    const birthdayThisYear = new Date(race.getFullYear(), birth.getMonth(), birth.getDate())
+    const age = race.getFullYear() - birth.getFullYear() - (race < birthdayThisYear ? 1 : 0)
+    if (age >= 9) return -0.12
+    if (age >= 8) return -0.07
+    if (age >= 7) return -0.03
+    return 0
   }
 
   // v10 軸スコア計算
@@ -2641,6 +2657,7 @@ function computeFormationV10(
     const postPositionAdj = getPostPositionAdj(venue, distanceM, entry?.horse_number ?? null)
 
     // v10 重み: 脚質(derived)20%, 騎手13%, place3Rate20%, 近走17%, 上がり10%, 安定10%
+    const agePenalty = getAgePenalty(id)
     const axisScore =
       paceFit * 0.20
       + jockeyScore * 0.13
@@ -2653,6 +2670,7 @@ function computeFormationV10(
       + bloodlineBonus
       + groundStrength
       + weightAdj
+      + agePenalty
 
     return { id, axisScore, paceFit, distanceFit, jockeyScore, closingScore, bloodlineBonus, weightAdj, groundStrength, postPositionAdj, horsePlace3Rate, recentFormScore }
   }
@@ -2839,7 +2857,7 @@ export default async function RaceDetailPage({
     }
     formation = await rpcRes.json()
 
-    const horseRes = await fetch(`${baseUrl}/rest/v1/horses?select=id,name,father_line,damsire_line,place3_rate,race_count`, {
+    const horseRes = await fetch(`${baseUrl}/rest/v1/horses?select=id,name,father_line,damsire_line,place3_rate,race_count,birth_date`, {
       headers: { apikey: key, Authorization: `Bearer ${key}` },
       cache: 'no-store',
     })
@@ -3006,7 +3024,7 @@ export default async function RaceDetailPage({
     formationV9_1Debug = v9_1Result.debug
     const v9_2Result = computeFormationV9_2(origFormation, horses, entries, pace, earlyStabilityScore, race?.distance_m ?? null, race?.race_name ?? null, race?.venue ?? null, jockeyScoreMap, horseFormRecords, applyDiv)
     formationV9_2Debug = v9_2Result.debug
-    const v10Result = computeFormationV10(origFormation, horses, entries, pace, earlyStabilityScore, race?.distance_m ?? null, race?.race_name ?? null, race?.venue ?? null, jockeyScoreMap, horseFormRecords, horseRunForms)
+    const v10Result = computeFormationV10(origFormation, horses, entries, pace, earlyStabilityScore, race?.distance_m ?? null, race?.race_name ?? null, race?.venue ?? null, jockeyScoreMap, horseFormRecords, horseRunForms, race?.date ?? null)
     formationV10Debug = v10Result.debug
     formation = v10Result.formation  // v10 を実際の表示に使用
     formationV10Axis2Id = v10Result.debug.axis2Id ?? null
@@ -3014,7 +3032,7 @@ export default async function RaceDetailPage({
 
   // 本番レース（is_test=false）でも 2026-04-19 以降はv10を適用
   if (!race?.is_test && race?.date != null && race.date >= '2026-04-19' && formation) {
-    const v10Result = computeFormationV10(formation, horses, entries, pace, earlyStabilityScore, race.distance_m ?? null, race.race_name ?? null, race.venue ?? null, jockeyScoreMap, horseFormRecords, horseRunForms)
+    const v10Result = computeFormationV10(formation, horses, entries, pace, earlyStabilityScore, race.distance_m ?? null, race.race_name ?? null, race.venue ?? null, jockeyScoreMap, horseFormRecords, horseRunForms, race.date)
     formation = v10Result.formation
     formationV10Axis2Id = v10Result.debug.axis2Id ?? null
   }

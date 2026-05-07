@@ -45,7 +45,7 @@ export default async function AdminHorseDetailPage({ params }: { params: Promise
   const supabase = await createClient()
 
   const [{ data: horse }, { data: pastResults }, { data: formRecords }] = await Promise.all([
-    supabase.from('horses').select('id,name,sire_name,damsire_name,dam_name,father_line,damsire_line,place3_rate,race_count').eq('id', id).single(),
+    supabase.from('horses').select('id,name,sire_name,damsire_name,dam_name,father_line,damsire_line,place3_rate,race_count,birth_date').eq('id', id).single(),
     supabase.from('horse_past_results').select('id,race_name,grade,distance_m,finish_pos,field_size').eq('horse_id', id).order('grade').order('race_name'),
     supabase.from('horse_form_records').select('id,race_seq,race_name,last3f,corner_pos,finish_pos').eq('horse_id', id).order('race_seq', { ascending: false }),
   ])

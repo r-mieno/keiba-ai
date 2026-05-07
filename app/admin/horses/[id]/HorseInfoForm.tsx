@@ -78,6 +78,10 @@ function guessLine(sireName: string): string {
   return SIRE_TO_LINE[sireName.trim()] ?? ''
 }
 
+const BIRTH_YEARS = Array.from({ length: 14 }, (_, i) => 2010 + i)  // 2010-2023
+const BIRTH_MONTHS = Array.from({ length: 12 }, (_, i) => i + 1)
+const BIRTH_DAYS = Array.from({ length: 31 }, (_, i) => i + 1)
+
 type Props = {
   horseId: string
   horse: {
@@ -89,6 +93,7 @@ type Props = {
     damsire_line?: string | null
     place3_rate?: number | null
     race_count?: number | null
+    birth_date?: string | null
   }
   derivedStyle: string | null
 }
@@ -104,9 +109,19 @@ const inputStyle = {
   width: '100%',
 }
 
+function parseBirthDate(birthDate: string | null | undefined) {
+  if (!birthDate) return { year: '', month: '', day: '' }
+  const [y, m, d] = birthDate.split('-')
+  return { year: y ?? '', month: m ? String(Number(m)) : '', day: d ? String(Number(d)) : '' }
+}
+
 export default function HorseInfoForm({ horseId, horse, derivedStyle }: Props) {
   const [fatherLine, setFatherLine] = useState(horse.father_line ?? '')
   const [damsireLine, setDamsireLine] = useState(horse.damsire_line ?? '')
+  const bd = parseBirthDate(horse.birth_date)
+  const [birthYear, setBirthYear] = useState(bd.year)
+  const [birthMonth, setBirthMonth] = useState(bd.month)
+  const [birthDay, setBirthDay] = useState(bd.day)
 
   const updateAction = updateHorse.bind(null, horseId)
 
@@ -164,6 +179,26 @@ export default function HorseInfoForm({ horseId, horse, derivedStyle }: Props) {
         <div>
           <label style={{ fontSize: 11, color: '#62627A', display: 'block', marginBottom: 4 }}>出走数</label>
           <input name="race_count" type="number" step="1" min="0" defaultValue={horse.race_count ?? ''} placeholder="20" style={inputStyle} />
+        </div>
+        <div style={{ gridColumn: '1 / -1' }}>
+          <label style={{ fontSize: 11, color: '#62627A', display: 'block', marginBottom: 4 }}>生年月日</label>
+          <input type="hidden" name="birth_year" value={birthYear} />
+          <input type="hidden" name="birth_month" value={birthMonth} />
+          <input type="hidden" name="birth_day" value={birthDay} />
+          <div style={{ display: 'flex', gap: 8 }}>
+            <select value={birthYear} onChange={(e) => setBirthYear(e.target.value)} style={{ ...inputStyle, width: 100, cursor: 'pointer' }}>
+              <option value="">年</option>
+              {BIRTH_YEARS.map((y) => <option key={y} value={y}>{y}年</option>)}
+            </select>
+            <select value={birthMonth} onChange={(e) => setBirthMonth(e.target.value)} style={{ ...inputStyle, width: 76, cursor: 'pointer' }}>
+              <option value="">月</option>
+              {BIRTH_MONTHS.map((m) => <option key={m} value={m}>{m}月</option>)}
+            </select>
+            <select value={birthDay} onChange={(e) => setBirthDay(e.target.value)} style={{ ...inputStyle, width: 76, cursor: 'pointer' }}>
+              <option value="">日</option>
+              {BIRTH_DAYS.map((d) => <option key={d} value={d}>{d}日</option>)}
+            </select>
+          </div>
         </div>
         <div>
           <label style={{ fontSize: 11, color: '#62627A', display: 'block', marginBottom: 4 }}>

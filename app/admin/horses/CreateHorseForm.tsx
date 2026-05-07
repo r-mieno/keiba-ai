@@ -67,9 +67,16 @@ const inputStyle = {
   width: '100%',
 }
 
+const BIRTH_YEARS = Array.from({ length: 14 }, (_, i) => 2010 + i)
+const BIRTH_MONTHS = Array.from({ length: 12 }, (_, i) => i + 1)
+const BIRTH_DAYS = Array.from({ length: 31 }, (_, i) => i + 1)
+
 export default function CreateHorseForm() {
   const [fatherLine, setFatherLine] = useState('')
   const [damsireLine, setDamsireLine] = useState('')
+  const [birthYear, setBirthYear] = useState('')
+  const [birthMonth, setBirthMonth] = useState('')
+  const [birthDay, setBirthDay] = useState('')
 
   return (
     <form action={createHorse}>
@@ -127,6 +134,26 @@ export default function CreateHorseForm() {
         <div>
           <label style={{ fontSize: 11, color: '#62627A', display: 'block', marginBottom: 4 }}>3着内率</label>
           <input name="place3_rate" type="number" step="0.001" min="0" max="1" placeholder="0.350" style={inputStyle} />
+        </div>
+        <div style={{ gridColumn: '1 / -1' }}>
+          <label style={{ fontSize: 11, color: '#62627A', display: 'block', marginBottom: 4 }}>生年月日</label>
+          <input type="hidden" name="birth_year" value={birthYear} />
+          <input type="hidden" name="birth_month" value={birthMonth} />
+          <input type="hidden" name="birth_day" value={birthDay} />
+          <div style={{ display: 'flex', gap: 8 }}>
+            <select value={birthYear} onChange={(e) => setBirthYear(e.target.value)} style={{ ...inputStyle, width: 100, cursor: 'pointer' }}>
+              <option value="">年</option>
+              {BIRTH_YEARS.map((y) => <option key={y} value={y}>{y}年</option>)}
+            </select>
+            <select value={birthMonth} onChange={(e) => setBirthMonth(e.target.value)} style={{ ...inputStyle, width: 76, cursor: 'pointer' }}>
+              <option value="">月</option>
+              {BIRTH_MONTHS.map((m) => <option key={m} value={m}>{m}月</option>)}
+            </select>
+            <select value={birthDay} onChange={(e) => setBirthDay(e.target.value)} style={{ ...inputStyle, width: 76, cursor: 'pointer' }}>
+              <option value="">日</option>
+              {BIRTH_DAYS.map((d) => <option key={d} value={d}>{d}日</option>)}
+            </select>
+          </div>
         </div>
       </div>
       <SubmitButton label="登録" loadingLabel="登録中..." />

@@ -10,6 +10,11 @@ export async function createHorse(formData: FormData) {
   const name = (formData.get('name') as string).trim()
   if (!name) return
 
+  const by = formData.get('birth_year') as string
+  const bm = formData.get('birth_month') as string
+  const bd = formData.get('birth_day') as string
+  const birthDate = by && bm && bd ? `${by}-${bm.padStart(2, '0')}-${bd.padStart(2, '0')}` : null
+
   const { data, error } = await supabase.from('horses').insert({
     name,
     sire_name:    (formData.get('sire_name') as string) || null,
@@ -18,6 +23,7 @@ export async function createHorse(formData: FormData) {
     father_line:  (formData.get('father_line') as string) || null,
     damsire_line: (formData.get('damsire_line') as string) || null,
     place3_rate:  formData.get('place3_rate') ? Number(formData.get('place3_rate')) : null,
+    birth_date:   birthDate,
   }).select('id').single()
 
   if (error || !data) return
@@ -34,6 +40,11 @@ export async function createHorse(formData: FormData) {
 export async function updateHorse(horseId: string, formData: FormData) {
   const supabase = createAdminClient()
 
+  const by = formData.get('birth_year') as string
+  const bm = formData.get('birth_month') as string
+  const bd = formData.get('birth_day') as string
+  const birthDate = by && bm && bd ? `${by}-${bm.padStart(2, '0')}-${bd.padStart(2, '0')}` : null
+
   await supabase.from('horses').update({
     name:         formData.get('name') as string,
     sire_name:    (formData.get('sire_name') as string) || null,
@@ -43,6 +54,7 @@ export async function updateHorse(horseId: string, formData: FormData) {
     damsire_line: (formData.get('damsire_line') as string) || null,
     place3_rate:  formData.get('place3_rate') ? Number(formData.get('place3_rate')) : null,
     race_count:   formData.get('race_count')  ? Number(formData.get('race_count'))  : null,
+    birth_date:   birthDate,
   }).eq('id', horseId)
 
   const style = formData.get('style') as string
