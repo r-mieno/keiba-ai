@@ -20,10 +20,11 @@ export default async function AdminRaceDetailPage({ params }: { params: Promise<
   const { id } = await params
   const supabase = await createClient()
 
-  const [{ data: race }, { data: entries }, { data: horses }] = await Promise.all([
+  const [{ data: race }, { data: entries }, { data: horses }, { data: allEntries }] = await Promise.all([
     supabase.from('races').select('*').eq('id', id).single(),
     supabase.from('entries').select('horse_id,horse_number,jockey_name,weight_kg,last3f_1,last3f_2,last3f_3,finish_position,popularity_rank,scratched').eq('race_id', id),
     supabase.from('horses').select('id,name'),
+    supabase.from('entries').select('jockey_name').not('jockey_name', 'is', null),
   ])
 
   if (!race) notFound()
@@ -34,6 +35,16 @@ export default async function AdminRaceDetailPage({ params }: { params: Promise<
     horse_name: horseMap.get(e.horse_id) ?? e.horse_id,
   }))
   const allHorseNames = (horses ?? []).map((h) => h.name).sort()
+  const allJockeyNames = [
+    ...new Set([
+      'ルメール', '川田将雅', '武豊', '横山典弘', '横山武史', '松山弘平',
+      '戸崎圭太', '田辺裕信', '岩田望来', '坂井瑠星', '池添謙一', '幸英明',
+      '和田竜二', '吉田隼人', '北村友一', '丸山元気', '岩田康誠', '三浦皇成',
+      '鮫島克駿', '鮫島良太', '大野拓弥', '菅原明良', '永野猛蔵', '津村明秀',
+      '西村淳也', '団野大成', 'デムーロ', 'モレイラ',
+      ...(allEntries ?? []).map((e) => e.jockey_name as string).filter(Boolean),
+    ]),
+  ].sort()
 
   const updateAction = updateRace.bind(null, id)
 
@@ -124,7 +135,7 @@ export default async function AdminRaceDetailPage({ params }: { params: Promise<
         <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.10em', textTransform: 'uppercase', color: '#62627A', margin: '0 0 16px' }}>
           出走馬　<span style={{ color: '#EEEEF5', fontSize: 14 }}>{entryRows.length}頭</span>
         </p>
-        <EntryManager raceId={id} entries={entryRows} allHorseNames={allHorseNames} />
+        <EntryManager raceId={id} entries={entryRows} allHorseNames={allHorseNames} allJockeyNames={allJockeyNames} />
       </div>
     </div>
   )

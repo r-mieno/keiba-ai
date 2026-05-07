@@ -55,17 +55,25 @@ export default function EntryManager({
   raceId,
   entries,
   allHorseNames,
+  allJockeyNames,
 }: {
   raceId: string
   entries: Entry[]
   allHorseNames: string[]
+  allJockeyNames: string[]
 }) {
   const [editingId, setEditingId] = useState<string | null>(null)
+  const [savingId, setSavingId] = useState<string | null>(null)
+  const [savedId, setSavedId] = useState<string | null>(null)
 
   const addAction = addEntry.bind(null, raceId)
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+      <datalist id="jockey-list">
+        {allJockeyNames.map((n) => <option key={n} value={n} />)}
+      </datalist>
+
       {/* エントリー一覧 */}
       <div style={{ overflowX: 'auto' }}>
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
@@ -83,20 +91,28 @@ export default function EntryManager({
               .map((entry) => {
                 const isEditing = editingId === entry.horse_id
                 const isScratched = entry.scratched === true
+                const isSaving = savingId === entry.horse_id
+                const isSaved = savedId === entry.horse_id
                 const updateAction = updateEntry.bind(null, raceId, entry.horse_id)
                 return (
                   <tr key={entry.horse_id} style={{ borderBottom: '1px solid rgba(255,255,255,0.04)', opacity: isScratched ? 0.45 : 1 }}>
                     {isEditing ? (
                       <td colSpan={9} style={{ padding: '10px' }}>
                         <form
-                          action={async (fd) => { await updateAction(fd); setEditingId(null) }}
+                          action={async (fd) => {
+                            setSavingId(entry.horse_id)
+                            await updateAction(fd)
+                            setSavingId(null)
+                            setSavedId(entry.horse_id)
+                            setTimeout(() => { setSavedId(null); setEditingId(null) }, 1000)
+                          }}
                           style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}
                         >
                           <span style={{ fontSize: 12, color: '#EEEEF5', fontWeight: 600, minWidth: 80 }}>{entry.horse_name}</span>
                           <SelectField name="horse_number"    label="馬番" value={entry.horse_number}    options={HORSE_NUMBERS} width={60} />
                           <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
                             <label style={{ fontSize: 10, color: '#62627A' }}>騎手</label>
-                            <input name="jockey_name" defaultValue={entry.jockey_name ?? ''} style={{ ...inputStyle, width: 100 }} />
+                            <input name="jockey_name" defaultValue={entry.jockey_name ?? ''} list="jockey-list" style={{ ...inputStyle, width: 110 }} />
                           </div>
                           <SelectField name="weight_kg"       label="斤量" value={entry.weight_kg}       options={WEIGHT_OPTIONS} width={65} />
                           {(['last3f_1','last3f_2','last3f_3'] as const).map((name, i) => (
@@ -108,7 +124,25 @@ export default function EntryManager({
                           <SelectField name="finish_position" label="着順" value={entry.finish_position} options={RANK_OPTIONS}   width={60} />
                           <SelectField name="popularity_rank" label="人気" value={entry.popularity_rank} options={RANK_OPTIONS}   width={60} />
                           <div style={{ display: 'flex', gap: 6, alignSelf: 'flex-end' }}>
-                            <button type="submit" style={{ background: '#14B8A6', color: '#fff', border: 'none', borderRadius: 6, padding: '6px 12px', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>保存</button>
+                            <button
+                              type="submit"
+                              disabled={isSaving}
+                              style={{
+                                background: isSaved ? 'rgba(20,184,166,0.2)' : '#14B8A6',
+                                color: '#fff',
+                                border: 'none',
+                                borderRadius: 6,
+                                padding: '6px 12px',
+                                fontSize: 12,
+                                fontWeight: 600,
+                                cursor: isSaving ? 'not-allowed' : 'pointer',
+                                minWidth: 72,
+                                opacity: isSaving ? 0.7 : 1,
+                                transition: 'background 0.2s',
+                              }}
+                            >
+                              {isSaving ? '保存中…' : isSaved ? '✓ 保存済' : '保存'}
+                            </button>
                             <button type="button" onClick={() => setEditingId(null)} style={{ background: 'rgba(255,255,255,0.08)', color: '#9898B0', border: 'none', borderRadius: 6, padding: '6px 10px', fontSize: 12, cursor: 'pointer' }}>×</button>
                           </div>
                         </form>
@@ -169,7 +203,7 @@ export default function EntryManager({
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
             <label style={{ fontSize: 11, color: '#62627A' }}>騎手</label>
-            <input name="jockey_name" type="text" placeholder="騎手名" style={{ ...inputStyle, width: 120 }} />
+            <input name="jockey_name" type="text" placeholder="騎手名" list="jockey-list" style={{ ...inputStyle, width: 120 }} />
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
             <label style={{ fontSize: 11, color: '#62627A' }}>斤量</label>
