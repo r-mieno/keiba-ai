@@ -10,7 +10,7 @@ const AI_RECOMMENDED_2 = 4
 
 function computeCombinations(axisCount: number, himoCount: number): number {
   if (axisCount >= 3) return 1
-  if (axisCount === 2) return Math.max(0, himoCount)
+  if (axisCount === 2) return himoCount >= 2 ? himoCount * (himoCount - 1) : Math.max(0, himoCount)
   return himoCount >= 2 ? (himoCount * (himoCount - 1)) / 2 : 0
 }
 
@@ -32,7 +32,7 @@ function buildComment(axisCount: number, himoCount: number, stabilityScore: numb
       return `荒れやすいレースのため、相手を${himoCount}頭に広げてミスリスクを最小化する。穴馬の台頭に備えたカバー範囲を優先した構成。`
     }
   } else if (axisCount === 2) {
-    return `軸1頭目が外れても軸2頭目が3着内に来れば的中圏内。単軸リスクを分散した安全志向の構成。相手${himoCount}頭との組み合わせで${himoCount}点買い。`
+    return `軸1・2頭目のどちらかが3着内に来れば的中圏内。単軸リスクを分散した安全志向の構成。相手${himoCount}頭との組み合わせで${himoCount * (himoCount - 1)}点買い。`
   } else {
     return `AIが高く評価した${axisCount}頭を軸に、相手${himoCount}頭を組み合わせた網羅的なフォーメーション。高配当圏を狙いつつ、複数の的中パターンを確保する積極的な構成。`
   }
@@ -89,7 +89,7 @@ function checkFormationHit(
     return nonAxis.every((id) => himoSet.has(id))
   }
   if (axisCount === 2) {
-    if (axisInTop3.length < Math.min(2, axisIds.length)) return false
+    if (axisInTop3.length < 1) return false
     const nonAxis = top3.filter((id) => !axisSet.has(id))
     return nonAxis.every((id) => himoSet.has(id))
   }
@@ -223,7 +223,7 @@ export default function BetPlanPanel({
         <div style={{ display: 'flex', gap: 6, marginBottom: 16 }}>
           {(['1', '2'] as const).map((mode) => {
             const active = axisMode === mode
-            const label = mode === '1' ? '1頭軸（10点）' : '2頭軸（5点）'
+            const label = mode === '1' ? '1頭軸' : '2頭軸'
             return (
               <motion.button
                 key={mode}
