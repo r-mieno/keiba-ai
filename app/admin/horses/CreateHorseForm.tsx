@@ -40,6 +40,18 @@ const SIRE_TO_LINE: Record<string, string> = {
   'エフフォーリア': 'roberto',
   'サンデーサイレンス': 'nasrullah', 'バゴ': 'nasrullah', 'Linamix': 'nasrullah',
   'ニューイヤーズデイ': 'mrprospector', 'エンパイアメーカー': 'mrprospector',
+  // ノーザンダンサー系追加
+  'モズアスコット': 'northerndancer',
+  'Bated Breath': 'northerndancer', 'ベイテッドブレス': 'northerndancer',
+  'Not For Sale': 'northerndancer', 'ノットフォーセール': 'northerndancer',
+  'Hinchinbrook': 'northerndancer', 'ヒンチンブルック': 'northerndancer',
+  'Snitzel': 'northerndancer', 'スニッツェル': 'northerndancer',
+  'Lizard Island': 'northerndancer', 'リザードアイランド': 'northerndancer',
+  "Medaglia d'Oro": 'northerndancer', 'メダグリアドーロ': 'northerndancer',
+  // ミスプロ系追加
+  'Swept Overboard': 'mrprospector', 'スウェプトオーヴァーボード': 'mrprospector',
+  'Thewayyouare': 'mrprospector', 'ザウェイユーアー': 'mrprospector',
+  // その他
   'Dark Angel': 'other',
 }
 
