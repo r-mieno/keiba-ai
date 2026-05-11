@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { addEntry, updateEntry, deleteEntry, toggleScratched } from '../actions'
+import { addEntry, updateEntry, deleteEntry, toggleScratched, bulkUpdateEntries } from '../actions'
 
 type Entry = {
   horse_id: string
@@ -9,9 +9,6 @@ type Entry = {
   horse_number: number | null
   jockey_name: string | null
   weight_kg: number | null
-  last3f_1: number | null
-  last3f_2: number | null
-  last3f_3: number | null
   finish_position: number | null
   popularity_rank: number | null
   scratched: boolean | null
@@ -51,6 +48,14 @@ function SelectField({ name, label, value, options, width, placeholder }: {
   )
 }
 
+type BulkRow = {
+  horse_number: string
+  jockey_name: string
+  weight_kg: string
+  finish_position: string
+  popularity_rank: string
+}
+
 export default function EntryManager({
   raceId,
   entries,
@@ -66,6 +71,60 @@ export default function EntryManager({
   const [savingId, setSavingId] = useState<string | null>(null)
   const [savedId, setSavedId] = useState<string | null>(null)
 
+  // 一括編集
+  const [isBulkEdit, setIsBulkEdit] = useState(false)
+  const [isBulkSaving, setIsBulkSaving] = useState(false)
+  const [isBulkSaved, setIsBulkSaved] = useState(false)
+  const [bulkData, setBulkData] = useState<Record<string, BulkRow>>({})
+
+  const sorted = [...entries].sort((a, b) => (a.horse_number ?? 99) - (b.horse_number ?? 99))
+
+  function initBulkData() {
+    const init: Record<string, BulkRow> = {}
+    for (const e of sorted) {
+      init[e.horse_id] = {
+        horse_number:    e.horse_number    != null ? String(e.horse_number)    : '',
+        jockey_name:     e.jockey_name     ?? '',
+        weight_kg:       e.weight_kg       != null ? String(e.weight_kg)       : '',
+        finish_position: e.finish_position != null ? String(e.finish_position) : '',
+        popularity_rank: e.popularity_rank != null ? String(e.popularity_rank) : '',
+      }
+    }
+    return init
+  }
+
+  function handleBulkToggle() {
+    if (!isBulkEdit) {
+      setBulkData(initBulkData())
+      setEditingId(null)
+    }
+    setIsBulkEdit(!isBulkEdit)
+    setIsBulkSaved(false)
+  }
+
+  function updateBulkField(horseId: string, field: keyof BulkRow, value: string) {
+    setBulkData((prev) => ({ ...prev, [horseId]: { ...prev[horseId], [field]: value } }))
+  }
+
+  async function handleBulkSave() {
+    setIsBulkSaving(true)
+    const updates = sorted.map((e) => {
+      const row = bulkData[e.horse_id]
+      return {
+        horse_id:        e.horse_id,
+        horse_number:    row.horse_number    ? Number(row.horse_number)    : null,
+        jockey_name:     row.jockey_name.replace(/\s+/g, '') || null,
+        weight_kg:       row.weight_kg       ? Number(row.weight_kg)       : null,
+        finish_position: row.finish_position ? Number(row.finish_position) : null,
+        popularity_rank: row.popularity_rank ? Number(row.popularity_rank) : null,
+      }
+    })
+    await bulkUpdateEntries(raceId, updates)
+    setIsBulkSaving(false)
+    setIsBulkSaved(true)
+    setTimeout(() => { setIsBulkSaved(false); setIsBulkEdit(false) }, 1200)
+  }
+
   const addAction = addEntry.bind(null, raceId)
 
   return (
@@ -74,149 +133,211 @@ export default function EntryManager({
         {allJockeyNames.map((n) => <option key={n} value={n} />)}
       </datalist>
 
+      {/* ツールバー */}
+      <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+        {isBulkEdit ? (
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button
+              onClick={handleBulkSave}
+              disabled={isBulkSaving}
+              style={{
+                background: isBulkSaved ? 'rgba(20,184,166,0.2)' : '#14B8A6',
+                color: '#fff',
+                border: 'none',
+                borderRadius: 8,
+                padding: '7px 18px',
+                fontSize: 13,
+                fontWeight: 600,
+                cursor: isBulkSaving ? 'not-allowed' : 'pointer',
+                opacity: isBulkSaving ? 0.7 : 1,
+                transition: 'background 0.2s',
+              }}
+            >
+              {isBulkSaving ? '保存中…' : isBulkSaved ? '✓ 保存済' : '全て保存'}
+            </button>
+            <button
+              onClick={handleBulkToggle}
+              style={{ background: 'rgba(255,255,255,0.08)', color: '#9898B0', border: 'none', borderRadius: 8, padding: '7px 14px', fontSize: 13, cursor: 'pointer' }}
+            >
+              キャンセル
+            </button>
+          </div>
+        ) : (
+          <button
+            onClick={handleBulkToggle}
+            style={{ background: 'rgba(255,255,255,0.07)', color: '#EEEEF5', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 8, padding: '7px 16px', fontSize: 13, cursor: 'pointer' }}
+          >
+            一括編集
+          </button>
+        )}
+      </div>
+
       {/* エントリー一覧 */}
       <div style={{ overflowX: 'auto' }}>
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
           <thead>
             <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
-              {['馬番', '馬名', '騎手', '斤量', '上がり1', '上がり2', '上がり3', '着順', '人気', ''].map((h) => (
+              {['馬番', '馬名', '騎手', '斤量', '着順', '人気', ''].map((h) => (
                 <th key={h} style={{ textAlign: 'left', padding: '8px 10px', color: '#62627A', fontWeight: 600, fontSize: 11, whiteSpace: 'nowrap' }}>{h}</th>
               ))}
             </tr>
           </thead>
           <tbody>
-            {entries
-              .slice()
-              .sort((a, b) => (a.horse_number ?? 99) - (b.horse_number ?? 99))
-              .map((entry) => {
-                const isEditing = editingId === entry.horse_id
-                const isScratched = entry.scratched === true
-                const isSaving = savingId === entry.horse_id
-                const isSaved = savedId === entry.horse_id
-                const updateAction = updateEntry.bind(null, raceId, entry.horse_id)
+            {sorted.map((entry) => {
+              const isScratched = entry.scratched === true
+
+              // ── 一括編集行 ──────────────────────────────────────────
+              if (isBulkEdit) {
+                const row = bulkData[entry.horse_id] ?? {
+                  horse_number: '', jockey_name: '', weight_kg: '', finish_position: '', popularity_rank: '',
+                }
+                const cellInput = (field: keyof BulkRow, width: number, type = 'text', list?: string) => (
+                  <input
+                    type={type}
+                    value={row[field]}
+                    list={list}
+                    onChange={(e) => updateBulkField(entry.horse_id, field, e.target.value)}
+                    style={{ ...inputStyle, width }}
+                  />
+                )
                 return (
                   <tr key={entry.horse_id} style={{ borderBottom: '1px solid rgba(255,255,255,0.04)', opacity: isScratched ? 0.45 : 1 }}>
-                    {isEditing ? (
-                      <td colSpan={9} style={{ padding: '10px' }}>
-                        <form
-                          action={async (fd) => {
-                            setSavingId(entry.horse_id)
-                            await updateAction(fd)
-                            setSavingId(null)
-                            setSavedId(entry.horse_id)
-                            setTimeout(() => { setSavedId(null); setEditingId(null) }, 1000)
-                          }}
-                          style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}
-                        >
-                          <span style={{ fontSize: 12, color: '#EEEEF5', fontWeight: 600, minWidth: 80 }}>{entry.horse_name}</span>
-                          <SelectField name="horse_number"    label="馬番" value={entry.horse_number}    options={HORSE_NUMBERS} width={60} />
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                            <label style={{ fontSize: 10, color: '#62627A' }}>騎手</label>
-                            <input name="jockey_name" defaultValue={entry.jockey_name ?? ''} list="jockey-list" style={{ ...inputStyle, width: 110 }} />
-                          </div>
-                          <SelectField name="weight_kg"       label="斤量" value={entry.weight_kg}       options={WEIGHT_OPTIONS} width={65} />
-                          {(['last3f_1','last3f_2','last3f_3'] as const).map((name, i) => (
-                            <div key={name} style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                              <label style={{ fontSize: 10, color: '#62627A' }}>上り{i+1}</label>
-                              <input name={name} defaultValue={(entry[name] as number | null) ?? ''} style={{ ...inputStyle, width: 55 }} />
-                            </div>
-                          ))}
-                          <SelectField name="finish_position" label="着順" value={entry.finish_position} options={RANK_OPTIONS}   width={60} />
-                          <SelectField name="popularity_rank" label="人気" value={entry.popularity_rank} options={RANK_OPTIONS}   width={60} />
-                          <div style={{ display: 'flex', gap: 6, alignSelf: 'flex-end' }}>
-                            <button
-                              type="submit"
-                              disabled={isSaving}
-                              style={{
-                                background: isSaved ? 'rgba(20,184,166,0.2)' : '#14B8A6',
-                                color: '#fff',
-                                border: 'none',
-                                borderRadius: 6,
-                                padding: '6px 12px',
-                                fontSize: 12,
-                                fontWeight: 600,
-                                cursor: isSaving ? 'not-allowed' : 'pointer',
-                                minWidth: 72,
-                                opacity: isSaving ? 0.7 : 1,
-                                transition: 'background 0.2s',
-                              }}
-                            >
-                              {isSaving ? '保存中…' : isSaved ? '✓ 保存済' : '保存'}
-                            </button>
-                            <button type="button" onClick={() => setEditingId(null)} style={{ background: 'rgba(255,255,255,0.08)', color: '#9898B0', border: 'none', borderRadius: 6, padding: '6px 10px', fontSize: 12, cursor: 'pointer' }}>×</button>
-                          </div>
-                        </form>
-                      </td>
-                    ) : (
-                      <>
-                        <td style={{ padding: '10px', color: '#EEEEF5' }}>{entry.horse_number ?? '—'}</td>
-                        <td style={{ padding: '10px', color: '#EEEEF5', fontWeight: 500 }}>
-                          {entry.horse_name}
-                          {isScratched && <span style={{ fontSize: 10, color: '#F87171', marginLeft: 6, fontWeight: 700 }}>取消</span>}
-                        </td>
-                        <td style={{ padding: '10px', color: '#9898B0' }}>{entry.jockey_name ?? '—'}</td>
-                        <td style={{ padding: '10px', color: '#9898B0' }}>{entry.weight_kg ?? '—'}</td>
-                        <td style={{ padding: '10px', color: '#9898B0' }}>{entry.last3f_1 ?? '—'}</td>
-                        <td style={{ padding: '10px', color: '#9898B0' }}>{entry.last3f_2 ?? '—'}</td>
-                        <td style={{ padding: '10px', color: '#9898B0' }}>{entry.last3f_3 ?? '—'}</td>
-                        <td style={{ padding: '10px', color: '#9898B0' }}>{entry.finish_position ?? '—'}</td>
-                        <td style={{ padding: '10px', color: '#9898B0' }}>{entry.popularity_rank ?? '—'}</td>
-                        <td style={{ padding: '10px' }}>
-                          <div style={{ display: 'flex', gap: 8 }}>
-                            <button onClick={() => setEditingId(entry.horse_id)} style={{ background: 'rgba(255,255,255,0.07)', color: '#9898B0', border: 'none', borderRadius: 6, padding: '4px 10px', fontSize: 11, cursor: 'pointer' }}>編集</button>
-                            <form action={toggleScratched.bind(null, raceId, entry.horse_id, !isScratched)}>
-                              <button type="submit" style={{ background: isScratched ? 'rgba(20,184,166,0.1)' : 'rgba(251,191,36,0.1)', color: isScratched ? '#14B8A6' : '#FBBF24', border: 'none', borderRadius: 6, padding: '4px 10px', fontSize: 11, cursor: 'pointer' }}>
-                                {isScratched ? '取消解除' : '取消'}
-                              </button>
-                            </form>
-                            <form action={deleteEntry.bind(null, raceId, entry.horse_id)}>
-                              <button type="submit" style={{ background: 'rgba(248,113,113,0.1)', color: '#F87171', border: 'none', borderRadius: 6, padding: '4px 10px', fontSize: 11, cursor: 'pointer' }}>削除</button>
-                            </form>
-                          </div>
-                        </td>
-                      </>
-                    )}
+                    <td style={{ padding: '6px 10px' }}>{cellInput('horse_number', 52, 'number')}</td>
+                    <td style={{ padding: '6px 10px', color: '#EEEEF5', fontWeight: 500, whiteSpace: 'nowrap' }}>
+                      {entry.horse_name}
+                      {isScratched && <span style={{ fontSize: 10, color: '#F87171', marginLeft: 6, fontWeight: 700 }}>取消</span>}
+                    </td>
+                    <td style={{ padding: '6px 10px' }}>{cellInput('jockey_name', 110, 'text', 'jockey-list')}</td>
+                    <td style={{ padding: '6px 10px' }}>{cellInput('weight_kg', 60, 'number')}</td>
+                    <td style={{ padding: '6px 10px' }}>{cellInput('finish_position', 52, 'number')}</td>
+                    <td style={{ padding: '6px 10px' }}>{cellInput('popularity_rank', 52, 'number')}</td>
+                    <td />
                   </tr>
                 )
-              })}
+              }
+
+              // ── 個別編集行 ──────────────────────────────────────────
+              const isEditing = editingId === entry.horse_id
+              const isSaving = savingId === entry.horse_id
+              const isSaved = savedId === entry.horse_id
+              const updateAction = updateEntry.bind(null, raceId, entry.horse_id)
+
+              return (
+                <tr key={entry.horse_id} style={{ borderBottom: '1px solid rgba(255,255,255,0.04)', opacity: isScratched ? 0.45 : 1 }}>
+                  {isEditing ? (
+                    <td colSpan={7} style={{ padding: '10px' }}>
+                      <form
+                        action={async (fd) => {
+                          setSavingId(entry.horse_id)
+                          await updateAction(fd)
+                          setSavingId(null)
+                          setSavedId(entry.horse_id)
+                          setTimeout(() => { setSavedId(null); setEditingId(null) }, 1000)
+                        }}
+                        style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}
+                      >
+                        <span style={{ fontSize: 12, color: '#EEEEF5', fontWeight: 600, minWidth: 80 }}>{entry.horse_name}</span>
+                        <SelectField name="horse_number"    label="馬番" value={entry.horse_number}    options={HORSE_NUMBERS} width={60} />
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                          <label style={{ fontSize: 10, color: '#62627A' }}>騎手</label>
+                          <input name="jockey_name" defaultValue={entry.jockey_name ?? ''} list="jockey-list" style={{ ...inputStyle, width: 110 }} />
+                        </div>
+                        <SelectField name="weight_kg"       label="斤量" value={entry.weight_kg}       options={WEIGHT_OPTIONS} width={65} />
+                        <SelectField name="finish_position" label="着順" value={entry.finish_position} options={RANK_OPTIONS}   width={60} />
+                        <SelectField name="popularity_rank" label="人気" value={entry.popularity_rank} options={RANK_OPTIONS}   width={60} />
+                        <div style={{ display: 'flex', gap: 6, alignSelf: 'flex-end' }}>
+                          <button
+                            type="submit"
+                            disabled={isSaving}
+                            style={{
+                              background: isSaved ? 'rgba(20,184,166,0.2)' : '#14B8A6',
+                              color: '#fff',
+                              border: 'none',
+                              borderRadius: 6,
+                              padding: '6px 12px',
+                              fontSize: 12,
+                              fontWeight: 600,
+                              cursor: isSaving ? 'not-allowed' : 'pointer',
+                              minWidth: 72,
+                              opacity: isSaving ? 0.7 : 1,
+                              transition: 'background 0.2s',
+                            }}
+                          >
+                            {isSaving ? '保存中…' : isSaved ? '✓ 保存済' : '保存'}
+                          </button>
+                          <button type="button" onClick={() => setEditingId(null)} style={{ background: 'rgba(255,255,255,0.08)', color: '#9898B0', border: 'none', borderRadius: 6, padding: '6px 10px', fontSize: 12, cursor: 'pointer' }}>×</button>
+                        </div>
+                      </form>
+                    </td>
+                  ) : (
+                    <>
+                      <td style={{ padding: '10px', color: '#EEEEF5' }}>{entry.horse_number ?? '—'}</td>
+                      <td style={{ padding: '10px', color: '#EEEEF5', fontWeight: 500 }}>
+                        {entry.horse_name}
+                        {isScratched && <span style={{ fontSize: 10, color: '#F87171', marginLeft: 6, fontWeight: 700 }}>取消</span>}
+                      </td>
+                      <td style={{ padding: '10px', color: '#9898B0' }}>{entry.jockey_name ?? '—'}</td>
+                      <td style={{ padding: '10px', color: '#9898B0' }}>{entry.weight_kg ?? '—'}</td>
+                      <td style={{ padding: '10px', color: '#9898B0' }}>{entry.finish_position ?? '—'}</td>
+                      <td style={{ padding: '10px', color: '#9898B0' }}>{entry.popularity_rank ?? '—'}</td>
+                      <td style={{ padding: '10px' }}>
+                        <div style={{ display: 'flex', gap: 8 }}>
+                          <button onClick={() => setEditingId(entry.horse_id)} style={{ background: 'rgba(255,255,255,0.07)', color: '#9898B0', border: 'none', borderRadius: 6, padding: '4px 10px', fontSize: 11, cursor: 'pointer' }}>編集</button>
+                          <form action={toggleScratched.bind(null, raceId, entry.horse_id, !isScratched)}>
+                            <button type="submit" style={{ background: isScratched ? 'rgba(20,184,166,0.1)' : 'rgba(251,191,36,0.1)', color: isScratched ? '#14B8A6' : '#FBBF24', border: 'none', borderRadius: 6, padding: '4px 10px', fontSize: 11, cursor: 'pointer' }}>
+                              {isScratched ? '取消解除' : '取消'}
+                            </button>
+                          </form>
+                          <form action={deleteEntry.bind(null, raceId, entry.horse_id)}>
+                            <button type="submit" style={{ background: 'rgba(248,113,113,0.1)', color: '#F87171', border: 'none', borderRadius: 6, padding: '4px 10px', fontSize: 11, cursor: 'pointer' }}>削除</button>
+                          </form>
+                        </div>
+                      </td>
+                    </>
+                  )}
+                </tr>
+              )
+            })}
           </tbody>
         </table>
       </div>
 
       {/* 馬の追加 */}
-      <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 10, padding: 16 }}>
-        <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.10em', textTransform: 'uppercase', color: '#62627A', margin: '0 0 12px' }}>馬を追加</p>
-        <form action={addAction} style={{ display: 'flex', gap: 8, alignItems: 'flex-end', flexWrap: 'wrap' }}>
-          <datalist id="horse-list">
-            {allHorseNames.map((n) => <option key={n} value={n} />)}
-          </datalist>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-            <label style={{ fontSize: 11, color: '#62627A' }}>馬名</label>
-            <input name="horse_name" type="text" placeholder="馬名" list="horse-list" required style={{ ...inputStyle, width: 160 }} />
-          </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-            <label style={{ fontSize: 11, color: '#62627A' }}>馬番</label>
-            <select name="horse_number" style={{ ...inputStyle, width: 70, cursor: 'pointer' }}>
-              <option value="">—</option>
-              {HORSE_NUMBERS.map((n) => <option key={n} value={n}>{n}</option>)}
-            </select>
-          </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-            <label style={{ fontSize: 11, color: '#62627A' }}>騎手</label>
-            <input name="jockey_name" type="text" placeholder="騎手名" list="jockey-list" style={{ ...inputStyle, width: 120 }} />
-          </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-            <label style={{ fontSize: 11, color: '#62627A' }}>斤量</label>
-            <select name="weight_kg" style={{ ...inputStyle, width: 75, cursor: 'pointer' }}>
-              <option value="">—</option>
-              {WEIGHT_OPTIONS.map((w) => <option key={w} value={w}>{w}</option>)}
-            </select>
-          </div>
-          <button type="submit" style={{ background: '#14B8A6', color: '#fff', border: 'none', borderRadius: 8, padding: '8px 16px', fontSize: 13, fontWeight: 600, cursor: 'pointer', alignSelf: 'flex-end' }}>
-            追加
-          </button>
-        </form>
-      </div>
+      {!isBulkEdit && (
+        <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 10, padding: 16 }}>
+          <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.10em', textTransform: 'uppercase', color: '#62627A', margin: '0 0 12px' }}>馬を追加</p>
+          <form action={addAction} style={{ display: 'flex', gap: 8, alignItems: 'flex-end', flexWrap: 'wrap' }}>
+            <datalist id="horse-list">
+              {allHorseNames.map((n) => <option key={n} value={n} />)}
+            </datalist>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+              <label style={{ fontSize: 11, color: '#62627A' }}>馬名</label>
+              <input name="horse_name" type="text" placeholder="馬名" list="horse-list" required style={{ ...inputStyle, width: 160 }} />
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+              <label style={{ fontSize: 11, color: '#62627A' }}>馬番</label>
+              <select name="horse_number" style={{ ...inputStyle, width: 70, cursor: 'pointer' }}>
+                <option value="">—</option>
+                {HORSE_NUMBERS.map((n) => <option key={n} value={n}>{n}</option>)}
+              </select>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+              <label style={{ fontSize: 11, color: '#62627A' }}>騎手</label>
+              <input name="jockey_name" type="text" placeholder="騎手名" list="jockey-list" style={{ ...inputStyle, width: 120 }} />
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+              <label style={{ fontSize: 11, color: '#62627A' }}>斤量</label>
+              <select name="weight_kg" style={{ ...inputStyle, width: 75, cursor: 'pointer' }}>
+                <option value="">—</option>
+                {WEIGHT_OPTIONS.map((w) => <option key={w} value={w}>{w}</option>)}
+              </select>
+            </div>
+            <button type="submit" style={{ background: '#14B8A6', color: '#fff', border: 'none', borderRadius: 8, padding: '8px 16px', fontSize: 13, fontWeight: 600, cursor: 'pointer', alignSelf: 'flex-end' }}>
+              追加
+            </button>
+          </form>
+        </div>
+      )}
     </div>
   )
 }

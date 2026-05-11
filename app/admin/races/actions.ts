@@ -111,6 +111,35 @@ export async function deleteEntry(raceId: string, horseId: string) {
   revalidatePath(`/admin/races/${raceId}`)
 }
 
+type BulkEntryUpdate = {
+  horse_id: string
+  horse_number: number | null
+  jockey_name: string | null
+  weight_kg: number | null
+  finish_position: number | null
+  popularity_rank: number | null
+}
+
+export async function bulkUpdateEntries(raceId: string, updates: BulkEntryUpdate[]) {
+  const supabase = createAdminClient()
+  await Promise.all(
+    updates.map((u) =>
+      supabase
+        .from('entries')
+        .update({
+          horse_number:    u.horse_number,
+          jockey_name:     u.jockey_name,
+          weight_kg:       u.weight_kg,
+          finish_position: u.finish_position,
+          popularity_rank: u.popularity_rank,
+        })
+        .eq('race_id', raceId)
+        .eq('horse_id', u.horse_id)
+    )
+  )
+  revalidatePath(`/admin/races/${raceId}`)
+}
+
 export async function toggleScratched(raceId: string, horseId: string, scratched: boolean) {
   const supabase = createAdminClient()
   await supabase
