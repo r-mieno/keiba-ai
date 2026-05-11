@@ -4773,14 +4773,14 @@ export default async function RaceDetailPage({
               <div
                 style={{
                   display: 'grid',
-                  gridTemplateColumns: '40px 44px 1fr 56px 64px',
+                  gridTemplateColumns: '40px 44px 1fr 72px',
                   gap: 4,
                   paddingBottom: 8,
                   borderBottom: '1px solid rgba(255,255,255,0.05)',
                   marginBottom: 4,
                 }}
               >
-                {['着順', '馬番', '馬名', 'AI順位', ''].map((h) => (
+                {['着順', '馬番', '馬名', 'AI順位'].map((h) => (
                   <span key={h} style={{ color: '#9898B0', fontSize: 10, fontWeight: 600, letterSpacing: '0.05em' }}>{h}</span>
                 ))}
               </div>
@@ -4799,13 +4799,6 @@ export default async function RaceDetailPage({
                   ? { label: '紐', color: '#FBBF24', bg: 'rgba(251,191,36,0.12)' }
                   : null
 
-                let hint: { label: string; color: string; bg: string } | null = null
-                if (aiRank > 0 && aiRank <= 3 && finish_pos <= 3) {
-                  hint = { label: 'AI上位', color: '#166534', bg: 'rgba(22,101,52,0.08)' }
-                } else if (finish_pos <= 3 && (aiRank === 0 || aiRank > 3)) {
-                  hint = { label: '想定外', color: '#DC2626', bg: 'rgba(248,113,113,0.1)' }
-                }
-
                 const isTop3 = finish_pos <= 3
 
                 return (
@@ -4813,7 +4806,7 @@ export default async function RaceDetailPage({
                     key={horse_id}
                     style={{
                       display: 'grid',
-                      gridTemplateColumns: '40px 44px 1fr 56px 64px',
+                      gridTemplateColumns: '40px 44px 1fr 72px',
                       gap: 4,
                       alignItems: 'center',
                       padding: '8px 0',
@@ -4851,23 +4844,6 @@ export default async function RaceDetailPage({
                       {roleBadge && (
                         <span style={{ fontSize: 9, fontWeight: 700, padding: '1px 5px', borderRadius: 3, background: roleBadge.bg, color: roleBadge.color }}>
                           {roleBadge.label}
-                        </span>
-                      )}
-                    </span>
-                    <span>
-                      {hint && (
-                        <span
-                          style={{
-                            fontSize: 10,
-                            fontWeight: 700,
-                            padding: '2px 7px',
-                            borderRadius: 4,
-                            background: hint.bg,
-                            color: hint.color,
-                            whiteSpace: 'nowrap',
-                          }}
-                        >
-                          {hint.label}
                         </span>
                       )}
                     </span>
