@@ -896,151 +896,6 @@ const sectionLabel: React.CSSProperties = {
 const circled = (n: number | null | undefined) =>
   n != null && n >= 1 && n <= 20 ? String.fromCharCode(0x245f + n) : null
 
-// ─── HorseRow component ───────────────────────────────────────────────────────
-
-function HorseRow({
-  rank,
-  name,
-  horseNumber,
-  role,
-  paceTag,
-  styleTag,
-  popularityRank,
-  gapBadge,
-}: {
-  rank: number
-  name: string
-  horseNumber?: number | null
-  role: 'axis' | 'himo' | 'other'
-  paceTag?: 'up' | 'down' | null
-  styleTag?: { label: string; color: string } | null
-  popularityRank?: number | null
-  gapBadge?: 'ai_pick' | 'market_lead' | null
-}) {
-  const isAxis = role === 'axis'
-  const isOther = role === 'other'
-  return (
-    <div
-      style={{
-        display: 'flex',
-        alignItems: 'center',
-        gap: 10,
-        padding: isAxis ? '11px 14px' : '9px 14px',
-        borderRadius: 6,
-        background: isAxis ? 'rgba(20,184,166,0.08)' : 'transparent',
-        borderLeft: `3px solid ${isAxis ? '#14B8A6' : 'rgba(255,255,255,0.08)'}`,
-        marginBottom: 4,
-        opacity: isOther ? 0.55 : 1,
-      }}
-    >
-      {/* Rank number */}
-      <span
-        style={{
-          width: isAxis ? 28 : 22,
-          height: isAxis ? 28 : 22,
-          borderRadius: 6,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          fontSize: isAxis ? 13 : 10,
-          fontWeight: 800,
-          flexShrink: 0,
-          background: isAxis ? '#14B8A6' : 'rgba(255,255,255,0.08)',
-          color: isAxis ? '#fff' : '#9898B0',
-          fontVariantNumeric: 'tabular-nums',
-        }}
-      >
-        {rank}
-      </span>
-
-      {/* Horse name + popularity rank */}
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <span
-          style={{
-            display: 'block',
-            fontWeight: isAxis ? 700 : 500,
-            fontSize: isAxis ? 15 : 13,
-            color: isAxis ? '#EEEEF5' : '#9898B0',
-            letterSpacing: isAxis ? '0.01em' : 0,
-          }}
-        >
-          {circled(horseNumber) != null && (
-            <span style={{ fontSize: 13, color: '#62627A', marginRight: 5 }}>
-              {circled(horseNumber)}
-            </span>
-          )}
-          {name}
-        </span>
-        {popularityRank != null && (
-          <span style={{ fontSize: 10, color: '#9898B0', marginTop: 2, display: 'block', fontVariantNumeric: 'tabular-nums' }}>
-            {popularityRank}番人気
-          </span>
-        )}
-      </div>
-
-      {/* Tags */}
-      <div style={{ display: 'flex', gap: 5, alignItems: 'center', flexShrink: 0 }}>
-        {styleTag && (
-          <span
-            style={{
-              fontSize: 10,
-              fontWeight: 700,
-              padding: '2px 7px',
-              borderRadius: 4,
-              background: `${styleTag.color}14`,
-              color: styleTag.color,
-              border: `1px solid ${styleTag.color}38`,
-              letterSpacing: '0.02em',
-            }}
-          >
-            {styleTag.label}
-          </span>
-        )}
-        {paceTag && (
-          <span
-            style={{
-              fontSize: 10,
-              fontWeight: 700,
-              padding: '2px 7px',
-              borderRadius: 4,
-              background: paceTag === 'up' ? '#e6f4ec' : '#fdf2f2',
-              color: paceTag === 'up' ? '#1a6e3f' : '#a83030',
-              border: `1px solid ${paceTag === 'up' ? '#b8dfc8' : '#e8c8c8'}`,
-            }}
-          >
-            {paceTag === 'up' ? '↑' : '↓'}ペース
-          </span>
-        )}
-        {gapBadge === 'ai_pick' && (
-          <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 7px', borderRadius: 6, background: 'rgba(22,101,52,0.08)', color: '#166534', border: '1px solid rgba(22,101,52,0.25)' }}>
-            AI注目
-          </span>
-        )}
-        {gapBadge === 'market_lead' && (
-          <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 7px', borderRadius: 6, background: 'rgba(255,255,255,0.04)', color: '#9898B0', border: '1px solid rgba(255,255,255,0.10)' }}>
-            人気先行
-          </span>
-        )}
-        {!isOther && (
-          <span
-            style={{
-              fontSize: 10,
-              fontWeight: 700,
-              padding: '2px 8px',
-              borderRadius: 6,
-              background: isAxis ? '#14B8A6' : 'transparent',
-              color: isAxis ? '#fff' : '#9898B0',
-              border: `1px solid ${isAxis ? '#14B8A6' : 'rgba(255,255,255,0.10)'}`,
-              letterSpacing: '0.04em',
-            }}
-          >
-            {isAxis ? '軸' : '相手'}
-          </span>
-        )}
-      </div>
-    </div>
-  )
-}
 
 // ─── Formation v2 (検証レース専用) ───────────────────────────────────────────
 //
@@ -2097,6 +1952,7 @@ function computeFormationV9(
 
 type FormationV9_1DebugRow = {
   horseName: string
+  horseId?: string
   paceFit: number
   distanceFit: number
   jockeyScore: number
@@ -2786,6 +2642,7 @@ function computeFormationV10(
 
   const rows: FormationV9_1DebugRow[] = scored.map((s) => ({
     horseName: resolveName(s.id),
+    horseId: s.id,
     paceFit: s.paceFit,
     distanceFit: s.distanceFit,
     jockeyScore: s.jockeyScore,
@@ -3007,9 +2864,6 @@ export default async function RaceDetailPage({
   } catch {
     // results/entries are optional — page renders without them
   }
-
-  const getHorseName = (horseId: string) =>
-    horses.find((h) => h.id === horseId)?.name ?? horseId
 
   // 枠順（馬番）が1頭以上確定していれば確定済みとみなす
   const isDrawComplete = entries.some((e) => e.horse_number !== null)
@@ -4815,39 +4669,94 @@ export default async function RaceDetailPage({
               {/* TODO: 買いチャンス — race_structure_score が実データになったら復活させる
                   betScore = computeBetScore(pct, edge), betLevel = getBetLevel(betScore) */}
 
-              {/* AI着順予測ランキング */}
-              <div style={card}>
-                <p style={sectionLabel}>AI着順予測ランキング</p>
-                {allRankedHorses.slice(0, 10).map(({ id: horseId, role }, index) => {
-                  const horse = horses.find((h) => h.id === horseId)
-                  // 4角順位から自動判定、データなしは手動設定にフォールバック
-                  const effectiveStyle = getDerivedStyle(horseId, horseRunForms) ?? horse?.style ?? null
-                  const adj = getPaceAdjustment(effectiveStyle, pace)
-                  const paceTag = adj > 0 ? 'up' : adj < 0 ? 'down' : null
-                  const styleTag = effectiveStyle
-                    ? { label: STYLE_LABELS[effectiveStyle], color: STYLE_COLORS[effectiveStyle] }
-                    : null
-                  // AI評価 vs 市場人気
-                  const entry = entries.find((e) => e.horse_id === horseId)
-                  const popularityRank = entry?.popularity_rank ?? null
-                  const aiRank = index + 1
-                  const gap = popularityRank != null ? popularityRank - aiRank : null
-                  const gapBadge = gap == null ? null : gap >= 3 ? 'ai_pick' as const : gap <= -3 ? 'market_lead' as const : null
-                  return (
-                    <HorseRow
-                      key={horseId}
-                      rank={aiRank}
-                      name={getHorseName(horseId)}
-                      horseNumber={entry?.horse_number ?? null}
-                      role={role}
-                      paceTag={paceTag}
-                      styleTag={styleTag}
-                      popularityRank={popularityRank}
-                      gapBadge={gapBadge}
-                    />
-                  )
-                })}
-              </div>
+              {/* 軸候補・相手候補 */}
+              {(() => {
+                const axisTopIds = axisSortedIds.slice(0, 5)
+                const axisSelectedSet = new Set(axisSortedIds.slice(0, 2))
+                const himoAllRows = (formationV10Debug?.rows ?? []).filter(
+                  (r) => !axisSelectedSet.has(r.horseId ?? horses.find((h) => h.name === r.horseName)?.id ?? '')
+                )
+                const himoDisplayRows = [
+                  ...himoAllRows.slice(0, 10),
+                  ...himoAllRows.slice(10).filter((r) => r.isHimo),
+                ]
+                const rowStyle = (selected: boolean): React.CSSProperties => ({
+                  display: 'flex', alignItems: 'center', gap: 8,
+                  padding: '9px 0',
+                  borderBottom: '1px solid rgba(255,255,255,0.05)',
+                  opacity: selected ? 1 : 0.38,
+                })
+                const numBadge = (n: number | null): React.ReactNode => n == null ? null : (
+                  <span style={{ fontSize: 11, background: 'rgba(255,255,255,0.08)', borderRadius: 4, padding: '2px 6px', minWidth: 22, textAlign: 'center' as const, color: '#EEEEF5' }}>{n}</span>
+                )
+                return (
+                  <>
+                    {/* ── 軸候補 ── */}
+                    <div style={card}>
+                      <p style={sectionLabel}>軸候補</p>
+                      {axisTopIds.map((horseId, i) => {
+                        const rank = i + 1
+                        const isAxis1 = rank === 1
+                        const isAxis2 = rank === 2
+                        const isSelected = isAxis1 || isAxis2
+                        const horse = horses.find((h) => h.id === horseId)
+                        const entry = entries.find((e) => e.horse_id === horseId)
+                        const effectiveStyle = getDerivedStyle(horseId, horseRunForms) ?? horse?.style ?? null
+                        const styleTag = effectiveStyle
+                          ? { label: STYLE_LABELS[effectiveStyle], color: STYLE_COLORS[effectiveStyle] }
+                          : null
+                        return (
+                          <div key={horseId} style={rowStyle(isSelected)}>
+                            <span style={{ fontSize: 11, color: '#62627A', width: 14, textAlign: 'right' as const }}>{rank}</span>
+                            {numBadge(entry?.horse_number ?? null)}
+                            <span style={{ flex: 1, fontSize: 13, color: '#EEEEF5', fontWeight: isSelected ? 600 : 400 }}>{horse?.name ?? horseId}</span>
+                            {styleTag && (
+                              <span style={{ fontSize: 10, color: styleTag.color, padding: '1px 6px', border: `1px solid ${styleTag.color}40`, borderRadius: 4 }}>{styleTag.label}</span>
+                            )}
+                            {isAxis1 && (
+                              <span style={{ fontSize: 10, color: '#14B8A6', background: 'rgba(20,184,166,0.18)', padding: '2px 10px', borderRadius: 4, fontWeight: 700 }}>1番軸</span>
+                            )}
+                            {isAxis2 && (
+                              <span style={{ fontSize: 10, color: '#14B8A6', background: 'rgba(20,184,166,0.10)', padding: '2px 10px', borderRadius: 4, fontWeight: 600 }}>2番軸</span>
+                            )}
+                          </div>
+                        )
+                      })}
+                    </div>
+
+                    {/* ── 相手候補 ── */}
+                    <div style={{ ...card, marginTop: 8 }}>
+                      <p style={sectionLabel}>相手候補</p>
+                      {himoDisplayRows.map((row, i) => {
+                        const hId = row.horseId ?? horses.find((h) => h.name === row.horseName)?.id ?? ''
+                        const horse = horses.find((h) => h.id === hId)
+                        const entry = entries.find((e) => e.horse_id === hId)
+                        const effectiveStyle = hId ? (getDerivedStyle(hId, horseRunForms) ?? horse?.style ?? null) : null
+                        const styleTag = effectiveStyle
+                          ? { label: STYLE_LABELS[effectiveStyle], color: STYLE_COLORS[effectiveStyle] }
+                          : null
+                        const isOutOfRank = i >= 10
+                        return (
+                          <div key={hId || row.horseName} style={rowStyle(row.isHimo)}>
+                            <span style={{ fontSize: 11, color: '#62627A', width: 14, textAlign: 'right' as const }}>{i + 1}</span>
+                            {numBadge(entry?.horse_number ?? null)}
+                            <span style={{ flex: 1, fontSize: 13, color: '#EEEEF5', fontWeight: row.isHimo ? 600 : 400 }}>{horse?.name ?? row.horseName}</span>
+                            {styleTag && (
+                              <span style={{ fontSize: 10, color: styleTag.color, padding: '1px 6px', border: `1px solid ${styleTag.color}40`, borderRadius: 4 }}>{styleTag.label}</span>
+                            )}
+                            {row.isHimo && (
+                              <span style={{ fontSize: 10, color: '#FBBF24', background: 'rgba(251,191,36,0.12)', padding: '2px 10px', borderRadius: 4, fontWeight: 600 }}>紐</span>
+                            )}
+                            {isOutOfRank && row.isHimo && (
+                              <span style={{ fontSize: 9, color: '#9898B0', padding: '1px 5px', border: '1px solid rgba(152,152,176,0.25)', borderRadius: 4 }}>脚質選定</span>
+                            )}
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </>
+                )
+              })()}
             </>
           )
         })()}
