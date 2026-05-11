@@ -2929,6 +2929,7 @@ export default async function RaceDetailPage({
   if (!race?.is_test && race?.date != null && race.date >= '2026-04-19' && formation) {
     const v10Result = computeFormationV10(formation, horses, entries, pace, earlyStabilityScore, race.distance_m ?? null, race.race_name ?? null, race.venue ?? null, jockeyScoreMap, horseFormRecords, horseRunForms, race.date)
     formation = v10Result.formation
+    formationV10Debug = v10Result.debug
     formationV10Axis2Id = v10Result.debug.axis2Id ?? null
   }
 
