@@ -82,22 +82,29 @@ export async function addEntry(raceId: string, formData: FormData) {
 
 export async function updateEntry(raceId: string, horseId: string, formData: FormData) {
   const supabase = createAdminClient()
+  const finishPosition = formData.get('finish_position') ? Number(formData.get('finish_position')) : null
+
   await supabase
     .from('entries')
     .update({
       horse_number:     formData.get('horse_number') ? Number(formData.get('horse_number')) : null,
       jockey_name:      ((formData.get('jockey_name') as string) || '').replace(/\s+/g, '') || null,
       weight_kg:        formData.get('weight_kg') ? Number(formData.get('weight_kg')) : null,
-      last3f_1:         formData.get('last3f_1') ? Number(formData.get('last3f_1')) : null,
-      last3f_2:         formData.get('last3f_2') ? Number(formData.get('last3f_2')) : null,
-      last3f_3:         formData.get('last3f_3') ? Number(formData.get('last3f_3')) : null,
-      finish_position:  formData.get('finish_position') ? Number(formData.get('finish_position')) : null,
+      finish_position:  finishPosition,
       popularity_rank:  formData.get('popularity_rank') ? Number(formData.get('popularity_rank')) : null,
     })
     .eq('race_id', raceId)
     .eq('horse_id', horseId)
 
+  if (finishPosition != null) {
+    await supabase
+      .from('race_results')
+      .upsert({ race_id: raceId, horse_id: horseId, finish_pos: finishPosition }, { onConflict: 'race_id,horse_id' })
+  }
+
   revalidatePath(`/admin/races/${raceId}`)
+  revalidatePath(`/race/${raceId}`)
+  revalidatePath('/')
 }
 
 export async function deleteEntry(raceId: string, horseId: string) {
@@ -122,6 +129,8 @@ type BulkEntryUpdate = {
 
 export async function bulkUpdateEntries(raceId: string, updates: BulkEntryUpdate[]) {
   const supabase = createAdminClient()
+
+  // entries を一括更新
   await Promise.all(
     updates.map((u) =>
       supabase
@@ -137,7 +146,21 @@ export async function bulkUpdateEntries(raceId: string, updates: BulkEntryUpdate
         .eq('horse_id', u.horse_id)
     )
   )
+
+  // finish_position が入力されている馬を race_results にも upsert
+  const resultRows = updates
+    .filter((u) => u.finish_position != null)
+    .map((u) => ({ race_id: raceId, horse_id: u.horse_id, finish_pos: u.finish_position! }))
+
+  if (resultRows.length > 0) {
+    await supabase
+      .from('race_results')
+      .upsert(resultRows, { onConflict: 'race_id,horse_id' })
+  }
+
   revalidatePath(`/admin/races/${raceId}`)
+  revalidatePath(`/race/${raceId}`)
+  revalidatePath('/')
 }
 
 export async function toggleScratched(raceId: string, horseId: string, scratched: boolean) {
