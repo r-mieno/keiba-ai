@@ -16,17 +16,15 @@ https://keiba-ai-zeta.vercel.app/
 | 地力スコア | 重賞過去実績（着順・出走頭数・グレード）から算出した加点項目 |
 | 騎手スコア | 3着内率 + 重賞勝利ボーナスで算出 |
 | 重賞カレンダー | 2026年重賞一覧。過去レースはJST基準でグレーアウト |
-| レース結果比較 | 結果入力後に予想的中判定を表示 |
+| レース結果比較 | 結果入力後に予想的中判定・AI順位との照合を表示 |
 | 馬マスタ一覧 | 出走馬の血統系統・直近走行データ・重賞実績を一覧表示 |
 | 競馬用語集 | 買い目・脚質・展開・重賞などの用語解説 |
 
 ---
 
-## 予想ロジック v10（デバッグ版）
+## 予想ロジック v10（本番使用中）
 
-> 本番表示は v9.1 を使用。v10 はデバッグパネルに表示。
-
-重賞レース専用。人気（オッズ）は一切使用しない回収率重視の設計。
+> 2026-04-19 以降の全レースで v10 を適用。人気（オッズ）は一切使用しない回収率重視の設計。
 
 ### 軸馬スコア式
 
@@ -43,18 +41,32 @@ axisScore =
   ＋ bloodlineBonus     // 血統×距離適性ボーナス（加算項目）
   ＋ groundStrength     // 地力スコア（重賞実績から±補正）
   ＋ weightAdj          // 斤量補正（加算項目）
+  ＋ agePenalty         // 年齢ペナルティ（7歳以上に適用）
 ```
+
+> 軸スコアは3歳戦・古馬戦で重みの区別なし（今後改善検討中）
 
 ### ヒモ馬スコア式
 
+3歳戦と古馬戦で重みが異なる。
+
 ```
-himoScore =
+himoScore（古馬戦）=
   paceFit        × 0.20
   jockeyScore    × 0.13
   place3Rate     × 0.30   // 3着内率（軸より重視）
   recentForm     × 0.17
-  closingScore   × 0.15   // 上がり（古馬戦）
+  closingScore   × 0.15
   stability      × 0.05
+  ＋ 加算項目（軸と同じ）
+
+himoScore（3歳戦）=
+  paceFit        × 0.20
+  jockeyScore    × 0.13
+  place3Rate     × 0.26   // 実績が少ないため少し低め
+  recentForm     × 0.17
+  closingScore   × 0.12
+  stability      × 0.06
   ＋ 加算項目（軸と同じ）
 ```
 
@@ -65,7 +77,7 @@ himoScore =
 ### `paceFit`（データ駆動型ペース適性）
 - `horse_form_records.corner_pos`（4角通過順位）から自動計算
 - 手入力の脚質分類は**使わない**
-- 4角順位を頭数(16)で割り正規化 → 前傾度(0=逃げ, 1=追い込み)
+- 4角順位を実際の出走頭数（`horse_form_records.field_size`、未入力時は16）で割り正規化 → 前傾度(0=逃げ, 1=追い込み)
 - ペースと前傾度を掛け合わせてスコア化（0.34〜0.66）
 - データなし: 0.50（ニュートラル）
 - **ハイペース(fast)** のとき逃げ馬(front)は**1頭制限**
@@ -107,6 +119,14 @@ himoScore =
 - 0.35〜0.65に圧縮（突出馬の過大評価を防ぐ）
 - データなし: 0.50（非圧縮ニュートラル）
 
+### `agePenalty`（年齢ペナルティ）
+- `horses.birth_date`（生年月日）からレース当日時点の満年齢を計算
+- 7歳未満: ペナルティなし
+- 7歳: -0.03
+- 8歳: -0.07
+- 9歳以上: -0.12
+- 天皇賞・春等の長距離古馬戦データをもとに設定
+
 ### `stability`（レース安定度）
 - 出走馬の脚質分布からペースの安定度を計算
 - 逃げ馬が多い・ペースが混乱するほど低い
@@ -146,12 +166,18 @@ himoScore =
 |--------|---------|---------|------|
 | 3着内率 | `horses.place3_rate` | 馬マスタ | place3Rate |
 | 出走数 | `horses.race_count` | 馬マスタ | place3Rate信頼度補正 |
-| 父系・母父系 | `horses.father_line` | 馬マスタ | bloodlineBonus |
+| 生年月日 | `horses.birth_date` | 馬マスタ | agePenalty（7歳以上） |
+| 父系・母父系 | `horses.father_line` / `damsire_line` | 馬マスタ | bloodlineBonus |
 | 重賞実績 | `horse_past_results` | 馬マスタ | recentForm, groundStrength |
-| 直近走行データ | `horse_form_records` | 馬マスタ | paceFit, closingScore, 自動脚質判定 |
+| 直近走行データ | `horse_form_records` | 馬マスタ | paceFit, closingScore, 脚質自動判定 |
 | 騎手3着内率 | `jockey_stats.place3_rate` | 騎手マスタ | jockeyScore |
 | 騎手重賞勝利数 | `jockey_stats.g1/g2/g3_wins` | 騎手マスタ | jockeyScore bonus |
-| 馬番・騎手名 | `entries` | レース管理 | postAdj, jockeyScore |
+| 馬番・騎手名・斤量 | `entries` | レース管理 | postAdj, jockeyScore, weightAdj |
+| 着順・人気 | `entries` / `race_results` | レース管理（一括編集） | 結果表示・的中判定 |
+| 馬場状態 | `races.track_condition` | レース管理 | （ロジック組込み検討中） |
+| 前走間隔(日) | `entries.days_since_last_race` | レース管理 | （ロジック組込み検討中） |
+| 初距離フラグ | `entries.is_distance_debut` | レース管理 | （ロジック組込み検討中） |
+| 初コースフラグ | `entries.is_venue_debut` | レース管理 | （ロジック組込み検討中） |
 
 ---
 
@@ -179,7 +205,7 @@ himoScore =
 
 ```
 /                  トップ（レース一覧・重賞カレンダー）
-/race/[id]         レース予想ページ（フォーメーション・AI分析・買い目）
+/race/[id]         レース予想ページ（フォーメーション・AI分析・買い目・結果）
 /horses            馬マスタ一覧
 /glossary          競馬用語集
 /how-to-buy        買い方ガイド
@@ -191,14 +217,14 @@ himoScore =
 
 | テーブル | 内容 |
 |---------|------|
-| `races` | レース情報（名称・日付・グレード・距離・会場等）|
-| `horses` | 馬マスタ（血統系統・3着内率・出走数）|
-| `entries` | 出走情報（馬番・騎手・上がり3F・馬体重・着順）|
-| `race_results` | 確定着順（AI精度検証用）|
+| `races` | レース情報（名称・日付・グレード・距離・会場・馬場状態等）|
+| `horses` | 馬マスタ（血統系統・3着内率・出走数・生年月日）|
+| `entries` | 出走情報（馬番・騎手・斤量・着順・人気・前走間隔・初距離・初コース）|
+| `race_results` | 確定着順（AI精度検証・本番ページ結果表示用）|
 | `jockey_stats` | 騎手別3着内率・重賞勝利数 |
 | `horse_past_results` | 重賞過去実績（grade・距離・着順・頭数）|
-| `horse_form_records` | 直近走行データ（上がり3F・4角順位・着順）|
-| `horse_style_profiles` | 手動脚質設定（v10では未使用）|
+| `horse_form_records` | 直近走行データ（上がり3F・4角順位・着順・出走頭数）|
+| `horse_style_profiles` | 手動脚質設定（v10では未使用、フォールバックとして保持）|
 
 ## セットアップ
 
