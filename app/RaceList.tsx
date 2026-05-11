@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { motion } from 'framer-motion'
+// ボタンスタイルは GradeCalendar.tsx の「翌月以降を見る」ボタンと共通
 
 type Race = {
   id: string
@@ -106,23 +107,26 @@ export default function RaceList({ races, resultRaceIds }: Props) {
           {showOld && oldRaces.map((race) => (
             <RaceRow key={race.id} race={race} hasResult={resultSet.has(race.id)} />
           ))}
-          <button
+          <motion.button
             onClick={() => setShowOld((v) => !v)}
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.97 }}
+            transition={{ type: 'spring', stiffness: 400, damping: 25 }}
             style={{
-              margin: '8px 0 4px',
-              padding: '9px 0',
-              background: 'none',
-              border: '1px solid rgba(255,255,255,0.08)',
-              borderRadius: 8,
-              color: '#62627A',
-              fontSize: 12,
-              cursor: 'pointer',
-              width: '100%',
-              textAlign: 'center',
+              margin: '10px 0 4px',
+              display: 'inline-flex', alignItems: 'center', gap: 6,
+              padding: '6px 14px', borderRadius: 10,
+              background: showOld ? 'rgba(20,184,166,0.12)' : 'rgba(255,255,255,0.04)',
+              border: '1px solid rgba(20,184,166,0.30)',
+              color: '#14B8A6', fontSize: 12, fontWeight: 600,
+              letterSpacing: '0.04em', cursor: 'pointer', fontFamily: 'inherit',
             }}
           >
             {showOld ? '閉じる' : `過去のレースをもっと見る（${oldRaces.length}件）`}
-          </button>
+            <span style={{ opacity: 0.6, fontWeight: 400, marginLeft: 2 }}>
+              {showOld ? '▲' : '▼'}
+            </span>
+          </motion.button>
         </>
       )}
     </div>
