@@ -113,7 +113,7 @@ export default function RaceList({ races, resultRaceIds }: Props) {
             whileTap={{ scale: 0.97 }}
             transition={{ type: 'spring', stiffness: 400, damping: 25 }}
             style={{
-              margin: '10px 0 4px',
+              margin: '10px 0 16px',
               alignSelf: 'center',
               display: 'inline-flex', alignItems: 'center', gap: 6,
               padding: '6px 14px', borderRadius: 10,
@@ -123,7 +123,7 @@ export default function RaceList({ races, resultRaceIds }: Props) {
               letterSpacing: '0.04em', cursor: 'pointer', fontFamily: 'inherit',
             }}
           >
-            {showOld ? '閉じる' : `過去のレースをもっと見る（${oldRaces.length}件）`}
+            {showOld ? '閉じる' : '過去のレースを見る'}
             <span style={{ opacity: 0.6, fontWeight: 400, marginLeft: 2 }}>
               {showOld ? '▲' : '▼'}
             </span>
