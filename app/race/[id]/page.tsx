@@ -2143,6 +2143,7 @@ type FormationV9_1Result = {
     axisName: string
     axisRows: AxisDebugRow[]
     axis2Id?: string | null  // 軸スコア2位の馬ID（2頭軸モード用）
+    allSortedByAxis?: string[]  // axisScore降順の全馬ID（結果表示用純粋ランク）
   }
 }
 
@@ -2784,7 +2785,7 @@ function computeFormationV10(
 
   return {
     formation: { ...formation, axis_count: 1, axis_horses: axisV10, himo_horses: himoV10 },
-    debug: { pace, raceType, jockeyWeight: 0.20, axisTypeV7, himoCount, rows, axisScore: top1Score, axisName: resolveName(axisId ?? ''), axisRows, axis2Id },
+    debug: { pace, raceType, jockeyWeight: 0.20, axisTypeV7, himoCount, rows, axisScore: top1Score, axisName: resolveName(axisId ?? ''), axisRows, axis2Id, allSortedByAxis: allSorted.map((s) => s.id) },
   }
 }
 
@@ -3049,6 +3050,11 @@ export default async function RaceDetailPage({
     )
     if (picksRes.ok) racePicks = await picksRes.json()
   } catch {}
+
+  // axisScore 純粋ランク（結果テーブル用）: v10 debug から取得、なければ allRankedHorses の順
+  const axisRankMap = new Map<string, number>()
+  const axisSortedIds = formationV10Debug?.allSortedByAxis ?? []
+  axisSortedIds.forEach((id, i) => axisRankMap.set(id, i + 1))
 
   // ヒモは v9.1 のヒモスコア順（選出順）をそのまま使う
   // ※ 旧: getPaceAdjustment で再ソートしていたが、pace が既にスコアに織り込み済みのため不要
@@ -4834,8 +4840,16 @@ export default async function RaceDetailPage({
               {sorted.map(({ horse_id, finish_pos }) => {
                 const name = horses.find((h) => h.id === horse_id)?.name ?? horse_id
                 const horseNumber = entries.find((e) => e.horse_id === horse_id)?.horse_number ?? null
-                const aiRank = allRankedHorses.findIndex((h) => h.id === horse_id) + 1
+                // axisScore 純粋ランク（v10 debug から）、なければ allRankedHorses の順
+                const aiRank = axisRankMap.get(horse_id) ?? ((allRankedHorses.findIndex((h) => h.id === horse_id) + 1) || 0)
                 const aiRankDisplay = aiRank > 0 ? `${aiRank}位` : '—'
+                // 役割バッジ（軸/紐/外）
+                const role = allRankedHorses.find((h) => h.id === horse_id)?.role ?? null
+                const roleBadge = role === 'axis'
+                  ? { label: '軸', color: '#14B8A6', bg: 'rgba(20,184,166,0.15)' }
+                  : role === 'himo'
+                  ? { label: '紐', color: '#FBBF24', bg: 'rgba(251,191,36,0.12)' }
+                  : null
 
                 let hint: { label: string; color: string; bg: string } | null = null
                 if (aiRank > 0 && aiRank <= 3 && finish_pos <= 3) {
@@ -4884,7 +4898,14 @@ export default async function RaceDetailPage({
                     >
                       {name}
                     </span>
-                    <span style={{ fontSize: 12, color: '#9898B0', fontVariantNumeric: 'tabular-nums' }}>{aiRankDisplay}</span>
+                    <span style={{ fontSize: 12, color: '#9898B0', fontVariantNumeric: 'tabular-nums', display: 'flex', alignItems: 'center', gap: 4 }}>
+                      {aiRankDisplay}
+                      {roleBadge && (
+                        <span style={{ fontSize: 9, fontWeight: 700, padding: '1px 5px', borderRadius: 3, background: roleBadge.bg, color: roleBadge.color }}>
+                          {roleBadge.label}
+                        </span>
+                      )}
+                    </span>
                     <span>
                       {hint && (
                         <span
