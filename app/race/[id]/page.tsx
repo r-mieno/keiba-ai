@@ -2546,6 +2546,32 @@ function getDerivedClosingScore(
   return 0.35 + rawScore * 0.30  // 0.35-0.65 に圧縮
 }
 
+// horse_form_records の着順から近走フォームスコアを計算（0.35〜0.65に圧縮）
+// 条件戦・重賞問わず直近5走の相対着順を加重平均し、closingScoreと同じ尺度で返す
+function getRecentFinishScore(
+  horseId: string,
+  runForms: HorseRunForm[],
+): number {
+  const records = runForms
+    .filter((r) => r.horse_id === horseId && r.finish_pos != null)
+    .sort((a, b) => b.race_seq - a.race_seq)
+    .slice(0, 5)
+
+  if (records.length === 0) return 0.50
+
+  const TIME_W = [0.40, 0.28, 0.18, 0.09, 0.05]
+  let wSum = 0, wTotal = 0
+  records.forEach((r, i) => {
+    const fs = r.field_size ?? 16
+    const rel = (fs - r.finish_pos!) / Math.max(1, fs - 1)  // 1.0=1着, 0.0=最下位
+    const w = TIME_W[i] ?? 0.02
+    wSum += rel * w
+    wTotal += w
+  })
+  const rawScore = wTotal > 0 ? wSum / wTotal : 0.50
+  return 0.35 + rawScore * 0.30  // 0.35-0.65 に圧縮
+}
+
 // 会場・距離・馬番 → 枠順有利補正
 function getPostPositionAdj(
   venue: string | null | undefined,
@@ -2618,7 +2644,12 @@ function computeFormationV10(
     const raw = horse?.place3_rate ?? place3RateBaseline
     const n = horse?.race_count ?? null
     if (n === null) return raw  // 出走数未入力はそのまま
-    const reliability = Math.min(1, n / 15)  // 15戦で信頼度1.0
+    // 3歳馬は春時点でキャリア4〜6戦が上限のため閾値を5に下げる
+    const is3yo = horse?.birth_date && raceDate
+      ? new Date(raceDate).getFullYear() - new Date(horse.birth_date).getFullYear() === 3
+      : false
+    const threshold = is3yo ? 5 : 15
+    const reliability = Math.min(1, n / threshold)
     return raw * reliability + 0.33 * (1 - reliability)
   }
 
@@ -2657,10 +2688,13 @@ function computeFormationV10(
     const groundStrength = getGroundStrengthScore(id, horseFormRecords, distanceM)
     const horsePlace3Rate = getReliablePlace3Rate(id)
     const recentFormScore = getRecentFormScore(id, horseFormRecords)
+    const recentFinishScore = getRecentFinishScore(id, horseRunForms)
     const postPositionAdj = getPostPositionAdj(venue, distanceM, entry?.horse_number ?? null)
 
     // v10 重み: 脚質(derived)20%, 騎手13%, place3Rate20%, 近走17%, 上がり10%, 安定10%
+    // recentFinishAdj: horse_form_records着順から±0.045の加算補正
     const agePenalty = getAgePenalty(id)
+    const recentFinishAdj = (recentFinishScore - 0.50) * 0.30
     const axisScore =
       paceFit * 0.20
       + jockeyScore * 0.13
@@ -2674,8 +2708,9 @@ function computeFormationV10(
       + groundStrength
       + weightAdj
       + agePenalty
+      + recentFinishAdj
 
-    return { id, axisScore, paceFit, distanceFit, jockeyScore, closingScore, bloodlineBonus, weightAdj, groundStrength, postPositionAdj, horsePlace3Rate, recentFormScore }
+    return { id, axisScore, paceFit, distanceFit, jockeyScore, closingScore, bloodlineBonus, weightAdj, groundStrength, postPositionAdj, horsePlace3Rate, recentFormScore, recentFinishScore }
   }
 
   const allSorted = entries
@@ -2717,8 +2752,10 @@ function computeFormationV10(
     const groundStrength = getGroundStrengthScore(id, horseFormRecords, distanceM)
     const horsePlace3Rate = getReliablePlace3Rate(id)
     const recentFormScore = getRecentFormScore(id, horseFormRecords)
+    const recentFinishScore = getRecentFinishScore(id, horseRunForms)
     const postPositionAdj = getPostPositionAdj(venue, distanceM, entry?.horse_number ?? null)
 
+    const recentFinishAdj = (recentFinishScore - 0.50) * 0.30
     const himoScore =
       paceFit * Wh.pace
       + jockeyScore * Wh.jockey
@@ -2731,8 +2768,9 @@ function computeFormationV10(
       + bloodlineBonus
       + groundStrength
       + weightAdj
+      + recentFinishAdj
 
-    return { id, paceFit, distanceFit, jockeyScore, closingScore, himoScoreV9: himoScore, himoScoreV9_1: himoScore, bloodlineBonus, weightAdj, groundStrength, horsePlace3Rate, recentFormScore, postPositionAdj }
+    return { id, paceFit, distanceFit, jockeyScore, closingScore, himoScoreV9: himoScore, himoScoreV9_1: himoScore, bloodlineBonus, weightAdj, groundStrength, horsePlace3Rate, recentFormScore, recentFinishScore, postPositionAdj }
   })
 
   scored.sort((a, b) => b.himoScoreV9_1 - a.himoScoreV9_1)
