@@ -37,8 +37,9 @@ export async function updateRace(raceId: string, formData: FormData) {
       distance_m:    formData.get('distance_m') ? Number(formData.get('distance_m')) : null,
       surface:       (formData.get('surface') as string) || null,
       start_time:    (formData.get('start_time') as string) || null,
-      pace_override: (formData.get('pace_override') as string) || null,
-      description:   (formData.get('description') as string) || null,
+      pace_override:    (formData.get('pace_override') as string) || null,
+      track_condition:  (formData.get('track_condition') as string) || null,
+      description:      (formData.get('description') as string) || null,
     })
     .eq('id', raceId)
 
@@ -90,8 +91,11 @@ export async function updateEntry(raceId: string, horseId: string, formData: For
       horse_number:     formData.get('horse_number') ? Number(formData.get('horse_number')) : null,
       jockey_name:      ((formData.get('jockey_name') as string) || '').replace(/\s+/g, '') || null,
       weight_kg:        formData.get('weight_kg') ? Number(formData.get('weight_kg')) : null,
-      finish_position:  finishPosition,
-      popularity_rank:  formData.get('popularity_rank') ? Number(formData.get('popularity_rank')) : null,
+      finish_position:       finishPosition,
+      popularity_rank:       formData.get('popularity_rank') ? Number(formData.get('popularity_rank')) : null,
+      days_since_last_race:  formData.get('days_since_last_race') ? Number(formData.get('days_since_last_race')) : null,
+      is_distance_debut:     formData.get('is_distance_debut') === 'true',
+      is_venue_debut:        formData.get('is_venue_debut') === 'true',
     })
     .eq('race_id', raceId)
     .eq('horse_id', horseId)
@@ -125,6 +129,9 @@ type BulkEntryUpdate = {
   weight_kg: number | null
   finish_position: number | null
   popularity_rank: number | null
+  days_since_last_race: number | null
+  is_distance_debut: boolean
+  is_venue_debut: boolean
 }
 
 export async function bulkUpdateEntries(raceId: string, updates: BulkEntryUpdate[]) {
@@ -139,8 +146,11 @@ export async function bulkUpdateEntries(raceId: string, updates: BulkEntryUpdate
           horse_number:    u.horse_number,
           jockey_name:     u.jockey_name,
           weight_kg:       u.weight_kg,
-          finish_position: u.finish_position,
-          popularity_rank: u.popularity_rank,
+          finish_position:      u.finish_position,
+          popularity_rank:      u.popularity_rank,
+          days_since_last_race: u.days_since_last_race,
+          is_distance_debut:    u.is_distance_debut,
+          is_venue_debut:       u.is_venue_debut,
         })
         .eq('race_id', raceId)
         .eq('horse_id', u.horse_id)

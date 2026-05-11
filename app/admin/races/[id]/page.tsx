@@ -22,7 +22,7 @@ export default async function AdminRaceDetailPage({ params }: { params: Promise<
 
   const [{ data: race }, { data: entries }, { data: horses }, { data: allEntries }] = await Promise.all([
     supabase.from('races').select('*').eq('id', id).single(),
-    supabase.from('entries').select('horse_id,horse_number,jockey_name,weight_kg,finish_position,popularity_rank,scratched').eq('race_id', id),
+    supabase.from('entries').select('horse_id,horse_number,jockey_name,weight_kg,finish_position,popularity_rank,scratched,days_since_last_race,is_distance_debut,is_venue_debut').eq('race_id', id),
     supabase.from('horses').select('id,name'),
     supabase.from('entries').select('jockey_name').not('jockey_name', 'is', null),
   ])
@@ -119,6 +119,16 @@ export default async function AdminRaceDetailPage({ params }: { params: Promise<
                 <option value="S">S（スロー）</option>
                 <option value="M">M（ミドル）</option>
                 <option value="H">H（ハイ）</option>
+              </select>
+            </div>
+            <div>
+              <label style={{ fontSize: 11, color: '#62627A', display: 'block', marginBottom: 4 }}>馬場状態</label>
+              <select name="track_condition" defaultValue={race.track_condition ?? ''} style={inputStyle}>
+                <option value="">—</option>
+                <option value="良">良</option>
+                <option value="稍重">稍重</option>
+                <option value="重">重</option>
+                <option value="不良">不良</option>
               </select>
             </div>
             <div style={{ gridColumn: 'span 3' }}>

@@ -12,6 +12,9 @@ type Entry = {
   finish_position: number | null
   popularity_rank: number | null
   scratched: boolean | null
+  days_since_last_race: number | null
+  is_distance_debut: boolean | null
+  is_venue_debut: boolean | null
 }
 
 const inputStyle = {
@@ -54,6 +57,9 @@ type BulkRow = {
   weight_kg: string
   finish_position: string
   popularity_rank: string
+  days_since_last_race: string
+  is_distance_debut: string   // 'true' | 'false'
+  is_venue_debut: string      // 'true' | 'false'
 }
 
 export default function EntryManager({
@@ -83,11 +89,14 @@ export default function EntryManager({
     const init: Record<string, BulkRow> = {}
     for (const e of sorted) {
       init[e.horse_id] = {
-        horse_number:    e.horse_number    != null ? String(e.horse_number)    : '',
-        jockey_name:     e.jockey_name     ?? '',
-        weight_kg:       e.weight_kg       != null ? String(e.weight_kg)       : '',
-        finish_position: e.finish_position != null ? String(e.finish_position) : '',
-        popularity_rank: e.popularity_rank != null ? String(e.popularity_rank) : '',
+        horse_number:         e.horse_number         != null ? String(e.horse_number)         : '',
+        jockey_name:          e.jockey_name          ?? '',
+        weight_kg:            e.weight_kg            != null ? String(e.weight_kg)            : '',
+        finish_position:      e.finish_position      != null ? String(e.finish_position)      : '',
+        popularity_rank:      e.popularity_rank      != null ? String(e.popularity_rank)      : '',
+        days_since_last_race: e.days_since_last_race != null ? String(e.days_since_last_race) : '',
+        is_distance_debut:    e.is_distance_debut    ? 'true' : 'false',
+        is_venue_debut:       e.is_venue_debut       ? 'true' : 'false',
       }
     }
     return init
@@ -111,12 +120,15 @@ export default function EntryManager({
     const updates = sorted.map((e) => {
       const row = bulkData[e.horse_id]
       return {
-        horse_id:        e.horse_id,
-        horse_number:    row.horse_number    ? Number(row.horse_number)    : null,
-        jockey_name:     row.jockey_name.replace(/\s+/g, '') || null,
-        weight_kg:       row.weight_kg       ? Number(row.weight_kg)       : null,
-        finish_position: row.finish_position ? Number(row.finish_position) : null,
-        popularity_rank: row.popularity_rank ? Number(row.popularity_rank) : null,
+        horse_id:             e.horse_id,
+        horse_number:         row.horse_number         ? Number(row.horse_number)         : null,
+        jockey_name:          row.jockey_name.replace(/\s+/g, '') || null,
+        weight_kg:            row.weight_kg            ? Number(row.weight_kg)            : null,
+        finish_position:      row.finish_position      ? Number(row.finish_position)      : null,
+        popularity_rank:      row.popularity_rank      ? Number(row.popularity_rank)      : null,
+        days_since_last_race: row.days_since_last_race ? Number(row.days_since_last_race) : null,
+        is_distance_debut:    row.is_distance_debut === 'true',
+        is_venue_debut:       row.is_venue_debut === 'true',
       }
     })
     await bulkUpdateEntries(raceId, updates)
@@ -177,7 +189,7 @@ export default function EntryManager({
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
           <thead>
             <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
-              {['馬番', '馬名', '騎手', '斤量', '着順', '人気', ''].map((h) => (
+              {['馬番', '馬名', '騎手', '斤量', '着順', '人気', '前走', '初距離', '初コース', ''].map((h) => (
                 <th key={h} style={{ textAlign: 'left', padding: '8px 10px', color: '#62627A', fontWeight: 600, fontSize: 11, whiteSpace: 'nowrap' }}>{h}</th>
               ))}
             </tr>
@@ -211,6 +223,27 @@ export default function EntryManager({
                     <td style={{ padding: '6px 10px' }}>{cellInput('weight_kg', 60, 'number')}</td>
                     <td style={{ padding: '6px 10px' }}>{cellInput('finish_position', 52, 'number')}</td>
                     <td style={{ padding: '6px 10px' }}>{cellInput('popularity_rank', 52, 'number')}</td>
+                    <td style={{ padding: '6px 10px' }}>{cellInput('days_since_last_race', 52, 'number')}</td>
+                    <td style={{ padding: '6px 10px' }}>
+                      <select
+                        value={row.is_distance_debut}
+                        onChange={(e) => updateBulkField(entry.horse_id, 'is_distance_debut', e.target.value)}
+                        style={{ ...inputStyle, width: 52, cursor: 'pointer' }}
+                      >
+                        <option value="false">—</option>
+                        <option value="true">初</option>
+                      </select>
+                    </td>
+                    <td style={{ padding: '6px 10px' }}>
+                      <select
+                        value={row.is_venue_debut}
+                        onChange={(e) => updateBulkField(entry.horse_id, 'is_venue_debut', e.target.value)}
+                        style={{ ...inputStyle, width: 52, cursor: 'pointer' }}
+                      >
+                        <option value="false">—</option>
+                        <option value="true">初</option>
+                      </select>
+                    </td>
                     <td />
                   </tr>
                 )
@@ -225,7 +258,7 @@ export default function EntryManager({
               return (
                 <tr key={entry.horse_id} style={{ borderBottom: '1px solid rgba(255,255,255,0.04)', opacity: isScratched ? 0.45 : 1 }}>
                   {isEditing ? (
-                    <td colSpan={7} style={{ padding: '10px' }}>
+                    <td colSpan={10} style={{ padding: '10px' }}>
                       <form
                         action={async (fd) => {
                           setSavingId(entry.horse_id)
@@ -245,6 +278,24 @@ export default function EntryManager({
                         <SelectField name="weight_kg"       label="斤量" value={entry.weight_kg}       options={WEIGHT_OPTIONS} width={65} />
                         <SelectField name="finish_position" label="着順" value={entry.finish_position} options={RANK_OPTIONS}   width={60} />
                         <SelectField name="popularity_rank" label="人気" value={entry.popularity_rank} options={RANK_OPTIONS}   width={60} />
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                          <label style={{ fontSize: 10, color: '#62627A' }}>前走間隔(日)</label>
+                          <input name="days_since_last_race" type="number" defaultValue={entry.days_since_last_race ?? ''} placeholder="28" style={{ ...inputStyle, width: 70 }} />
+                        </div>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                          <label style={{ fontSize: 10, color: '#62627A' }}>初距離</label>
+                          <select name="is_distance_debut" defaultValue={entry.is_distance_debut ? 'true' : 'false'} style={{ ...inputStyle, width: 60, cursor: 'pointer' }}>
+                            <option value="false">—</option>
+                            <option value="true">初</option>
+                          </select>
+                        </div>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                          <label style={{ fontSize: 10, color: '#62627A' }}>初コース</label>
+                          <select name="is_venue_debut" defaultValue={entry.is_venue_debut ? 'true' : 'false'} style={{ ...inputStyle, width: 60, cursor: 'pointer' }}>
+                            <option value="false">—</option>
+                            <option value="true">初</option>
+                          </select>
+                        </div>
                         <div style={{ display: 'flex', gap: 6, alignSelf: 'flex-end' }}>
                           <button
                             type="submit"
@@ -280,6 +331,13 @@ export default function EntryManager({
                       <td style={{ padding: '10px', color: '#9898B0' }}>{entry.weight_kg ?? '—'}</td>
                       <td style={{ padding: '10px', color: '#9898B0' }}>{entry.finish_position ?? '—'}</td>
                       <td style={{ padding: '10px', color: '#9898B0' }}>{entry.popularity_rank ?? '—'}</td>
+                      <td style={{ padding: '10px', color: '#9898B0' }}>{entry.days_since_last_race != null ? `${entry.days_since_last_race}日` : '—'}</td>
+                      <td style={{ padding: '10px' }}>
+                        {entry.is_distance_debut ? <span style={{ fontSize: 10, fontWeight: 700, color: '#FBBF24', background: 'rgba(251,191,36,0.12)', padding: '1px 6px', borderRadius: 3 }}>初</span> : <span style={{ color: '#62627A' }}>—</span>}
+                      </td>
+                      <td style={{ padding: '10px' }}>
+                        {entry.is_venue_debut ? <span style={{ fontSize: 10, fontWeight: 700, color: '#FBBF24', background: 'rgba(251,191,36,0.12)', padding: '1px 6px', borderRadius: 3 }}>初</span> : <span style={{ color: '#62627A' }}>—</span>}
+                      </td>
                       <td style={{ padding: '10px' }}>
                         <div style={{ display: 'flex', gap: 8 }}>
                           <button onClick={() => setEditingId(entry.horse_id)} style={{ background: 'rgba(255,255,255,0.07)', color: '#9898B0', border: 'none', borderRadius: 6, padding: '4px 10px', fontSize: 11, cursor: 'pointer' }}>編集</button>
