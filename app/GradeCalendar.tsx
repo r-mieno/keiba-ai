@@ -250,6 +250,7 @@ export default function GradeCalendar({ today }: { today: string }) {
 
         {futureMonths.length > 0 && (
           <>
+            <div style={{ display: 'flex', justifyContent: 'center' }}>
             <motion.button
               onClick={() => setFutureOpen((v) => !v)}
               whileHover={{ scale: 1.02 }}
@@ -269,6 +270,7 @@ export default function GradeCalendar({ today }: { today: string }) {
                 {futureOpen ? '▲' : '▼'}
               </span>
             </motion.button>
+            </div>
 
             <AnimatePresence>
               {futureOpen && (

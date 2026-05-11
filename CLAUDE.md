@@ -30,26 +30,29 @@
 
 ### 展開トグルボタン（「もっと見る」系）
 `GradeCalendar.tsx` の「翌月以降を見る」および `RaceList.tsx` の「過去のレースをもっと見る」で使用。
-新たに折りたたみ展開ボタンを作る際はこのスタイルを使うこと。
+新たに折りたたみ展開ボタンを作る際はこのスタイルを使うこと。**ボタンは中央配置**。
 
 ```tsx
-<motion.button
-  onClick={() => setOpen((v) => !v)}
-  whileHover={{ scale: 1.02 }}
-  whileTap={{ scale: 0.97 }}
-  transition={{ type: 'spring', stiffness: 400, damping: 25 }}
-  style={{
-    display: 'inline-flex', alignItems: 'center', gap: 6,
-    padding: '6px 14px', borderRadius: 10,
-    background: open ? 'rgba(20,184,166,0.12)' : 'rgba(255,255,255,0.04)',
-    border: '1px solid rgba(20,184,166,0.30)',
-    color: '#14B8A6', fontSize: 12, fontWeight: 600,
-    letterSpacing: '0.04em', cursor: 'pointer', fontFamily: 'inherit',
-  }}
->
-  {open ? '閉じる' : 'もっと見る'}
-  <span style={{ opacity: 0.6, fontWeight: 400, marginLeft: 2 }}>{open ? '▲' : '▼'}</span>
-</motion.button>
+// ラッパーで中央寄せ（flexコンテナ内ではalignSelf: 'center'でも可）
+<div style={{ display: 'flex', justifyContent: 'center' }}>
+  <motion.button
+    onClick={() => setOpen((v) => !v)}
+    whileHover={{ scale: 1.02 }}
+    whileTap={{ scale: 0.97 }}
+    transition={{ type: 'spring', stiffness: 400, damping: 25 }}
+    style={{
+      display: 'inline-flex', alignItems: 'center', gap: 6,
+      padding: '6px 14px', borderRadius: 10,
+      background: open ? 'rgba(20,184,166,0.12)' : 'rgba(255,255,255,0.04)',
+      border: '1px solid rgba(20,184,166,0.30)',
+      color: '#14B8A6', fontSize: 12, fontWeight: 600,
+      letterSpacing: '0.04em', cursor: 'pointer', fontFamily: 'inherit',
+    }}
+  >
+    {open ? '閉じる' : 'もっと見る'}
+    <span style={{ opacity: 0.6, fontWeight: 400, marginLeft: 2 }}>{open ? '▲' : '▼'}</span>
+  </motion.button>
+</div>
 ```
 
 ---

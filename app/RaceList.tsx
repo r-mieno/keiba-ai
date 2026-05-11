@@ -114,7 +114,7 @@ export default function RaceList({ races, resultRaceIds }: Props) {
             transition={{ type: 'spring', stiffness: 400, damping: 25 }}
             style={{
               margin: '10px 0 4px',
-              alignSelf: 'flex-start',
+              alignSelf: 'center',
               display: 'inline-flex', alignItems: 'center', gap: 6,
               padding: '6px 14px', borderRadius: 10,
               background: showOld ? 'rgba(20,184,166,0.12)' : 'rgba(255,255,255,0.04)',
