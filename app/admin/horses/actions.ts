@@ -85,6 +85,19 @@ export async function addPastResult(horseId: string, formData: FormData) {
   redirect(`/admin/horses/${horseId}?saved=1`)
 }
 
+export async function updatePastResult(resultId: string, horseId: string, formData: FormData) {
+  const supabase = createAdminClient()
+  await supabase.from('horse_past_results').update({
+    race_name:  formData.get('race_name') as string,
+    grade:      (formData.get('grade') as string) || null,
+    distance_m: formData.get('distance_m') ? Number(formData.get('distance_m')) : null,
+    finish_pos: Number(formData.get('finish_pos')),
+    field_size: Number(formData.get('field_size')),
+  }).eq('id', resultId)
+  revalidatePath(`/admin/horses/${horseId}`)
+  redirect(`/admin/horses/${horseId}?saved=1`)
+}
+
 export async function deletePastResult(resultId: string, horseId: string) {
   const supabase = createAdminClient()
   await supabase.from('horse_past_results').delete().eq('id', resultId)
