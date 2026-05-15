@@ -55,6 +55,9 @@ type Entry = {
   finish_position: number | null
   weight_kg: number | null
   scratched: boolean | null
+  days_since_last_race: number | null
+  is_venue_debut: boolean | null
+  is_distance_debut: boolean | null
 }
 
 type JockeyStat = {
@@ -442,6 +445,19 @@ function getWeightAdjustment(weightKg: number | null): number {
   if (weightKg == null) return 0
   const diff = weightKg - 57
   return diff > 0 ? diff * -0.015 : diff * -0.008
+}
+
+function getIntervalPenalty(days: number | null): number {
+  if (days == null) return 0
+  if (days < 14)  return -0.02
+  if (days < 28)  return -0.01
+  if (days <= 90) return 0
+  if (days <= 120) return -0.02
+  return -0.04
+}
+
+function getDebutPenalty(isVenueDebut: boolean | null, isDistanceDebut: boolean | null): number {
+  return (isVenueDebut ? -0.02 : 0) + (isDistanceDebut ? -0.02 : 0)
 }
 
 // ── 脚質多様性ルール（2026-03-30以降のレースに適用） ─────────────────────────
@@ -1970,6 +1986,8 @@ type FormationV9_1DebugRow = {
   recentFormScore?: number
   venueAdj?: number
   recentFinishAdj?: number
+  intervalPenalty?: number
+  debutPenalty?: number
 }
 
 type AxisDebugRow = {
@@ -1989,6 +2007,8 @@ type AxisDebugRow = {
   venueAdj?: number
   agePenalty?: number
   recentFinishAdj?: number
+  intervalPenalty?: number
+  debutPenalty?: number
 }
 
 type FormationV9_1Result = {
@@ -2555,6 +2575,8 @@ function computeFormationV10(
     // recentFinishAdj: horse_form_records着順から±0.045の加算補正
     const agePenalty = getAgePenalty(id)
     const recentFinishAdj = (recentFinishScore - 0.50) * 0.30
+    const intervalPenalty = getIntervalPenalty(entry?.days_since_last_race ?? null)
+    const debutPenalty = getDebutPenalty(entry?.is_venue_debut ?? null, entry?.is_distance_debut ?? null)
     const axisScore =
       paceFit * 0.20
       + jockeyScore * 0.13
@@ -2569,8 +2591,10 @@ function computeFormationV10(
       + weightAdj
       + agePenalty
       + recentFinishAdj
+      + intervalPenalty
+      + debutPenalty
 
-    return { id, axisScore, paceFit, jockeyScore, closingScore, bloodlineBonus, weightAdj, groundStrength, postPositionAdj, horsePlace3Rate, recentFormScore, recentFinishScore, venueAdj, agePenalty, recentFinishAdj }
+    return { id, axisScore, paceFit, jockeyScore, closingScore, bloodlineBonus, weightAdj, groundStrength, postPositionAdj, horsePlace3Rate, recentFormScore, recentFinishScore, venueAdj, agePenalty, recentFinishAdj, intervalPenalty, debutPenalty }
   }
 
   const allSorted = entries
@@ -2615,6 +2639,8 @@ function computeFormationV10(
     const postPositionAdj = getPostPositionAdj(venue, distanceM, entry?.horse_number ?? null)
 
     const recentFinishAdj = (recentFinishScore - 0.50) * 0.30
+    const intervalPenalty = getIntervalPenalty(entry?.days_since_last_race ?? null)
+    const debutPenalty = getDebutPenalty(entry?.is_venue_debut ?? null, entry?.is_distance_debut ?? null)
     const himoScore =
       paceFit * Wh.pace
       + jockeyScore * Wh.jockey
@@ -2628,8 +2654,10 @@ function computeFormationV10(
       + groundStrength
       + weightAdj
       + recentFinishAdj
+      + intervalPenalty
+      + debutPenalty
 
-    return { id, paceFit, jockeyScore, closingScore, himoScoreV9: himoScore, himoScoreV9_1: himoScore, bloodlineBonus, weightAdj, groundStrength, horsePlace3Rate, recentFormScore, recentFinishScore, postPositionAdj, venueAdj, recentFinishAdj }
+    return { id, paceFit, jockeyScore, closingScore, himoScoreV9: himoScore, himoScoreV9_1: himoScore, bloodlineBonus, weightAdj, groundStrength, horsePlace3Rate, recentFormScore, recentFinishScore, postPositionAdj, venueAdj, recentFinishAdj, intervalPenalty, debutPenalty }
   })
 
   scored.sort((a, b) => b.himoScoreV9_1 - a.himoScoreV9_1)
@@ -2661,6 +2689,8 @@ function computeFormationV10(
     postPositionAdj: s.postPositionAdj,
     venueAdj: s.venueAdj,
     recentFinishAdj: s.recentFinishAdj,
+    intervalPenalty: s.intervalPenalty,
+    debutPenalty: s.debutPenalty,
     isHimo: himoSet.has(s.id),
     wasHimoV9: false,
   }))
@@ -2681,6 +2711,8 @@ function computeFormationV10(
     venueAdj: s.venueAdj,
     agePenalty: s.agePenalty,
     recentFinishAdj: s.recentFinishAdj,
+    intervalPenalty: s.intervalPenalty,
+    debutPenalty: s.debutPenalty,
   }))
 
   const axis2Id = allSorted[1]?.id ?? null
@@ -2779,7 +2811,7 @@ export default async function RaceDetailPage({
       fetch(`${baseUrl}/rest/v1/race_results?race_id=eq.${id}&select=horse_id,finish_pos`, {
         headers: { apikey: key, Authorization: `Bearer ${key}` }, cache: 'no-store',
       }),
-      fetch(`${baseUrl}/rest/v1/entries?race_id=eq.${id}&select=horse_id,horse_number,popularity_rank,jockey_name,last3f_1,last3f_2,last3f_3,finish_position,weight_kg,scratched&scratched=neq.true`, {
+      fetch(`${baseUrl}/rest/v1/entries?race_id=eq.${id}&select=horse_id,horse_number,popularity_rank,jockey_name,last3f_1,last3f_2,last3f_3,finish_position,weight_kg,scratched,days_since_last_race,is_venue_debut,is_distance_debut&scratched=neq.true`, {
         headers: { apikey: key, Authorization: `Bearer ${key}` }, cache: 'no-store',
       }),
       fetch(`${baseUrl}/rest/v1/jockey_stats?select=jockey_name,place3_rate,g1_wins,g2_wins,g3_wins`, {
@@ -4368,8 +4400,8 @@ export default async function RaceDetailPage({
                         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 11 }}>
                           <thead>
                             <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                              {['', '馬名', 'pace', 'jockey', 'p3rate', 'form', 'closing', 'blood', 'ground', 'post', 'venue', 'weight', 'fin', 'age', 'axis score'].map((h) => (
-                                <th key={h} style={{ padding: '4px 6px', color: h === 'form' ? '#A78BFA' : h === 'fin' ? '#FB923C' : '#9898B0', fontWeight: 600, textAlign: 'right', whiteSpace: 'nowrap' }}>{h}</th>
+                              {['', '馬名', 'pace', 'jockey', 'p3rate', 'form', 'closing', 'blood', 'ground', 'post', 'venue', 'weight', 'fin', 'age', 'interval', 'debut', 'axis score'].map((h) => (
+                                <th key={h} style={{ padding: '4px 6px', color: h === 'form' ? '#A78BFA' : h === 'fin' ? '#FB923C' : h === 'interval' || h === 'debut' ? '#F87171' : '#9898B0', fontWeight: 600, textAlign: 'right', whiteSpace: 'nowrap' }}>{h}</th>
                               ))}
                             </tr>
                           </thead>
@@ -4392,6 +4424,8 @@ export default async function RaceDetailPage({
                                 <td style={{ padding: '5px 6px', color: (r.weightAdj ?? 0) < 0 ? '#F87171' : (r.weightAdj ?? 0) > 0 ? '#34D399' : '#62627A', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{sgn(r.weightAdj ?? 0)}</td>
                                 <td style={{ padding: '5px 6px', color: (r.recentFinishAdj ?? 0) > 0 ? '#FB923C' : (r.recentFinishAdj ?? 0) < 0 ? '#F87171' : '#62627A', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{sgn(r.recentFinishAdj ?? 0)}</td>
                                 <td style={{ padding: '5px 6px', color: (r.agePenalty ?? 0) < 0 ? '#F87171' : '#62627A', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{sgn(r.agePenalty ?? 0)}</td>
+                                <td style={{ padding: '5px 6px', color: (r.intervalPenalty ?? 0) < 0 ? '#F87171' : '#62627A', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{sgn(r.intervalPenalty ?? 0)}</td>
+                                <td style={{ padding: '5px 6px', color: (r.debutPenalty ?? 0) < 0 ? '#F87171' : '#62627A', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{sgn(r.debutPenalty ?? 0)}</td>
                                 <td style={{ padding: '5px 6px', color: r.isSelected ? '#FBBF24' : '#9898B0', fontWeight: r.isSelected ? 700 : 400, textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{r.axisScore.toFixed(4)}</td>
                               </tr>
                             ))}
@@ -4403,8 +4437,8 @@ export default async function RaceDetailPage({
                       <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 11 }}>
                         <thead>
                           <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                            {['馬名', 'pace', 'jockey', 'p3rate', 'form', 'closing', 'blood', 'ground', 'post', 'venue', 'weight', 'fin', 'himo score'].map((h) => (
-                              <th key={h} style={{ padding: '4px 6px', color: h === 'form' ? '#A78BFA' : h === 'fin' ? '#FB923C' : '#9898B0', fontWeight: 600, textAlign: 'right', whiteSpace: 'nowrap' }}>{h}</th>
+                            {['馬名', 'pace', 'jockey', 'p3rate', 'form', 'closing', 'blood', 'ground', 'post', 'venue', 'weight', 'fin', 'interval', 'debut', 'himo score'].map((h) => (
+                              <th key={h} style={{ padding: '4px 6px', color: h === 'form' ? '#A78BFA' : h === 'fin' ? '#FB923C' : h === 'interval' || h === 'debut' ? '#F87171' : '#9898B0', fontWeight: 600, textAlign: 'right', whiteSpace: 'nowrap' }}>{h}</th>
                             ))}
                             <th style={{ padding: '4px 6px', color: '#9898B0', fontWeight: 600, textAlign: 'center' }}>採用</th>
                           </tr>
@@ -4424,6 +4458,8 @@ export default async function RaceDetailPage({
                               <td style={{ padding: '5px 6px', color: (row.venueAdj ?? 0) > 0 ? '#34D399' : (row.venueAdj ?? 0) < 0 ? '#F87171' : '#62627A', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{sgn(row.venueAdj ?? 0)}</td>
                               <td style={{ padding: '5px 6px', color: (row.weightAdj ?? 0) < 0 ? '#F87171' : (row.weightAdj ?? 0) > 0 ? '#34D399' : '#62627A', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{sgn(row.weightAdj ?? 0)}</td>
                               <td style={{ padding: '5px 6px', color: (row.recentFinishAdj ?? 0) > 0 ? '#FB923C' : (row.recentFinishAdj ?? 0) < 0 ? '#F87171' : '#62627A', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{sgn(row.recentFinishAdj ?? 0)}</td>
+                              <td style={{ padding: '5px 6px', color: (row.intervalPenalty ?? 0) < 0 ? '#F87171' : '#62627A', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{sgn(row.intervalPenalty ?? 0)}</td>
+                              <td style={{ padding: '5px 6px', color: (row.debutPenalty ?? 0) < 0 ? '#F87171' : '#62627A', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{sgn(row.debutPenalty ?? 0)}</td>
                               <td style={{ padding: '5px 6px', color: row.isHimo ? '#FBBF24' : '#9898B0', fontWeight: row.isHimo ? 700 : 400, textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{row.himoScoreV9_1.toFixed(4)}</td>
                               <td style={{ padding: '5px 6px', textAlign: 'center' }}>
                                 {row.isHimo && (
