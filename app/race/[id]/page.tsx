@@ -2935,8 +2935,8 @@ export default async function RaceDetailPage({
   let formationV9_2Debug: FormationV9_1Result['debug'] | null = null
   let formationV10Debug: FormationV9_1Result['debug'] | null = null
   let formationV10Axis2Id: string | null = null
-  if ((race?.is_test || showDebug) && formation) {
-    const origFormation = formation  // v2〜v9.1 すべて同じ RPC 結果から計算
+  const origFormation = formation  // 全バージョン共通の RPC ベースライン
+  if ((race?.is_test || showDebug) && origFormation) {
     const v2Result = computeFormationV2(origFormation, horses, entries, pace, earlyStabilityScore)
     formationV2Debug = v2Result.debug
     const v3Result = computeFormationV3(origFormation, horses, entries, pace)
@@ -2958,15 +2958,12 @@ export default async function RaceDetailPage({
     formationV9_1Debug = v9_1Result.debug
     const v9_2Result = computeFormationV9_2(origFormation, horses, entries, pace, earlyStabilityScore, race?.distance_m ?? null, race?.race_name ?? null, race?.venue ?? null, jockeyScoreMap, horseFormRecords, applyDiv)
     formationV9_2Debug = v9_2Result.debug
-    const v10Result = computeFormationV10(origFormation, horses, entries, pace, earlyStabilityScore, race?.distance_m ?? null, race?.race_name ?? null, race?.venue ?? null, jockeyScoreMap, horseFormRecords, horseRunForms, race?.date ?? null)
-    formationV10Debug = v10Result.debug
-    formation = v10Result.formation  // v10 を実際の表示に使用
-    formationV10Axis2Id = v10Result.debug.axis2Id ?? null
   }
 
-  // 本番レース（is_test=false）でも 2026-04-19 以降はv10を適用
-  if (!race?.is_test && race?.date != null && race.date >= '2026-04-19' && formation) {
-    const v10Result = computeFormationV10(formation, horses, entries, pace, earlyStabilityScore, race.distance_m ?? null, race.race_name ?? null, race.venue ?? null, jockeyScoreMap, horseFormRecords, horseRunForms, race.date)
+  // v10 は origFormation から1回だけ実行（test・本番・debug共通）
+  // 本番は 2026-04-19 以降のレースに適用
+  if (origFormation && (race?.is_test || (race?.date != null && race.date >= '2026-04-19'))) {
+    const v10Result = computeFormationV10(origFormation, horses, entries, pace, earlyStabilityScore, race?.distance_m ?? null, race?.race_name ?? null, race?.venue ?? null, jockeyScoreMap, horseFormRecords, horseRunForms, race?.date ?? null)
     formation = v10Result.formation
     formationV10Debug = v10Result.debug
     formationV10Axis2Id = v10Result.debug.axis2Id ?? null
