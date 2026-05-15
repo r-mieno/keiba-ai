@@ -2026,7 +2026,6 @@ type FormationV9_1Result = {
     axisRows: AxisDebugRow[]
     axis2Id?: string | null  // 軸スコア2位の馬ID（2頭軸モード用）
     allSortedByAxis?: string[]  // axisScore降順の全馬ID（結果表示用純粋ランク）
-    closerCapLog?: string[]  // 差し馬上限ルールの各イテレーション記録
   }
 }
 
@@ -2681,25 +2680,21 @@ function computeFormationV10(
   const axisIsCloser = axisId ? isCloserStyle(axisId) : false
   const MAX_TOTAL_CLOSERS = 3
   let finalHimo = [...himoV10]
-  const closerCapLog: string[] = [`初期ヒモ: [${himoV10.map(id => resolveName(id)).join(', ')}]`, `軸差し=${axisIsCloser}`]
   for (let iter = 0; iter < himoCount; iter++) {
     const totalClosers = (axisIsCloser ? 1 : 0) + finalHimo.filter(id => isCloserStyle(id)).length
-    closerCapLog.push(`iter${iter}: 差し合計=${totalClosers}`)
-    if (totalClosers <= MAX_TOTAL_CLOSERS) { closerCapLog.push(`→ 上限内なのでbreak`); break }
+    if (totalClosers <= MAX_TOTAL_CLOSERS) break
     const weakest = finalHimo
       .filter(id => isCloserStyle(id))
       .map(id => ({ id, score: scored.find(s => s.id === id)?.himoScoreV9_1 ?? 0 }))
       .sort((a, b) => a.score - b.score)[0]
-    if (!weakest) { closerCapLog.push(`→ weakest=none break`); break }
+    if (!weakest) break
     const inSelection = new Set([...finalHimo, axisId ?? ''])
     const replacement = scored.find(s => !inSelection.has(s.id) && !isCloserStyle(s.id))
-    if (!replacement) { closerCapLog.push(`→ 非差し馬なし break`); break }
+    if (!replacement) break
     const rank = scored.findIndex(s => s.id === replacement.id) + 1
-    closerCapLog.push(`→ 除外候補=${resolveName(weakest.id)}, 代替=${resolveName(replacement.id)} rank=${rank}`)
-    if (rank > 9) { closerCapLog.push(`→ rank>${9} break`); break }
+    if (rank > 9) break
     finalHimo = finalHimo.filter(id => id !== weakest.id)
     finalHimo.push(replacement.id)
-    closerCapLog.push(`→ 入替完了: [${finalHimo.map(id => resolveName(id)).join(', ')}]`)
   }
 
   const himoSet = new Set(finalHimo)
@@ -2753,7 +2748,7 @@ function computeFormationV10(
 
   return {
     formation: { ...formation, axis_count: 1, axis_horses: axisV10, himo_horses: finalHimo },
-    debug: { pace, raceType, jockeyWeight: 0.20, axisTypeV7, himoCount, rows, axisScore: top1Score, axisName: resolveName(axisId ?? ''), axisRows, axis2Id, allSortedByAxis: allSorted.map((s) => s.id), closerCapLog },
+    debug: { pace, raceType, jockeyWeight: 0.20, axisTypeV7, himoCount, rows, axisScore: top1Score, axisName: resolveName(axisId ?? ''), axisRows, axis2Id, allSortedByAxis: allSorted.map((s) => s.id) },
   }
 }
 
@@ -4508,14 +4503,7 @@ export default async function RaceDetailPage({
                     <p style={{ fontSize: 10, color: '#62627A', marginTop: 10, lineHeight: 1.7 }}>
                       軸タイプ: <span style={{ color: AXIS_TYPE_COLOR[formationV10Debug.axisTypeV7] }}>{formationV10Debug.axisTypeV7}</span>　ヒモ {formationV10Debug.himoCount}頭　jockey重み=0.13　p3rate重み=0.20　form重み=0.17
                     </p>
-                    {formationV10Debug.closerCapLog && formationV10Debug.closerCapLog.length > 0 && (
-                      <div style={{ marginTop: 8, padding: '6px 10px', background: 'rgba(255,255,255,0.03)', borderRadius: 8, border: '1px solid rgba(255,255,255,0.06)' }}>
-                        <p style={{ fontSize: 10, color: '#62627A', fontWeight: 700, margin: '0 0 4px' }}>差し馬上限ループ trace</p>
-                        {formationV10Debug.closerCapLog.map((line, i) => (
-                          <p key={i} style={{ fontSize: 10, color: '#9898B0', margin: '1px 0', fontFamily: 'monospace' }}>{line}</p>
-                        ))}
-                      </div>
-                    )}
+
                   </div>
                 )
               })()}
