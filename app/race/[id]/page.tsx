@@ -478,9 +478,9 @@ function selectHimoDiverse(
   const styleCount: Record<string, number> = {}
   const selected: { id: string; score: number }[] = []
 
-  // ハイペースの逃げ馬は共倒れリスクが高いため1頭まで
+  // 逃げ馬のみ制限（共倒れリスク）。差し・先行・追い込みは制限なし
   const styleLimit = (style: string) =>
-    style === 'front' && pace === 'fast' ? 1 : 2
+    style === 'front' ? (pace === 'fast' ? 1 : 2) : Infinity
 
   // Step1: 多様性ルールで選出（styleがnullの馬は制約なしで通過）
   for (const c of sorted) {
@@ -1988,6 +1988,7 @@ type FormationV9_1DebugRow = {
   recentFinishAdj?: number
   intervalPenalty?: number
   debutPenalty?: number
+  derivedStyle?: string | null
 }
 
 type AxisDebugRow = {
@@ -2669,7 +2670,34 @@ function computeFormationV10(
     (id) => getDerivedStyle(id, horseRunForms),
     pace,
   )
-  const himoSet = new Set(himoV10)
+
+  // 差し馬上限ルール: 軸+ヒモ合計で差し(closer/deep_closer)は3頭まで
+  // 4頭目以降の差し馬は、候補top9以内の非差し馬と入れ替える（いなければそのまま）
+  const isCloserStyle = (id: string) => {
+    const s = getDerivedStyle(id, horseRunForms)
+    return s === 'closer' || s === 'deep_closer'
+  }
+  const axisIsCloser = axisId ? isCloserStyle(axisId) : false
+  const MAX_TOTAL_CLOSERS = 3
+  let finalHimo = [...himoV10]
+  for (let iter = 0; iter < himoCount; iter++) {
+    const totalClosers = (axisIsCloser ? 1 : 0) + finalHimo.filter(id => isCloserStyle(id)).length
+    if (totalClosers <= MAX_TOTAL_CLOSERS) break
+    const weakest = finalHimo
+      .filter(id => isCloserStyle(id))
+      .map(id => ({ id, score: scored.find(s => s.id === id)?.himoScoreV9_1 ?? 0 }))
+      .sort((a, b) => a.score - b.score)[0]
+    if (!weakest) break
+    const inSelection = new Set([...finalHimo, axisId ?? ''])
+    const replacement = scored.find(s => !inSelection.has(s.id) && !isCloserStyle(s.id))
+    if (!replacement) break
+    const rank = scored.findIndex(s => s.id === replacement.id) + 1
+    if (rank > 9) break
+    finalHimo = finalHimo.filter(id => id !== weakest.id)
+    finalHimo.push(replacement.id)
+  }
+
+  const himoSet = new Set(finalHimo)
 
   const rows: FormationV9_1DebugRow[] = scored.map((s) => ({
     horseName: resolveName(s.id),
@@ -2691,6 +2719,7 @@ function computeFormationV10(
     recentFinishAdj: s.recentFinishAdj,
     intervalPenalty: s.intervalPenalty,
     debutPenalty: s.debutPenalty,
+    derivedStyle: getDerivedStyle(s.id, horseRunForms),
     isHimo: himoSet.has(s.id),
     wasHimoV9: false,
   }))
@@ -2718,7 +2747,7 @@ function computeFormationV10(
   const axis2Id = allSorted[1]?.id ?? null
 
   return {
-    formation: { ...formation, axis_count: 1, axis_horses: axisV10, himo_horses: himoV10 },
+    formation: { ...formation, axis_count: 1, axis_horses: axisV10, himo_horses: finalHimo },
     debug: { pace, raceType, jockeyWeight: 0.20, axisTypeV7, himoCount, rows, axisScore: top1Score, axisName: resolveName(axisId ?? ''), axisRows, axis2Id, allSortedByAxis: allSorted.map((s) => s.id) },
   }
 }
@@ -4434,8 +4463,8 @@ export default async function RaceDetailPage({
                       <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 11 }}>
                         <thead>
                           <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                            {['馬名', 'pace', 'jockey', 'p3rate', 'form', 'closing', 'blood', 'ground', 'post', 'venue', 'weight', 'fin', 'interval', 'debut', 'himo score'].map((h) => (
-                              <th key={h} style={{ padding: '4px 6px', color: h === 'form' ? '#A78BFA' : h === 'fin' ? '#FB923C' : h === 'interval' || h === 'debut' ? '#F87171' : '#9898B0', fontWeight: 600, textAlign: 'right', whiteSpace: 'nowrap' }}>{h}</th>
+                            {['馬名', '脚質', 'pace', 'jockey', 'p3rate', 'form', 'closing', 'blood', 'ground', 'post', 'venue', 'weight', 'fin', 'interval', 'debut', 'himo score'].map((h) => (
+                              <th key={h} style={{ padding: '4px 6px', color: h === 'form' ? '#A78BFA' : h === 'fin' ? '#FB923C' : h === 'interval' || h === 'debut' ? '#F87171' : h === '脚質' ? '#14B8A6' : '#9898B0', fontWeight: 600, textAlign: 'right', whiteSpace: 'nowrap' }}>{h}</th>
                             ))}
                             <th style={{ padding: '4px 6px', color: '#9898B0', fontWeight: 600, textAlign: 'center' }}>採用</th>
                           </tr>
@@ -4444,6 +4473,7 @@ export default async function RaceDetailPage({
                           {formationV10Debug.rows.map((row, i) => (
                             <tr key={i} style={{ borderBottom: '1px solid rgba(255,255,255,0.04)', background: row.isHimo ? 'rgba(251,191,36,0.04)' : 'transparent' }}>
                               <td style={{ padding: '5px 6px', color: row.isHimo ? '#FBBF24' : '#9898B0', fontWeight: row.isHimo ? 700 : 400, whiteSpace: 'nowrap' }}>{row.horseName}</td>
+                              <td style={{ padding: '5px 6px', color: '#14B8A6', textAlign: 'right', fontVariantNumeric: 'tabular-nums', fontSize: 10 }}>{row.derivedStyle ?? '—'}</td>
                               <td style={{ padding: '5px 6px', color: '#9898B0', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{row.paceFit.toFixed(3)}</td>
                               <td style={{ padding: '5px 6px', color: '#9898B0', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{row.jockeyScore.toFixed(2)}</td>
                               <td style={{ padding: '5px 6px', color: '#60A5FA', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{(row.horsePlace3Rate ?? 0).toFixed(2)}</td>
