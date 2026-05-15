@@ -1968,22 +1968,27 @@ type FormationV9_1DebugRow = {
   postPositionAdj?: number
   horsePlace3Rate?: number
   recentFormScore?: number
+  venueAdj?: number
+  recentFinishAdj?: number
 }
 
 type AxisDebugRow = {
   horseName: string
   axisScore: number
   paceFit: number
-  distanceFit: number
+  distanceFit?: number
   jockeyScore: number
   closingScore: number
   bloodlineBonus: number
   weightAdj: number
   groundStrength: number
   isSelected: boolean  // 実際に軸として選ばれたか
-  postPositionAdj?: number   // v10以降: 枠順×会場補正
-  horsePlace3Rate?: number   // v10以降: 馬の3着内率（生値）
-  recentFormScore?: number   // v10以降: 近走グレード×着順スコア
+  postPositionAdj?: number
+  horsePlace3Rate?: number
+  recentFormScore?: number
+  venueAdj?: number
+  agePenalty?: number
+  recentFinishAdj?: number
 }
 
 type FormationV9_1Result = {
@@ -2530,7 +2535,6 @@ function computeFormationV10(
   const computeAxisDetailV10 = (id: string) => {
     // データ駆動型脚質スコア（手入力脚質分類に依存しない）
     const paceFit = getDerivedPaceFit(id, horseRunForms, pace)
-    const distanceFit = 0  // 廃止（derived paceFitに統合）
     const derivedStyle = getDerivedStyle(id, horseRunForms)
     const venueAdj = getVenueStyleAdjustment(venue, derivedStyle, distanceM)
     const entry = entries.find((e) => e.horse_id === id)
@@ -2566,7 +2570,7 @@ function computeFormationV10(
       + agePenalty
       + recentFinishAdj
 
-    return { id, axisScore, paceFit, distanceFit, jockeyScore, closingScore, bloodlineBonus, weightAdj, groundStrength, postPositionAdj, horsePlace3Rate, recentFormScore, recentFinishScore }
+    return { id, axisScore, paceFit, jockeyScore, closingScore, bloodlineBonus, weightAdj, groundStrength, postPositionAdj, horsePlace3Rate, recentFormScore, recentFinishScore, venueAdj, agePenalty, recentFinishAdj }
   }
 
   const allSorted = entries
@@ -2595,7 +2599,6 @@ function computeFormationV10(
 
   const scored = candidatePool.map((id) => {
     const paceFit = getDerivedPaceFit(id, horseRunForms, pace)
-    const distanceFit = 0  // 廃止
     const derivedStyle = getDerivedStyle(id, horseRunForms)
     const entry = entries.find((e) => e.horse_id === id)
     const rawJockeyName = entry?.jockey_name ?? ''
@@ -2626,7 +2629,7 @@ function computeFormationV10(
       + weightAdj
       + recentFinishAdj
 
-    return { id, paceFit, distanceFit, jockeyScore, closingScore, himoScoreV9: himoScore, himoScoreV9_1: himoScore, bloodlineBonus, weightAdj, groundStrength, horsePlace3Rate, recentFormScore, recentFinishScore, postPositionAdj }
+    return { id, paceFit, jockeyScore, closingScore, himoScoreV9: himoScore, himoScoreV9_1: himoScore, bloodlineBonus, weightAdj, groundStrength, horsePlace3Rate, recentFormScore, recentFinishScore, postPositionAdj, venueAdj, recentFinishAdj }
   })
 
   scored.sort((a, b) => b.himoScoreV9_1 - a.himoScoreV9_1)
@@ -2644,7 +2647,7 @@ function computeFormationV10(
     horseName: resolveName(s.id),
     horseId: s.id,
     paceFit: s.paceFit,
-    distanceFit: s.distanceFit,
+    distanceFit: 0,
     jockeyScore: s.jockeyScore,
     closingScore: s.closingScore,
     stabilityComponent: stabilityComp,
@@ -2656,6 +2659,8 @@ function computeFormationV10(
     horsePlace3Rate: s.horsePlace3Rate,
     recentFormScore: s.recentFormScore,
     postPositionAdj: s.postPositionAdj,
+    venueAdj: s.venueAdj,
+    recentFinishAdj: s.recentFinishAdj,
     isHimo: himoSet.has(s.id),
     wasHimoV9: false,
   }))
@@ -2664,7 +2669,6 @@ function computeFormationV10(
     horseName: resolveName(s.id),
     axisScore: s.axisScore,
     paceFit: s.paceFit,
-    distanceFit: s.distanceFit,
     jockeyScore: s.jockeyScore,
     closingScore: s.closingScore,
     bloodlineBonus: s.bloodlineBonus,
@@ -2674,6 +2678,9 @@ function computeFormationV10(
     postPositionAdj: s.postPositionAdj,
     horsePlace3Rate: s.horsePlace3Rate,
     recentFormScore: s.recentFormScore,
+    venueAdj: s.venueAdj,
+    agePenalty: s.agePenalty,
+    recentFinishAdj: s.recentFinishAdj,
   }))
 
   const axis2Id = allSorted[1]?.id ?? null
@@ -4182,7 +4189,7 @@ export default async function RaceDetailPage({
                                 </td>
                                 <td style={{ padding: '5px 6px', color: r.isSelected ? '#14B8A6' : '#9898B0', fontWeight: r.isSelected ? 700 : 400, whiteSpace: 'nowrap' }}>{r.horseName}</td>
                                 <td style={{ padding: '5px 6px', color: '#9898B0', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{r.paceFit.toFixed(3)}</td>
-                                <td style={{ padding: '5px 6px', color: '#9898B0', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{r.distanceFit.toFixed(2)}</td>
+                                <td style={{ padding: '5px 6px', color: '#9898B0', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{(r.distanceFit ?? 0).toFixed(2)}</td>
                                 <td style={{ padding: '5px 6px', color: '#9898B0', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{r.jockeyScore.toFixed(2)}</td>
                                 <td style={{ padding: '5px 6px', color: '#9898B0', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{r.closingScore.toFixed(3)}</td>
                                 <td style={{ padding: '5px 6px', color: r.bloodlineBonus > 0 ? '#34D399' : '#62627A', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{r.bloodlineBonus > 0 ? `+${r.bloodlineBonus.toFixed(3)}` : r.bloodlineBonus.toFixed(3)}</td>
@@ -4279,7 +4286,7 @@ export default async function RaceDetailPage({
                                 </td>
                                 <td style={{ padding: '5px 6px', color: r.isSelected ? '#14B8A6' : '#9898B0', fontWeight: r.isSelected ? 700 : 400, whiteSpace: 'nowrap' }}>{r.horseName}</td>
                                 <td style={{ padding: '5px 6px', color: '#9898B0', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{r.paceFit.toFixed(3)}</td>
-                                <td style={{ padding: '5px 6px', color: '#9898B0', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{r.distanceFit.toFixed(2)}</td>
+                                <td style={{ padding: '5px 6px', color: '#9898B0', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{(r.distanceFit ?? 0).toFixed(2)}</td>
                                 <td style={{ padding: '5px 6px', color: '#9898B0', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{r.jockeyScore.toFixed(2)}</td>
                                 <td style={{ padding: '5px 6px', color: '#9898B0', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{r.closingScore.toFixed(3)}</td>
                                 <td style={{ padding: '5px 6px', color: r.bloodlineBonus > 0 ? '#34D399' : '#62627A', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{r.bloodlineBonus > 0 ? `+${r.bloodlineBonus.toFixed(3)}` : r.bloodlineBonus.toFixed(3)}</td>
@@ -4348,11 +4355,12 @@ export default async function RaceDetailPage({
               {/* ── v10 debug ── */}
               {showDebug && formationV10Debug && (() => {
                 const AXIS_TYPE_COLOR: Record<string, string> = { '軸強い': '#14B8A6', '標準': '#60A5FA', '混戦': '#F87171' }
+                const sgn = (v: number) => (v > 0 ? `+${v.toFixed(3)}` : v.toFixed(3))
                 return (
                   <div style={{ ...card, fontSize: 11, border: '1px solid rgba(251,191,36,0.20)' }}>
-                    <p style={{ ...sectionLabel, color: '#FBBF24' }}>v10 DEBUG — 枠順×会場補正 / 脚質30% / 個の力20% / 騎手20%</p>
+                    <p style={{ ...sectionLabel, color: '#FBBF24' }}>v10 DEBUG — 枠順×会場補正 / 脚質20% / 個の力20% / 騎手13%</p>
                     <p style={{ fontSize: 11, color: '#9898B0', margin: '0 0 10px', lineHeight: 1.7 }}>
-                      v9.2からの変更: 脚質(pace+dist) 70%→30%、騎手 10%→20%、個の力(place3_rate) 明示的20%、枠順×会場補正を新規追加。本番未反映。
+                      v9.2からの変更: dist廃止・脚質(pace)20%・騎手13%・p3rate20%・近走form17%・closing10%・stability10%・venue/weight/blood/ground/post/age を加算補正
                     </p>
                     <div style={{ marginBottom: 14 }}>
                       <p style={{ fontSize: 10, fontWeight: 700, color: '#FBBF24', margin: '0 0 6px', letterSpacing: '0.08em' }}>AXIS CANDIDATES TOP 5</p>
@@ -4360,8 +4368,8 @@ export default async function RaceDetailPage({
                         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 11 }}>
                           <thead>
                             <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                              {['', '馬名', 'pace', 'dist', 'jockey', 'p3rate', 'form', 'closing', 'blood', 'ground', 'post', 'axis score'].map((h) => (
-                                <th key={h} style={{ padding: '4px 6px', color: h === 'form' ? '#A78BFA' : '#9898B0', fontWeight: 600, textAlign: 'right', whiteSpace: 'nowrap' }}>{h}</th>
+                              {['', '馬名', 'pace', 'jockey', 'p3rate', 'form', 'closing', 'blood', 'ground', 'post', 'venue', 'weight', 'fin', 'age', 'axis score'].map((h) => (
+                                <th key={h} style={{ padding: '4px 6px', color: h === 'form' ? '#A78BFA' : h === 'fin' ? '#FB923C' : '#9898B0', fontWeight: 600, textAlign: 'right', whiteSpace: 'nowrap' }}>{h}</th>
                               ))}
                             </tr>
                           </thead>
@@ -4373,14 +4381,17 @@ export default async function RaceDetailPage({
                                 </td>
                                 <td style={{ padding: '5px 6px', color: r.isSelected ? '#FBBF24' : '#9898B0', fontWeight: r.isSelected ? 700 : 400, whiteSpace: 'nowrap' }}>{r.horseName}</td>
                                 <td style={{ padding: '5px 6px', color: '#9898B0', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{r.paceFit.toFixed(3)}</td>
-                                <td style={{ padding: '5px 6px', color: '#9898B0', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{r.distanceFit.toFixed(2)}</td>
                                 <td style={{ padding: '5px 6px', color: '#9898B0', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{r.jockeyScore.toFixed(2)}</td>
                                 <td style={{ padding: '5px 6px', color: '#60A5FA', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{(r.horsePlace3Rate ?? 0).toFixed(2)}</td>
                                 <td style={{ padding: '5px 6px', color: '#A78BFA', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{(r.recentFormScore ?? 0.5).toFixed(2)}</td>
                                 <td style={{ padding: '5px 6px', color: '#9898B0', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{r.closingScore.toFixed(3)}</td>
-                                <td style={{ padding: '5px 6px', color: r.bloodlineBonus > 0 ? '#34D399' : '#62627A', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{r.bloodlineBonus > 0 ? `+${r.bloodlineBonus.toFixed(3)}` : r.bloodlineBonus.toFixed(3)}</td>
-                                <td style={{ padding: '5px 6px', color: r.groundStrength > 0 ? '#FBBF24' : r.groundStrength < 0 ? '#F87171' : '#62627A', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{r.groundStrength > 0 ? `+${r.groundStrength.toFixed(3)}` : r.groundStrength.toFixed(3)}</td>
-                                <td style={{ padding: '5px 6px', color: (r.postPositionAdj ?? 0) > 0 ? '#34D399' : (r.postPositionAdj ?? 0) < 0 ? '#F87171' : '#62627A', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{((r.postPositionAdj ?? 0) > 0 ? '+' : '') + (r.postPositionAdj ?? 0).toFixed(3)}</td>
+                                <td style={{ padding: '5px 6px', color: (r.bloodlineBonus ?? 0) > 0 ? '#34D399' : '#62627A', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{sgn(r.bloodlineBonus ?? 0)}</td>
+                                <td style={{ padding: '5px 6px', color: r.groundStrength > 0 ? '#FBBF24' : r.groundStrength < 0 ? '#F87171' : '#62627A', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{sgn(r.groundStrength)}</td>
+                                <td style={{ padding: '5px 6px', color: (r.postPositionAdj ?? 0) > 0 ? '#34D399' : (r.postPositionAdj ?? 0) < 0 ? '#F87171' : '#62627A', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{sgn(r.postPositionAdj ?? 0)}</td>
+                                <td style={{ padding: '5px 6px', color: (r.venueAdj ?? 0) > 0 ? '#34D399' : (r.venueAdj ?? 0) < 0 ? '#F87171' : '#62627A', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{sgn(r.venueAdj ?? 0)}</td>
+                                <td style={{ padding: '5px 6px', color: (r.weightAdj ?? 0) < 0 ? '#F87171' : (r.weightAdj ?? 0) > 0 ? '#34D399' : '#62627A', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{sgn(r.weightAdj ?? 0)}</td>
+                                <td style={{ padding: '5px 6px', color: (r.recentFinishAdj ?? 0) > 0 ? '#FB923C' : (r.recentFinishAdj ?? 0) < 0 ? '#F87171' : '#62627A', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{sgn(r.recentFinishAdj ?? 0)}</td>
+                                <td style={{ padding: '5px 6px', color: (r.agePenalty ?? 0) < 0 ? '#F87171' : '#62627A', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{sgn(r.agePenalty ?? 0)}</td>
                                 <td style={{ padding: '5px 6px', color: r.isSelected ? '#FBBF24' : '#9898B0', fontWeight: r.isSelected ? 700 : 400, textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{r.axisScore.toFixed(4)}</td>
                               </tr>
                             ))}
@@ -4392,8 +4403,8 @@ export default async function RaceDetailPage({
                       <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 11 }}>
                         <thead>
                           <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                            {['馬名', 'pace', 'dist', 'jockey', 'p3rate', 'form', 'closing', 'blood', 'ground', 'post', 'himo score'].map((h) => (
-                              <th key={h} style={{ padding: '4px 6px', color: h === 'form' ? '#A78BFA' : '#9898B0', fontWeight: 600, textAlign: 'right', whiteSpace: 'nowrap' }}>{h}</th>
+                            {['馬名', 'pace', 'jockey', 'p3rate', 'form', 'closing', 'blood', 'ground', 'post', 'venue', 'weight', 'fin', 'himo score'].map((h) => (
+                              <th key={h} style={{ padding: '4px 6px', color: h === 'form' ? '#A78BFA' : h === 'fin' ? '#FB923C' : '#9898B0', fontWeight: 600, textAlign: 'right', whiteSpace: 'nowrap' }}>{h}</th>
                             ))}
                             <th style={{ padding: '4px 6px', color: '#9898B0', fontWeight: 600, textAlign: 'center' }}>採用</th>
                           </tr>
@@ -4403,14 +4414,16 @@ export default async function RaceDetailPage({
                             <tr key={i} style={{ borderBottom: '1px solid rgba(255,255,255,0.04)', background: row.isHimo ? 'rgba(251,191,36,0.04)' : 'transparent' }}>
                               <td style={{ padding: '5px 6px', color: row.isHimo ? '#FBBF24' : '#9898B0', fontWeight: row.isHimo ? 700 : 400, whiteSpace: 'nowrap' }}>{row.horseName}</td>
                               <td style={{ padding: '5px 6px', color: '#9898B0', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{row.paceFit.toFixed(3)}</td>
-                              <td style={{ padding: '5px 6px', color: '#9898B0', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{row.distanceFit.toFixed(2)}</td>
                               <td style={{ padding: '5px 6px', color: '#9898B0', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{row.jockeyScore.toFixed(2)}</td>
                               <td style={{ padding: '5px 6px', color: '#60A5FA', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{(row.horsePlace3Rate ?? 0).toFixed(2)}</td>
                               <td style={{ padding: '5px 6px', color: '#A78BFA', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{(row.recentFormScore ?? 0.5).toFixed(2)}</td>
                               <td style={{ padding: '5px 6px', color: '#9898B0', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{row.closingScore.toFixed(3)}</td>
-                              <td style={{ padding: '5px 6px', color: row.bloodlineBonus > 0 ? '#34D399' : '#62627A', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{row.bloodlineBonus > 0 ? `+${row.bloodlineBonus.toFixed(3)}` : row.bloodlineBonus.toFixed(3)}</td>
-                              <td style={{ padding: '5px 6px', color: row.groundStrength > 0 ? '#FBBF24' : row.groundStrength < 0 ? '#F87171' : '#62627A', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{row.groundStrength > 0 ? `+${row.groundStrength.toFixed(3)}` : row.groundStrength.toFixed(3)}</td>
-                              <td style={{ padding: '5px 6px', color: (row.postPositionAdj ?? 0) > 0 ? '#34D399' : (row.postPositionAdj ?? 0) < 0 ? '#F87171' : '#62627A', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{((row.postPositionAdj ?? 0) > 0 ? '+' : '') + (row.postPositionAdj ?? 0).toFixed(3)}</td>
+                              <td style={{ padding: '5px 6px', color: row.bloodlineBonus > 0 ? '#34D399' : '#62627A', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{sgn(row.bloodlineBonus)}</td>
+                              <td style={{ padding: '5px 6px', color: row.groundStrength > 0 ? '#FBBF24' : row.groundStrength < 0 ? '#F87171' : '#62627A', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{sgn(row.groundStrength)}</td>
+                              <td style={{ padding: '5px 6px', color: (row.postPositionAdj ?? 0) > 0 ? '#34D399' : (row.postPositionAdj ?? 0) < 0 ? '#F87171' : '#62627A', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{sgn(row.postPositionAdj ?? 0)}</td>
+                              <td style={{ padding: '5px 6px', color: (row.venueAdj ?? 0) > 0 ? '#34D399' : (row.venueAdj ?? 0) < 0 ? '#F87171' : '#62627A', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{sgn(row.venueAdj ?? 0)}</td>
+                              <td style={{ padding: '5px 6px', color: (row.weightAdj ?? 0) < 0 ? '#F87171' : (row.weightAdj ?? 0) > 0 ? '#34D399' : '#62627A', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{sgn(row.weightAdj ?? 0)}</td>
+                              <td style={{ padding: '5px 6px', color: (row.recentFinishAdj ?? 0) > 0 ? '#FB923C' : (row.recentFinishAdj ?? 0) < 0 ? '#F87171' : '#62627A', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{sgn(row.recentFinishAdj ?? 0)}</td>
                               <td style={{ padding: '5px 6px', color: row.isHimo ? '#FBBF24' : '#9898B0', fontWeight: row.isHimo ? 700 : 400, textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{row.himoScoreV9_1.toFixed(4)}</td>
                               <td style={{ padding: '5px 6px', textAlign: 'center' }}>
                                 {row.isHimo && (
@@ -4423,7 +4436,7 @@ export default async function RaceDetailPage({
                       </table>
                     </div>
                     <p style={{ fontSize: 10, color: '#62627A', marginTop: 10, lineHeight: 1.7 }}>
-                      軸タイプ: <span style={{ color: AXIS_TYPE_COLOR[formationV10Debug.axisTypeV7] }}>{formationV10Debug.axisTypeV7}</span>　ヒモ {formationV10Debug.himoCount}頭　jockey重み=0.20　place3_rate重み=0.20
+                      軸タイプ: <span style={{ color: AXIS_TYPE_COLOR[formationV10Debug.axisTypeV7] }}>{formationV10Debug.axisTypeV7}</span>　ヒモ {formationV10Debug.himoCount}頭　jockey重み=0.13　p3rate重み=0.20　form重み=0.17
                     </p>
                   </div>
                 )
