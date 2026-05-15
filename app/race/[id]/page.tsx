@@ -2613,7 +2613,7 @@ function computeFormationV10(
     : top1Score - top2Score
   const axisTypeV7: AxisType =
     axisConfidence >= 0.08 ? '軸強い' : axisConfidence >= 0.04 ? '標準' : '混戦'
-  const himoCount = axisTypeV7 === '軸強い' ? 4 : axisTypeV7 === '標準' ? 5 : 6
+  const himoCount = axisTypeV7 === '軸強い' ? 4 : 5
 
   const axisV10 = axisId ? [axisId] : formation.axis_horses
   const candidatePool = entries.map((e) => e.horse_id).filter((id) => id !== axisId)
