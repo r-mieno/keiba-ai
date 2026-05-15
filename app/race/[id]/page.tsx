@@ -4463,6 +4463,7 @@ export default async function RaceDetailPage({
                       <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 11 }}>
                         <thead>
                           <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                            <th style={{ padding: '4px 6px', color: '#62627A', fontWeight: 600, textAlign: 'right' }}>#</th>
                             {['馬名', '脚質', 'pace', 'jockey', 'p3rate', 'form', 'closing', 'blood', 'ground', 'post', 'venue', 'weight', 'fin', 'interval', 'debut', 'himo score'].map((h) => (
                               <th key={h} style={{ padding: '4px 6px', color: h === 'form' ? '#A78BFA' : h === 'fin' ? '#FB923C' : h === 'interval' || h === 'debut' ? '#F87171' : h === '脚質' ? '#14B8A6' : '#9898B0', fontWeight: 600, textAlign: 'right', whiteSpace: 'nowrap' }}>{h}</th>
                             ))}
@@ -4472,6 +4473,7 @@ export default async function RaceDetailPage({
                         <tbody>
                           {formationV10Debug.rows.map((row, i) => (
                             <tr key={i} style={{ borderBottom: '1px solid rgba(255,255,255,0.04)', background: row.isHimo ? 'rgba(251,191,36,0.04)' : 'transparent' }}>
+                              <td style={{ padding: '5px 6px', color: '#62627A', textAlign: 'right', fontVariantNumeric: 'tabular-nums', fontSize: 11 }}>{i + 1}</td>
                               <td style={{ padding: '5px 6px', color: row.isHimo ? '#FBBF24' : '#9898B0', fontWeight: row.isHimo ? 700 : 400, whiteSpace: 'nowrap' }}>{row.horseName}</td>
                               <td style={{ padding: '5px 6px', color: '#14B8A6', textAlign: 'right', fontVariantNumeric: 'tabular-nums', fontSize: 10 }}>{row.derivedStyle ?? '—'}</td>
                               <td style={{ padding: '5px 6px', color: '#9898B0', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{row.paceFit.toFixed(3)}</td>
