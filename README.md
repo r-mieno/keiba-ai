@@ -43,6 +43,8 @@ axisScore =
   ＋ weightAdj          // 斤量補正（加算項目）
   ＋ agePenalty         // 年齢ペナルティ（7歳以上に適用）
   ＋ recentFinishAdj   // 近走着順アジャスト（horse_form_records着順から±0.045）
+  ＋ intervalPenalty   // 前走間隔ペナルティ（短期・長期休養に適用）
+  ＋ debutPenalty      // 初コース・初距離ペナルティ（各-0.02）
 ```
 
 > 軸スコアは3歳戦・古馬戦で重みの区別なし（今後改善検討中）
@@ -59,7 +61,7 @@ himoScore（古馬戦）=
   recentForm     × 0.17
   closingScore   × 0.15
   stability      × 0.05
-  ＋ 加算項目（軸と同じ）
+  ＋ 加算項目（軸と同じ、intervalPenalty・debutPenalty含む）
 
 himoScore（3歳戦）=
   paceFit        × 0.20
@@ -167,6 +169,25 @@ himoScore（3歳戦）=
 - 標準斤量(55kg)からの差分で±補正
 - 範囲: 約 -0.02 〜 +0.02
 
+### `intervalPenalty`（前走間隔ペナルティ）
+- `entries.days_since_last_race`（前走からの日数）から計算
+
+| 前走間隔 | ペナルティ |
+|---------|----------|
+| 14日未満（超短期） | -0.02 |
+| 14〜27日 | -0.01 |
+| 28〜90日（標準） | 0 |
+| 91〜120日 | -0.02 |
+| 121日以上（長期休養） | -0.04 |
+
+- データなし: 0（ニュートラル）
+
+### `debutPenalty`（初コース・初距離ペナルティ）
+- `entries.is_venue_debut`（初コースフラグ）: -0.02
+- `entries.is_distance_debut`（初距離フラグ）: -0.02
+- 両方該当: -0.04
+- データなし: 0（ニュートラル）
+
 ---
 
 ## データ入力の種類と用途
@@ -184,9 +205,9 @@ himoScore（3歳戦）=
 | 馬番・騎手名・斤量 | `entries` | レース管理 | postAdj, jockeyScore, weightAdj |
 | 着順・人気 | `entries` / `race_results` | レース管理（一括編集） | 結果表示・的中判定 |
 | 馬場状態 | `races.track_condition` | レース管理 | （ロジック組込み検討中） |
-| 前走間隔(日) | `entries.days_since_last_race` | レース管理 | （ロジック組込み検討中） |
-| 初距離フラグ | `entries.is_distance_debut` | レース管理 | （ロジック組込み検討中） |
-| 初コースフラグ | `entries.is_venue_debut` | レース管理 | （ロジック組込み検討中） |
+| 前走間隔(日) | `entries.days_since_last_race` | レース管理 | intervalPenalty |
+| 初距離フラグ | `entries.is_distance_debut` | レース管理 | debutPenalty |
+| 初コースフラグ | `entries.is_venue_debut` | レース管理 | debutPenalty |
 
 ---
 
