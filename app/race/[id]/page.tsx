@@ -3321,6 +3321,56 @@ export default async function RaceDetailPage({
 
           const favoredStyles = [...new Set(advantageHorses.map((h) => STYLE_LABELS[h.style]))]
 
+          // ── 馬連予想: place2_rate ベースのスコアで軸×相手3頭 ──────────────
+          const umarenAxisId = formation.axis_horses[0] ?? null
+          const umarenDM = race?.distance_m ?? null
+          const umarenVenue = race?.venue ?? null
+          const umarenStabilityComp = 1 - earlyStabilityScore / 100
+          const p2Rates = entries.map((e) => horses.find((h) => h.id === e.horse_id)?.place2_rate ?? null).filter((r): r is number => r !== null)
+          const p2Baseline = p2Rates.length > 0 ? p2Rates.reduce((a, b) => a + b, 0) / p2Rates.length : 0.25
+          const getReliableP2Rate = (horseId: string): number => {
+            const h = horses.find((hh) => hh.id === horseId)
+            const raw = h?.place2_rate ?? (h?.place3_rate != null ? h.place3_rate * 0.72 : p2Baseline)
+            const n = h?.race_count ?? null
+            if (n === null) return raw
+            const reliability = Math.min(1, n / 10)
+            return raw * reliability + p2Baseline * (1 - reliability)
+          }
+          const W2 = { pace: 0.22, jockey: 0.13, p2r: 0.32, closing: 0.12, form: 0.17, stability: 0.04 }
+          const umarenScored = entries
+            .filter((e) => e.horse_id !== umarenAxisId)
+            .map((e) => {
+              const id = e.horse_id
+              const paceFit = getDerivedPaceFit(id, horseRunForms, pace)
+              const derivedStyle = getDerivedStyle(id, horseRunForms)
+              const rawJockey = e.jockey_name ?? ''
+              const jockeyScore = rawJockey ? (jockeyScoreMap[rawJockey.replace(/\s+/g, '')] ?? JOCKEY_DEFAULT_SCORE) : JOCKEY_DEFAULT_SCORE
+              const closingScore = getDerivedClosingScore(id, horseRunForms)
+              const venueAdj = getVenueStyleAdjustment(umarenVenue, derivedStyle, umarenDM)
+              const horse = horses.find((h) => h.id === id)
+              const bloodlineBonus = getBloodlineFitBonus(horse?.father_line ?? null, horse?.damsire_line ?? null, umarenDM)
+              const weightAdj = getWeightAdjustment(e.weight_kg ?? null)
+              const groundStrength = getGroundStrengthScore(id, horseFormRecords, umarenDM)
+              const p2r = getReliableP2Rate(id)
+              const recentFormScore = getRecentFormScore(id, horseFormRecords)
+              const recentFinishScore = getRecentFinishScore(id, horseRunForms)
+              const postPositionAdj = getPostPositionAdj(umarenVenue, umarenDM, e.horse_number ?? null)
+              const recentFinishAdj = (recentFinishScore - 0.50) * 0.30
+              const intervalPenalty = getIntervalPenalty(e.days_since_last_race ?? null)
+              const debutPenalty = getDebutPenalty(e.is_venue_debut ?? null, e.is_distance_debut ?? null)
+              const score =
+                paceFit * W2.pace + jockeyScore * W2.jockey + p2r * W2.p2r
+                + closingScore * W2.closing + recentFormScore * W2.form
+                + umarenStabilityComp * W2.stability
+                + postPositionAdj + venueAdj + bloodlineBonus + groundStrength + weightAdj + recentFinishAdj + intervalPenalty + debutPenalty
+              return { id, score }
+            })
+            .sort((a, b) => b.score - a.score)
+          const umarenHimoIds = umarenScored.slice(0, 3).map((s) => s.id)
+          const umarenAxisEntry = entries.find((e) => e.horse_id === umarenAxisId)
+          const umarenAxisName = horses.find((h) => h.id === umarenAxisId)?.name ?? '—'
+          const umarenAxisNum = umarenAxisEntry?.horse_number ?? null
+
           return (
             <>
               {/* ── Chapter 1: AI予想 ────────────────────────────────────── */}
@@ -3339,6 +3389,37 @@ export default async function RaceDetailPage({
                 axis2Details={axis2Details}
                 axis2HorseId={axis2HorseId}
               />
+
+              {/* ── 馬連予想（試験運用） ────────────────────────────────── */}
+              <div style={{ background: '#13141F', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 12, padding: '16px 18px', marginTop: 12 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+                  <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.10em', textTransform: 'uppercase', color: '#62627A', margin: 0 }}>馬連予想</p>
+                  <span style={{ fontSize: 10, padding: '1px 7px', borderRadius: 9999, background: 'rgba(20,184,166,0.12)', color: '#14B8A6', border: '1px solid rgba(20,184,166,0.25)', fontWeight: 600 }}>試験運用</span>
+                  <span style={{ marginLeft: 'auto', fontSize: 11, color: '#62627A' }}>軸×相手3頭 = 3点</span>
+                </div>
+                {/* 軸 */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 10px', background: 'rgba(20,184,166,0.06)', borderRadius: 8, marginBottom: 8 }}>
+                  <span style={{ fontSize: 10, fontWeight: 700, color: '#14B8A6', width: 16, textAlign: 'center' }}>軸</span>
+                  <span style={{ fontSize: 13, fontWeight: 700, color: '#14B8A6', width: 22, textAlign: 'center' }}>{umarenAxisNum}</span>
+                  <span style={{ fontSize: 14, fontWeight: 700, color: '#EEEEF5' }}>{umarenAxisName}</span>
+                </div>
+                {/* 相手3頭 */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                  {umarenHimoIds.map((hid, i) => {
+                    const h = horses.find((hh) => hh.id === hid)
+                    const num = entries.find((e) => e.horse_id === hid)?.horse_number ?? null
+                    const stars = i === 0 ? 4 : 3
+                    return (
+                      <div key={hid} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '7px 10px', borderRadius: 8, background: 'rgba(255,255,255,0.02)' }}>
+                        <span style={{ fontSize: 10, color: '#62627A', width: 16, textAlign: 'center' }}>相手</span>
+                        <span style={{ fontSize: 13, fontWeight: 600, color: '#9898B0', width: 22, textAlign: 'center' }}>{num}</span>
+                        <span style={{ fontSize: 14, color: '#EEEEF5', flex: 1 }}>{h?.name ?? hid}</span>
+                        <span style={{ fontSize: 11, color: '#FBBF24', letterSpacing: 1 }}>{'★'.repeat(stars)}{'☆'.repeat(5 - stars)}</span>
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
 
               {/* ── DEBUGパネル（?debug=1 で表示） ──────────────────────── */}
               {showDebug && formationV2Debug && (() => {
