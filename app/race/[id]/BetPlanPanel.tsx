@@ -571,12 +571,12 @@ export default function BetPlanPanel({
                 fontSize: 13, fontWeight: 600, background: 'rgba(20,184,166,0.12)',
                 color: '#14B8A6', border: '1px solid rgba(20,184,166,0.30)',
               }}>
-                馬連フォーメーション
+                馬連流し
               </span>
               <motion.button
                 onClick={openUmarenModal}
                 whileTap={{ scale: 0.92 }}
-                aria-label="馬連フォーメーションの説明を見る"
+                aria-label="馬連流しの説明を見る"
                 style={{
                   display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
                   width: 22, height: 22, borderRadius: '50%',
@@ -853,18 +853,18 @@ export default function BetPlanPanel({
           >
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
               <p style={{ fontSize: 15, fontWeight: 700, color: '#EEEEF5', margin: 0 }}>
-                馬連フォーメーションとは？
+                馬連流しとは？
               </p>
               <button onClick={closeUmarenModal} style={{ background: 'none', border: 'none', color: '#62627A', cursor: 'pointer', fontSize: 20, lineHeight: 1, padding: '2px 4px' }} aria-label="閉じる">×</button>
             </div>
             <p style={{ color: '#9898B0', fontSize: 13, lineHeight: 1.8, marginBottom: 16 }}>
               馬連は、1〜2着に入る2頭を<span style={{ color: '#EEEEF5', fontWeight: 600 }}>順不同</span>で当てる馬券です。
-              三連複より対象馬が少なく、シンプルに当てやすい馬券です。
+              「流し」は軸1頭を固定して、相手を複数頭に流す買い方です。
             </p>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 16 }}>
               {([
-                { label: '1頭目（軸）', desc: '1〜2着に入る可能性が高い馬。AIが最も信頼する軸馬1頭を固定します。' },
-                { label: '2頭目（相手）', desc: '軸馬と一緒に1〜2着に来る馬。連対率データを重視してAIが選定します。' },
+                { label: '軸（1頭固定）', desc: '1〜2着に入る可能性が最も高い馬。AIが最も信頼する1頭を固定します。' },
+                { label: '流し相手（複数頭）', desc: '軸と組み合わせる相手馬。軸との馬連を相手の頭数分だけ購入します。' },
               ] as const).map(({ label, desc }) => (
                 <div key={label} style={{ background: 'rgba(255,255,255,0.04)', borderRadius: 10, padding: '10px 14px' }}>
                   <p style={{ fontSize: 11, fontWeight: 700, color: '#14B8A6', margin: '0 0 4px' }}>{label}</p>
@@ -873,7 +873,7 @@ export default function BetPlanPanel({
               ))}
             </div>
             <p style={{ fontSize: 12, color: '#62627A', lineHeight: 1.7, borderTop: '1px solid rgba(255,255,255,0.07)', paddingTop: 12, margin: 0 }}>
-              軸馬の連対率を起点に、相手を2〜3頭に絞ることで少点数での的中を目指す買い方です。
+              相手を2〜3頭に絞ることで2〜3点の少点数購入。連対率データを重視したAI選定で的中を狙います。
             </p>
           </div>
         </div>
