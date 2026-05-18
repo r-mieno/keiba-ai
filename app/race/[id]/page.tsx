@@ -3366,10 +3366,12 @@ export default async function RaceDetailPage({
               return { id, score }
             })
             .sort((a, b) => b.score - a.score)
-          const umarenHimoIds = umarenScored.slice(0, 3).map((s) => s.id)
-          const umarenAxisEntry = entries.find((e) => e.horse_id === umarenAxisId)
-          const umarenAxisName = horses.find((h) => h.id === umarenAxisId)?.name ?? '—'
-          const umarenAxisNum = umarenAxisEntry?.horse_number ?? null
+          const umarenHimoHorses = umarenScored.slice(0, 3).map((s, i) => ({
+            id: s.id,
+            name: horses.find((h) => h.id === s.id)?.name ?? s.id,
+            number: entries.find((e) => e.horse_id === s.id)?.horse_number ?? null,
+            aiEval: Math.max(12, 20 - i * 3),
+          }))
 
           return (
             <>
@@ -3388,38 +3390,8 @@ export default async function RaceDetailPage({
                 isDrawComplete={isDrawComplete}
                 axis2Details={axis2Details}
                 axis2HorseId={axis2HorseId}
+                umarenHimoHorses={umarenHimoHorses}
               />
-
-              {/* ── 馬連予想（試験運用） ────────────────────────────────── */}
-              <div style={{ background: '#13141F', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 12, padding: '16px 18px', marginTop: 12 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
-                  <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.10em', textTransform: 'uppercase', color: '#62627A', margin: 0 }}>馬連予想</p>
-                  <span style={{ fontSize: 10, padding: '1px 7px', borderRadius: 9999, background: 'rgba(20,184,166,0.12)', color: '#14B8A6', border: '1px solid rgba(20,184,166,0.25)', fontWeight: 600 }}>試験運用</span>
-                  <span style={{ marginLeft: 'auto', fontSize: 11, color: '#62627A' }}>軸×相手3頭 = 3点</span>
-                </div>
-                {/* 軸 */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 10px', background: 'rgba(20,184,166,0.06)', borderRadius: 8, marginBottom: 8 }}>
-                  <span style={{ fontSize: 10, fontWeight: 700, color: '#14B8A6', width: 16, textAlign: 'center' }}>軸</span>
-                  <span style={{ fontSize: 13, fontWeight: 700, color: '#14B8A6', width: 22, textAlign: 'center' }}>{umarenAxisNum}</span>
-                  <span style={{ fontSize: 14, fontWeight: 700, color: '#EEEEF5' }}>{umarenAxisName}</span>
-                </div>
-                {/* 相手3頭 */}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                  {umarenHimoIds.map((hid, i) => {
-                    const h = horses.find((hh) => hh.id === hid)
-                    const num = entries.find((e) => e.horse_id === hid)?.horse_number ?? null
-                    const stars = i === 0 ? 4 : 3
-                    return (
-                      <div key={hid} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '7px 10px', borderRadius: 8, background: 'rgba(255,255,255,0.02)' }}>
-                        <span style={{ fontSize: 10, color: '#62627A', width: 16, textAlign: 'center' }}>相手</span>
-                        <span style={{ fontSize: 13, fontWeight: 600, color: '#9898B0', width: 22, textAlign: 'center' }}>{num}</span>
-                        <span style={{ fontSize: 14, color: '#EEEEF5', flex: 1 }}>{h?.name ?? hid}</span>
-                        <span style={{ fontSize: 11, color: '#FBBF24', letterSpacing: 1 }}>{'★'.repeat(stars)}{'☆'.repeat(5 - stars)}</span>
-                      </div>
-                    )
-                  })}
-                </div>
-              </div>
 
               {/* ── DEBUGパネル（?debug=1 で表示） ──────────────────────── */}
               {showDebug && formationV2Debug && (() => {
