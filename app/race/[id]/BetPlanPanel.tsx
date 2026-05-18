@@ -204,9 +204,9 @@ export default function BetPlanPanel({
       <div style={{
         display: 'flex',
         alignItems: 'center',
-        marginBottom: 14,
-        paddingBottom: 10,
-        borderBottom: '1px solid rgba(255,255,255,0.05)',
+        marginBottom: showTabs ? 0 : 14,
+        paddingBottom: showTabs ? 6 : 10,
+        borderBottom: showTabs ? 'none' : '1px solid rgba(255,255,255,0.05)',
       }}>
         <p style={{
           fontSize: 10,
@@ -235,33 +235,40 @@ export default function BetPlanPanel({
         )}
       </div>
 
-      {/* Tab switcher */}
+      {/* Tab bar */}
       {showTabs && (
-        <div style={{ display: 'flex', gap: 6, marginBottom: 16 }}>
+        <div style={{
+          display: 'flex',
+          borderBottom: '1px solid rgba(255,255,255,0.08)',
+          marginLeft: -20,
+          marginRight: -20,
+          paddingLeft: 16,
+          marginBottom: 20,
+        }}>
           {(['trifecta', 'umaren'] as const).map((tab) => {
             const active = betTab === tab
             const label = tab === 'trifecta' ? '三連複' : '馬連'
             return (
-              <motion.button
+              <button
                 key={tab}
                 onClick={() => setBetTab(tab)}
-                whileTap={{ scale: 0.95 }}
-                transition={{ type: 'spring', stiffness: 500, damping: 30 }}
                 style={{
-                  flex: 1,
-                  padding: '7px 0',
-                  borderRadius: 8,
-                  fontSize: 12,
-                  fontWeight: active ? 700 : 400,
+                  padding: '8px 16px 10px',
+                  fontSize: 13,
+                  fontWeight: active ? 700 : 500,
                   cursor: 'pointer',
-                  border: active ? '1px solid rgba(20,184,166,0.50)' : '1px solid rgba(255,255,255,0.08)',
-                  background: active ? 'rgba(20,184,166,0.12)' : 'rgba(255,255,255,0.04)',
-                  color: active ? '#14B8A6' : '#9898B0',
-                  transition: 'all 0.15s',
+                  background: 'none',
+                  border: 'none',
+                  borderBottom: active ? '2px solid #14B8A6' : '2px solid transparent',
+                  marginBottom: -1,
+                  color: active ? '#14B8A6' : '#62627A',
+                  transition: 'color 0.15s, border-color 0.15s',
+                  fontFamily: 'inherit',
+                  letterSpacing: '0.02em',
                 }}
               >
                 {label}
-              </motion.button>
+              </button>
             )
           })}
         </div>
@@ -272,33 +279,39 @@ export default function BetPlanPanel({
         <>
           {/* 軸モード切替 */}
           {can2Axis && (
-            <div style={{ display: 'flex', gap: 6, marginBottom: 16 }}>
-              {(['1', '2'] as const).map((mode) => {
-                const active = axisMode === mode
-                const label = mode === '1' ? '1頭軸' : '2頭軸'
-                return (
-                  <motion.button
-                    key={mode}
-                    onClick={() => setAxisMode(mode)}
-                    whileTap={{ scale: 0.95 }}
-                    transition={{ type: 'spring', stiffness: 500, damping: 30 }}
-                    style={{
-                      flex: 1,
-                      padding: '7px 0',
-                      borderRadius: 8,
-                      fontSize: 12,
-                      fontWeight: active ? 700 : 400,
-                      cursor: 'pointer',
-                      border: active ? '1px solid rgba(20,184,166,0.50)' : '1px solid rgba(255,255,255,0.08)',
-                      background: active ? 'rgba(20,184,166,0.12)' : 'rgba(255,255,255,0.04)',
-                      color: active ? '#14B8A6' : '#9898B0',
-                      transition: 'all 0.15s',
-                    }}
-                  >
-                    {label}
-                  </motion.button>
-                )
-              })}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
+              <span style={{ fontSize: 11, color: '#62627A' }}>軸設定</span>
+              <div style={{
+                display: 'inline-flex',
+                background: 'rgba(255,255,255,0.04)',
+                borderRadius: 8,
+                padding: 2,
+                border: '1px solid rgba(255,255,255,0.08)',
+              }}>
+                {(['1', '2'] as const).map((mode) => {
+                  const active = axisMode === mode
+                  return (
+                    <button
+                      key={mode}
+                      onClick={() => setAxisMode(mode)}
+                      style={{
+                        padding: '5px 16px',
+                        borderRadius: 6,
+                        fontSize: 12,
+                        fontWeight: active ? 700 : 400,
+                        cursor: 'pointer',
+                        border: 'none',
+                        background: active ? 'rgba(20,184,166,0.15)' : 'transparent',
+                        color: active ? '#14B8A6' : '#62627A',
+                        transition: 'background 0.15s, color 0.15s',
+                        fontFamily: 'inherit',
+                      }}
+                    >
+                      {mode === '1' ? '1頭軸' : '2頭軸'}
+                    </button>
+                  )
+                })}
+              </div>
             </div>
           )}
 
