@@ -101,6 +101,7 @@ type Props = {
     dam_name?: string | null
     father_line?: string | null
     damsire_line?: string | null
+    place2_rate?: number | null
     place3_rate?: number | null
     race_count?: number | null
     birth_date?: string | null
@@ -181,6 +182,10 @@ export default function HorseInfoForm({ horseId, horse, derivedStyle }: Props) {
             <option value="">—</option>
             {BLOODLINE_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
           </select>
+        </div>
+        <div>
+          <label style={{ fontSize: 11, color: '#62627A', display: 'block', marginBottom: 4 }}>連対率</label>
+          <input name="place2_rate" type="number" step="0.001" min="0" max="1" defaultValue={horse.place2_rate ?? ''} placeholder="0.250" style={inputStyle} />
         </div>
         <div>
           <label style={{ fontSize: 11, color: '#62627A', display: 'block', marginBottom: 4 }}>3着内率</label>

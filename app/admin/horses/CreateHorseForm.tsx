@@ -144,6 +144,10 @@ export default function CreateHorseForm() {
           </select>
         </div>
         <div>
+          <label style={{ fontSize: 11, color: '#62627A', display: 'block', marginBottom: 4 }}>連対率</label>
+          <input name="place2_rate" type="number" step="0.001" min="0" max="1" placeholder="0.250" style={inputStyle} />
+        </div>
+        <div>
           <label style={{ fontSize: 11, color: '#62627A', display: 'block', marginBottom: 4 }}>3着内率</label>
           <input name="place3_rate" type="number" step="0.001" min="0" max="1" placeholder="0.350" style={inputStyle} />
         </div>

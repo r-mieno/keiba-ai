@@ -34,6 +34,7 @@ type Horse = {
   style: RunningStyle | null
   father_line: string | null
   damsire_line: string | null
+  place2_rate: number | null
   place3_rate: number | null
   race_count: number | null
   birth_date: string | null
@@ -2823,7 +2824,7 @@ export default async function RaceDetailPage({
     }
     formation = await rpcRes.json()
 
-    const horseRes = await fetch(`${baseUrl}/rest/v1/horses?select=id,name,father_line,damsire_line,place3_rate,race_count,birth_date`, {
+    const horseRes = await fetch(`${baseUrl}/rest/v1/horses?select=id,name,father_line,damsire_line,place2_rate,place3_rate,race_count,birth_date`, {
       headers: { apikey: key, Authorization: `Bearer ${key}` },
       cache: 'no-store',
     })

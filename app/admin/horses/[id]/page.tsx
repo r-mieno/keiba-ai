@@ -43,7 +43,7 @@ export default async function AdminHorseDetailPage({ params }: { params: Promise
   const supabase = await createClient()
 
   const [{ data: horse }, { data: pastResults }, { data: formRecords }] = await Promise.all([
-    supabase.from('horses').select('id,name,sire_name,damsire_name,dam_name,father_line,damsire_line,place3_rate,race_count,birth_date').eq('id', id).single(),
+    supabase.from('horses').select('id,name,sire_name,damsire_name,dam_name,father_line,damsire_line,place2_rate,place3_rate,race_count,birth_date').eq('id', id).single(),
     supabase.from('horse_past_results').select('id,race_name,grade,distance_m,finish_pos,field_size').eq('horse_id', id).order('grade').order('race_name'),
     supabase.from('horse_form_records').select('id,race_seq,race_name,last3f,corner_pos,finish_pos,field_size').eq('horse_id', id).order('race_seq', { ascending: false }),
   ])
@@ -66,7 +66,7 @@ export default async function AdminHorseDetailPage({ params }: { params: Promise
         <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.10em', textTransform: 'uppercase', color: '#62627A', margin: '0 0 16px' }}>
           基本情報・血統・脚質
         </p>
-        <HorseInfoForm horseId={id} horse={horse as { name: string; sire_name?: string | null; damsire_name?: string | null; dam_name?: string | null; father_line?: string | null; damsire_line?: string | null; place3_rate?: number | null; race_count?: number | null }} derivedStyle={derivedStyle} />
+        <HorseInfoForm horseId={id} horse={horse as { name: string; sire_name?: string | null; damsire_name?: string | null; dam_name?: string | null; father_line?: string | null; damsire_line?: string | null; place2_rate?: number | null; place3_rate?: number | null; race_count?: number | null }} derivedStyle={derivedStyle} />
       </div>
 
       {/* 過去実績 */}
