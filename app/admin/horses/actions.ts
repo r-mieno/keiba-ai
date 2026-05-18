@@ -24,6 +24,7 @@ export async function createHorse(formData: FormData) {
     damsire_line: (formData.get('damsire_line') as string) || null,
     place2_rate:  formData.get('place2_rate') ? Number(formData.get('place2_rate')) : null,
     place3_rate:  formData.get('place3_rate') ? Number(formData.get('place3_rate')) : null,
+    race_count:   formData.get('race_count')  ? Number(formData.get('race_count'))  : null,
     birth_date:   birthDate,
   }).select('id').single()
 

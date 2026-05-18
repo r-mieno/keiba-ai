@@ -151,6 +151,10 @@ export default function CreateHorseForm() {
           <label style={{ fontSize: 11, color: '#62627A', display: 'block', marginBottom: 4 }}>3着内率</label>
           <input name="place3_rate" type="number" step="0.001" min="0" max="1" placeholder="0.350" style={inputStyle} />
         </div>
+        <div>
+          <label style={{ fontSize: 11, color: '#62627A', display: 'block', marginBottom: 4 }}>出走数</label>
+          <input name="race_count" type="number" step="1" min="0" placeholder="20" style={inputStyle} />
+        </div>
         <div style={{ gridColumn: '1 / -1' }}>
           <label style={{ fontSize: 11, color: '#62627A', display: 'block', marginBottom: 4 }}>生年月日</label>
           <input type="hidden" name="birth_year" value={birthYear} />
