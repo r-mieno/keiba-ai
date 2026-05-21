@@ -27,6 +27,7 @@ const SIRE_TO_LINE: Record<string, string> = {
   'ダノンバラード': 'sunday', 'レッドファルクス': 'sunday',
   'ファインニードル': 'sunday', 'ダノンプレミアム': 'sunday', 'シルバーステート': 'sunday',
   // サンデー系（ディープ世代の産駒・主要母父）
+  'アルアイン': 'sunday',
   'ダイワメジャー': 'sunday', 'アグネスタキオン': 'sunday', 'スペシャルウィーク': 'sunday',
   'フジキセキ': 'sunday', 'ゼンノロブロイ': 'sunday', 'ネオユニヴァース': 'sunday',
   'ミッキーアイル': 'sunday', 'スワーヴリチャード': 'sunday', 'ワグネリアン': 'sunday',

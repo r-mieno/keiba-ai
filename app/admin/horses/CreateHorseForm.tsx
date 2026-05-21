@@ -19,6 +19,7 @@ const SIRE_TO_LINE: Record<string, string> = {
   'サトノアラジン': 'sunday', 'フィエールマン': 'sunday', 'ワールドプレミア': 'sunday',
   'イスラボニータ': 'sunday', 'サトノダイヤモンド': 'sunday', 'ダノンプレミアム': 'sunday',
   'レッドファルクス': 'sunday', 'ジョーカプチーノ': 'sunday', 'スカイダイヤモンズ': 'sunday',
+  'アルアイン': 'sunday',
   'キングカメハメハ': 'mrprospector', 'ロードカナロア': 'mrprospector', 'ドゥラメンテ': 'mrprospector',
   'ルーラーシップ': 'mrprospector', 'サートゥルナーリア': 'mrprospector', 'タスティエーラ': 'mrprospector',
   'エイシンフラッシュ': 'mrprospector', 'サトノクラウン': 'mrprospector',
