@@ -2672,14 +2672,14 @@ function computeFormationV10(
     pace,
   )
 
-  // 差し馬上限ルール: 軸+ヒモ合計で差し(closer/deep_closer)は3頭まで
-  // 4頭目以降の差し馬は、候補top9以内の非差し馬と入れ替える（いなければそのまま）
+  // 差し馬上限ルール: 軸+ヒモ合計で差し(closer/deep_closer)はペース別の上限まで
+  // fast: 上限5（実質なし） / balanced: 3 / slow: 2
   const isCloserStyle = (id: string) => {
     const s = getDerivedStyle(id, horseRunForms)
     return s === 'closer' || s === 'deep_closer'
   }
   const axisIsCloser = axisId ? isCloserStyle(axisId) : false
-  const MAX_TOTAL_CLOSERS = 3
+  const MAX_TOTAL_CLOSERS = pace === 'fast' ? 5 : pace === 'slow' ? 2 : 3
   let finalHimo = [...himoV10]
   for (let iter = 0; iter < himoCount; iter++) {
     const totalClosers = (axisIsCloser ? 1 : 0) + finalHimo.filter(id => isCloserStyle(id)).length
