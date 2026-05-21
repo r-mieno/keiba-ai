@@ -50,6 +50,8 @@ const SIRE_TO_LINE: Record<string, string> = {
   'ベンバトル': 'mrprospector', 'Benbatl': 'mrprospector',
   'Makfi': 'mrprospector', 'Candy Ride': 'mrprospector',
   // ノーザンダンサー系
+  'Footstepsinthesand': 'northerndancer', 'フットステップスインザサンド': 'northerndancer',
+  'ホワイトマズル': 'northerndancer',
   'ハービンジャー': 'northerndancer', 'ブリックスアンドモルタル': 'northerndancer',
   'フランケル': 'northerndancer', 'モズアスコット': 'northerndancer',
   'オペラハウス': 'northerndancer', 'メイショウサムソン': 'northerndancer',
@@ -69,6 +71,7 @@ const SIRE_TO_LINE: Record<string, string> = {
   // ナスルーラ系
   'サンデーサイレンス': 'nasrullah', 'バゴ': 'nasrullah', 'Linamix': 'nasrullah',
   // ミスプロ系追加
+  'グローバルハンター': 'mrprospector',
   'ニューイヤーズデイ': 'mrprospector', 'エンパイアメーカー': 'mrprospector',
   // ノーザンダンサー系追加
   'Bated Breath': 'northerndancer', 'ベイテッドブレス': 'northerndancer',
