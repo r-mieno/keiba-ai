@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { upsertFormRecord, deleteFormRecord } from '../actions'
+import { upsertFormRecord, updateFormRecord, deleteFormRecord } from '../actions'
 
 type FormRecord = {
   id: string
@@ -64,7 +64,7 @@ export default function FormRecordManager({
                 const isEditing = editingId === r.id
                 const isSaving = savingId === r.id
                 const isSaved = savedId === r.id
-                const updateAction = upsertFormRecord.bind(null, horseId)
+                const updateAction = updateFormRecord.bind(null, r.id, horseId)
                 return (
                   <tr key={r.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
                     {isEditing ? (
@@ -88,12 +88,7 @@ export default function FormRecordManager({
                                 step={step}
                                 placeholder={placeholder}
                                 defaultValue={r[name] ?? ''}
-                                readOnly={name === 'race_seq'}
-                                style={{
-                                  ...inputStyle,
-                                  width,
-                                  opacity: name === 'race_seq' ? 0.5 : 1,
-                                }}
+                                style={{ ...inputStyle, width }}
                               />
                             </div>
                           ))}

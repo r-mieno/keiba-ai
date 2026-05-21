@@ -127,6 +127,20 @@ export async function upsertFormRecord(horseId: string, formData: FormData) {
   redirect(`/admin/horses/${horseId}?saved=1`)
 }
 
+export async function updateFormRecord(recordId: string, horseId: string, formData: FormData) {
+  const supabase = createAdminClient()
+  await supabase.from('horse_form_records').update({
+    race_seq:   Number(formData.get('race_seq')),
+    race_name:  (formData.get('race_name') as string) || null,
+    last3f:     formData.get('last3f')     ? Number(formData.get('last3f'))     : null,
+    corner_pos: formData.get('corner_pos') ? Number(formData.get('corner_pos')) : null,
+    finish_pos: formData.get('finish_pos') ? Number(formData.get('finish_pos')) : null,
+    field_size: formData.get('field_size') ? Number(formData.get('field_size')) : null,
+  }).eq('id', recordId)
+  revalidatePath(`/admin/horses/${horseId}`)
+  redirect(`/admin/horses/${horseId}?saved=1`)
+}
+
 export async function deleteFormRecord(recordId: string, horseId: string) {
   const supabase = createAdminClient()
   await supabase.from('horse_form_records').delete().eq('id', recordId)
