@@ -52,6 +52,7 @@ const SIRE_TO_LINE: Record<string, string> = {
   // ノーザンダンサー系
   'Footstepsinthesand': 'northerndancer', 'フットステップスインザサンド': 'northerndancer',
   'ホワイトマズル': 'northerndancer',
+  'Alamosa': 'northerndancer', 'アラモサ': 'northerndancer',
   'ハービンジャー': 'northerndancer', 'ブリックスアンドモルタル': 'northerndancer',
   'フランケル': 'northerndancer', 'モズアスコット': 'northerndancer',
   'オペラハウス': 'northerndancer', 'メイショウサムソン': 'northerndancer',
@@ -69,6 +70,7 @@ const SIRE_TO_LINE: Record<string, string> = {
   'グラスワンダー': 'roberto', 'モーリス': 'roberto', 'ブライアンズタイム': 'roberto',
   'タイキシャトル': 'roberto', 'エフフォーリア': 'roberto',
   // ナスルーラ系
+  'Tapit': 'nasrullah',
   'サンデーサイレンス': 'nasrullah', 'バゴ': 'nasrullah', 'Linamix': 'nasrullah',
   // ミスプロ系追加
   'グローバルハンター': 'mrprospector',

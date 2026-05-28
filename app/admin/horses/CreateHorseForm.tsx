@@ -39,11 +39,13 @@ const SIRE_TO_LINE: Record<string, string> = {
   'エピファネイア': 'roberto', 'スクリーンヒーロー': 'roberto', 'シンボリクリスエス': 'roberto',
   'グラスワンダー': 'roberto', 'モーリス': 'roberto', 'ブライアンズタイム': 'roberto',
   'エフフォーリア': 'roberto',
+  'Tapit': 'nasrullah',
   'サンデーサイレンス': 'nasrullah', 'バゴ': 'nasrullah', 'Linamix': 'nasrullah',
   'ニューイヤーズデイ': 'mrprospector', 'エンパイアメーカー': 'mrprospector',
   // ノーザンダンサー系追加
   'Footstepsinthesand': 'northerndancer', 'フットステップスインザサンド': 'northerndancer',
   'ホワイトマズル': 'northerndancer',
+  'Alamosa': 'northerndancer', 'アラモサ': 'northerndancer',
   'モズアスコット': 'northerndancer',
   'Bated Breath': 'northerndancer', 'ベイテッドブレス': 'northerndancer',
   'Not For Sale': 'northerndancer', 'ノットフォーセール': 'northerndancer',
