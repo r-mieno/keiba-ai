@@ -593,6 +593,15 @@ const BET_LEVELS_MAP = BET_LEVELS
 
 // ─── Axis horse reason builder ────────────────────────────────────────────────
 
+type AxisReasonOpts = {
+  p3Rate?: number | null
+  recentFormScore?: number
+  groundStrength?: number
+  closingScore?: number
+  distanceM?: number | null
+  venue?: string | null
+}
+
 function buildAxisReason(
   style: RunningStyle | null,
   pace: PaceType,
@@ -600,43 +609,71 @@ function buildAxisReason(
   _rank: number,
   distanceFitScore: number,
   axisConfidenceLevel: AxisType,
+  opts: AxisReasonOpts = {},
 ): string {
+  const { p3Rate, recentFormScore, groundStrength, closingScore, distanceM, venue } = opts
   const paceAdj = style ? getPaceAdjustment(style, pace) : 0
-
-  const STYLE_DESC: Partial<Record<RunningStyle, string>> = {
-    front:       '自らハナを奪ってペースを支配できる逃げタイプ',
-    stalker:     '好位から直線で力強く抜け出す先行タイプ',
-    closer:      '末脚を温存して直線で一気に突き抜ける差しタイプ',
-    deep_closer: '後方から豪快な末脚を炸裂させる追込タイプ',
-  }
-
+  const isLong = distanceM != null && distanceM >= 2000
   const parts: string[] = []
 
-  if (style && STYLE_DESC[style]) {
-    parts.push(`${STYLE_DESC[style]}。`)
+  // ── 1. 安定感・実績（最も強い指標を1文で）──────────────────
+  const p3Pct = p3Rate != null ? Math.round(p3Rate * 100) : null
+  const goodForm = recentFormScore != null && recentFormScore >= 0.57
+  const goodP3   = p3Pct != null && p3Pct >= 65
+
+  if (goodP3 && goodForm) {
+    parts.push(`3着内率${p3Pct}%という安定感に加え、直近の着順も崩れていない。`)
+  } else if (goodP3) {
+    parts.push(`3着内率${p3Pct}%が示す通り、安定して上位に食い込む実力がある。`)
+  } else if (goodForm) {
+    parts.push(`直近のレースで安定して上位に入り続けており、崩れにくさが評価のポイント。`)
+  } else if (groundStrength != null && groundStrength >= 0.05) {
+    parts.push(`同クラス・距離での重賞好走実績がAI評価を後押しした。`)
   }
 
-  if (style && paceAdj > 0) {
-    parts.push(`${PACE_ADV_COMMENTS[pace]?.[style] ?? 'この展開で強みが最大限に活きる'}。`)
-  } else if (style && paceAdj < 0) {
-    parts.push('展開面での不利を覆すだけの総合力を持つ。')
+  // ── 2. 末脚補足（差し・追込で末脚が特に優れている場合のみ）──
+  if (closingScore != null && closingScore >= 0.58 && style !== 'front' && style !== 'stalker') {
+    parts.push(`上がり3Fのタイムも速く、直線での末脚にも定評がある。`)
   }
 
-  const distPart = distanceFitScore >= 0.70
-    ? '距離適性も抜群で、'
-    : distanceFitScore >= 0.55
-    ? '距離への適性も高く、'
-    : distanceFitScore < 0.45
-    ? 'スタミナが問われる舞台だが、'
-    : ''
+  // ── 3. 脚質 × コース特性（会場名を活用して具体的に）────────
+  const venueDesc = venue === '東京' ? `直線が約520mと長い東京コース`
+    : venue === '阪神' ? `急坂が待ち受ける阪神コース`
+    : venue === '中山' ? `急坂とコーナーが多い中山コース`
+    : venue === '京都' ? `直線に下り坂のある京都コース`
+    : venue === '小倉' ? `小倉の小回りコース`
+    : venue === '新潟' ? `直線が658mと日本最長の新潟外回りコース`
+    : isLong ? `直線が長いコース`
+    : `このコース`
 
+  const styleLine: Partial<Record<RunningStyle, string>> = {
+    front:       `自らハナを奪ってペースを作る逃げタイプ。前半から主導権を握り、後続に脚を使わせる競馬が持ち味。`,
+    stalker:     `好位につけて確実に脚を使える先行タイプ。${venueDesc}でポジションを活かした安定した走りが得意。`,
+    closer:      `末脚を温存して直線で伸びる差しタイプ。${venueDesc}は末脚が存分に活きる舞台。`,
+    deep_closer: `後方から豪快な末脚を使う追込タイプ。${venueDesc}なら直線で脚が届く可能性がある。`,
+  }
+
+  if (style && styleLine[style]) {
+    parts.push(styleLine[style]!)
+  }
+
+  // ── 4. ペース展開（明確に有利な場合のみ）──────────────────
+  if (paceAdj > 0 && style && PACE_ADV_COMMENTS[pace]?.[style]) {
+    parts.push(`${PACE_ADV_COMMENTS[pace][style]}。`)
+  }
+
+  // ── 5. 距離適性（明らかに不向きな場合のみ注釈）──────────────
+  if (distanceFitScore < 0.45) {
+    parts.push(`スタミナが問われる点は課題だが、他の指標でカバーしている。`)
+  }
+
+  // ── 6. 結論（信頼度に応じた締めくくり）──────────────────────
   const confPart = axisConfidenceLevel === '軸強い'
-    ? 'AI評価で2位以下に差をつけた断然の軸馬。'
+    ? 'AI総合スコアで2位以下を引き離した、断然の信頼度を誇る軸馬。'
     : axisConfidenceLevel === '標準'
-    ? 'AI総合評価トップの軸馬。'
-    : '混戦の中でもAI最高評価を獲得した軸候補。'
-
-  parts.push(`${distPart}${confPart}`)
+    ? 'AI総合スコアで出走馬トップを獲得した軸馬。'
+    : 'AI総合スコアで混戦を制して最高評価を獲得した軸候補。'
+  parts.push(confPart)
 
   return parts.join('')
 }
@@ -3290,7 +3327,14 @@ export default async function RaceDetailPage({
               styleLabel: style ? STYLE_LABELS[style] : null,
               styleColor: style ? STYLE_COLORS[style] : null,
               aiEval: Math.max(15, Math.round(25 + pct * 0.15 - i * 3)),
-              reason: buildAxisReason(style, pace, raceStabilityScore, i, distanceFitScore, axisConfLevel),
+              reason: buildAxisReason(style, pace, raceStabilityScore, i, distanceFitScore, axisConfLevel, {
+                p3Rate: horse?.place3_rate ?? null,
+                recentFormScore: getRecentFormScore(id, horseFormRecords),
+                groundStrength: getGroundStrengthScore(id, horseFormRecords, race?.distance_m ?? null),
+                closingScore: getDerivedClosingScore(id, horseRunForms),
+                distanceM: race?.distance_m ?? null,
+                venue: race?.venue ?? null,
+              }),
             }
           })
 
@@ -3306,7 +3350,14 @@ export default async function RaceDetailPage({
               styleLabel: style ? STYLE_LABELS[style] : null,
               styleColor: style ? STYLE_COLORS[style] : null,
               aiEval: Math.max(13, Math.round(25 + pct * 0.15 - 3)),
-              reason: buildAxisReason(style, pace, raceStabilityScore, 1, distanceFitScore, axisConfLevel),
+              reason: buildAxisReason(style, pace, raceStabilityScore, 1, distanceFitScore, axisConfLevel, {
+                p3Rate: horse?.place3_rate ?? null,
+                recentFormScore: getRecentFormScore(axis2HorseId, horseFormRecords),
+                groundStrength: getGroundStrengthScore(axis2HorseId, horseFormRecords, race?.distance_m ?? null),
+                closingScore: getDerivedClosingScore(axis2HorseId, horseRunForms),
+                distanceM: race?.distance_m ?? null,
+                venue: race?.venue ?? null,
+              }),
             }
           })() : undefined
 
