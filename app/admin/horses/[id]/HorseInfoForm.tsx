@@ -50,6 +50,8 @@ const SIRE_TO_LINE: Record<string, string> = {
   'ベンバトル': 'mrprospector', 'Benbatl': 'mrprospector',
   'Makfi': 'mrprospector', 'Candy Ride': 'mrprospector',
   // ノーザンダンサー系
+  'Farhh': 'northerndancer',
+  'ローレルゲレイロ': 'northerndancer',
   'Footstepsinthesand': 'northerndancer', 'フットステップスインザサンド': 'northerndancer',
   'ホワイトマズル': 'northerndancer',
   'Alamosa': 'northerndancer', 'アラモサ': 'northerndancer',
@@ -71,9 +73,14 @@ const SIRE_TO_LINE: Record<string, string> = {
   'タイキシャトル': 'roberto', 'エフフォーリア': 'roberto',
   // ナスルーラ系
   'Tapit': 'nasrullah',
+  'More Than Ready': 'nasrullah', 'モアザンレディ': 'nasrullah',
   'サンデーサイレンス': 'nasrullah', 'バゴ': 'nasrullah', 'Linamix': 'nasrullah',
   // ミスプロ系追加
   'グローバルハンター': 'mrprospector',
+  'マクフィ': 'mrprospector',
+  'レイデオロ': 'mrprospector',
+  'Kingmambo': 'mrprospector', 'キングマンボ': 'mrprospector',
+  'Twirling Candy': 'mrprospector',
   'ニューイヤーズデイ': 'mrprospector', 'エンパイアメーカー': 'mrprospector',
   // ノーザンダンサー系追加
   'Bated Breath': 'northerndancer', 'ベイテッドブレス': 'northerndancer',
@@ -86,6 +93,7 @@ const SIRE_TO_LINE: Record<string, string> = {
   'Swept Overboard': 'mrprospector', 'スウェプトオーヴァーボード': 'mrprospector',
   'Thewayyouare': 'mrprospector', 'ザウェイユーアー': 'mrprospector',
   // その他
+  'Kendargent': 'other', 'ケンダルジェント': 'other',
   'Dark Angel': 'other',
 }
 

@@ -40,9 +40,12 @@ const SIRE_TO_LINE: Record<string, string> = {
   'グラスワンダー': 'roberto', 'モーリス': 'roberto', 'ブライアンズタイム': 'roberto',
   'エフフォーリア': 'roberto',
   'Tapit': 'nasrullah',
+  'More Than Ready': 'nasrullah', 'モアザンレディ': 'nasrullah',
   'サンデーサイレンス': 'nasrullah', 'バゴ': 'nasrullah', 'Linamix': 'nasrullah',
   'ニューイヤーズデイ': 'mrprospector', 'エンパイアメーカー': 'mrprospector',
   // ノーザンダンサー系追加
+  'Farhh': 'northerndancer',
+  'ローレルゲレイロ': 'northerndancer',
   'Footstepsinthesand': 'northerndancer', 'フットステップスインザサンド': 'northerndancer',
   'ホワイトマズル': 'northerndancer',
   'Alamosa': 'northerndancer', 'アラモサ': 'northerndancer',
@@ -55,9 +58,14 @@ const SIRE_TO_LINE: Record<string, string> = {
   "Medaglia d'Oro": 'northerndancer', 'メダグリアドーロ': 'northerndancer',
   // ミスプロ系追加
   'グローバルハンター': 'mrprospector',
+  'マクフィ': 'mrprospector',
+  'レイデオロ': 'mrprospector',
+  'Kingmambo': 'mrprospector', 'キングマンボ': 'mrprospector',
+  'Twirling Candy': 'mrprospector',
   'Swept Overboard': 'mrprospector', 'スウェプトオーヴァーボード': 'mrprospector',
   'Thewayyouare': 'mrprospector', 'ザウェイユーアー': 'mrprospector',
   // その他
+  'Kendargent': 'other', 'ケンダルジェント': 'other',
   'Dark Angel': 'other',
 }
 
