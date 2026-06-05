@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { updatePastResult, deletePastResult, addPastResult } from '../actions'
+import SubmitButton from '../../components/SubmitButton'
 
 type PastResult = {
   id: string
@@ -31,14 +32,6 @@ const inp: React.CSSProperties = { ...sel, width: '100%' }
 
 export default function PastResultManager({ horseId, results }: { horseId: string; results: PastResult[] }) {
   const [editingId, setEditingId] = useState<string | null>(null)
-  const [saving, setSaving] = useState(false)
-
-  const handleSave = async (resultId: string, formData: FormData) => {
-    setSaving(true)
-    await updatePastResult(resultId, horseId, formData)
-    setSaving(false)
-    setEditingId(null)
-  }
 
   return (
     <div>
@@ -58,7 +51,7 @@ export default function PastResultManager({ horseId, results }: { horseId: strin
                 {editingId === r.id ? (
                   <td colSpan={6} style={{ padding: '10px 8px' }}>
                     <form
-                      action={async (fd) => { await handleSave(r.id, fd) }}
+                      action={updatePastResult.bind(null, r.id, horseId)}
                       style={{ display: 'flex', gap: 6, alignItems: 'flex-end', flexWrap: 'wrap' }}
                     >
                       <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
@@ -91,11 +84,13 @@ export default function PastResultManager({ horseId, results }: { horseId: strin
                           {FIELD_OPTIONS.map((n) => <option key={n} value={n}>{n}頭</option>)}
                         </select>
                       </div>
-                      <div style={{ display: 'flex', gap: 6 }}>
-                        <button type="submit" disabled={saving} style={{ background: 'rgba(20,184,166,0.15)', color: '#14B8A6', border: '1px solid rgba(20,184,166,0.3)', borderRadius: 6, padding: '6px 12px', fontSize: 12, cursor: 'pointer' }}>
-                          {saving ? '保存中…' : '保存'}
-                        </button>
-                        <button type="button" onClick={() => setEditingId(null)} style={{ background: 'rgba(255,255,255,0.05)', color: '#9898B0', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6, padding: '6px 10px', fontSize: 12, cursor: 'pointer' }}>
+                      <div style={{ display: 'flex', gap: 6, alignItems: 'flex-end' }}>
+                        <SubmitButton label="保存" loadingLabel="保存中…" />
+                        <button
+                          type="button"
+                          onClick={() => setEditingId(null)}
+                          style={{ background: 'rgba(255,255,255,0.05)', color: '#9898B0', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8, padding: '9px 10px', fontSize: 12, cursor: 'pointer' }}
+                        >
                           ×
                         </button>
                       </div>
@@ -167,9 +162,7 @@ export default function PastResultManager({ horseId, results }: { horseId: strin
             {FIELD_OPTIONS.map((n) => <option key={n} value={n}>{n}頭</option>)}
           </select>
         </div>
-        <button type="submit" style={{ background: 'rgba(20,184,166,0.15)', color: '#14B8A6', border: '1px solid rgba(20,184,166,0.3)', borderRadius: 8, padding: '8px 16px', fontSize: 13, cursor: 'pointer', fontFamily: 'inherit' }}>
-          追加
-        </button>
+        <SubmitButton label="追加" loadingLabel="追加中…" />
       </form>
     </div>
   )

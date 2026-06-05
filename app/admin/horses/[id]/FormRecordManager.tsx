@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { upsertFormRecord, updateFormRecord, deleteFormRecord } from '../actions'
+import SubmitButton from '../../components/SubmitButton'
 
 type FormRecord = {
   id: string
@@ -13,7 +14,7 @@ type FormRecord = {
   field_size: number | null
 }
 
-const inputStyle = {
+const inputStyle: React.CSSProperties = {
   background: 'rgba(255,255,255,0.05)',
   border: '1px solid rgba(255,255,255,0.12)',
   borderRadius: 6,
@@ -24,14 +25,10 @@ const inputStyle = {
   width: '100%',
 }
 
-const FIELDS = [
-  { name: 'race_seq',   label: '#',       type: 'number', placeholder: '1',      width: 52,  step: '1'   },
-  { name: 'race_name',  label: 'レース名', type: 'text',   placeholder: '桜花賞', width: 130, step: undefined },
-  { name: 'last3f',     label: '上がり3F', type: 'number', placeholder: '33.5',   width: 72,  step: '0.1' },
-  { name: 'corner_pos', label: '4角順位',  type: 'number', placeholder: '5',      width: 64,  step: '1'   },
-  { name: 'finish_pos', label: '着順',     type: 'number', placeholder: '2',      width: 56,  step: '1'   },
-  { name: 'field_size', label: '頭数',     type: 'number', placeholder: '18',     width: 56,  step: '1'   },
-] as const
+const SEQ_OPTIONS    = Array.from({ length: 10 }, (_, i) => i + 1)           // 1〜10
+const CORNER_OPTIONS = Array.from({ length: 18 }, (_, i) => i + 1)           // 1〜18
+const FINISH_OPTIONS = Array.from({ length: 18 }, (_, i) => i + 1)           // 1〜18
+const FIELD_OPTIONS  = Array.from({ length: 11 }, (_, i) => i + 8)           // 8〜18
 
 export default function FormRecordManager({
   horseId,
@@ -41,8 +38,6 @@ export default function FormRecordManager({
   records: FormRecord[]
 }) {
   const [editingId, setEditingId] = useState<string | null>(null)
-  const [savingId, setSavingId] = useState<string | null>(null)
-  const [savedId, setSavedId] = useState<string | null>(null)
 
   const upsertAction = upsertFormRecord.bind(null, horseId)
 
@@ -62,60 +57,61 @@ export default function FormRecordManager({
             <tbody>
               {records.map((r) => {
                 const isEditing = editingId === r.id
-                const isSaving = savingId === r.id
-                const isSaved = savedId === r.id
-                const updateAction = updateFormRecord.bind(null, r.id, horseId)
                 return (
                   <tr key={r.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
                     {isEditing ? (
                       <td colSpan={7} style={{ padding: '10px 12px' }}>
                         <form
-                          action={async (fd) => {
-                            setSavingId(r.id)
-                            await updateAction(fd)
-                            setSavingId(null)
-                            setSavedId(r.id)
-                            setTimeout(() => { setSavedId(null); setEditingId(null) }, 1000)
-                          }}
+                          action={updateFormRecord.bind(null, r.id, horseId)}
                           style={{ display: 'flex', gap: 8, alignItems: 'flex-end', flexWrap: 'wrap' }}
                         >
-                          {FIELDS.map(({ name, label, type, placeholder, width, step }) => (
-                            <div key={name} style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                              <label style={{ fontSize: 10, color: '#62627A' }}>{label}</label>
-                              <input
-                                name={name}
-                                type={type}
-                                step={step}
-                                placeholder={placeholder}
-                                defaultValue={r[name] ?? ''}
-                                style={{ ...inputStyle, width }}
-                              />
-                            </div>
-                          ))}
-                          <div style={{ display: 'flex', gap: 6, alignSelf: 'flex-end' }}>
-                            <button
-                              type="submit"
-                              disabled={isSaving}
-                              style={{
-                                background: isSaved ? 'rgba(20,184,166,0.2)' : '#14B8A6',
-                                color: '#fff',
-                                border: 'none',
-                                borderRadius: 6,
-                                padding: '6px 12px',
-                                fontSize: 12,
-                                fontWeight: 600,
-                                cursor: isSaving ? 'not-allowed' : 'pointer',
-                                minWidth: 72,
-                                opacity: isSaving ? 0.7 : 1,
-                                transition: 'background 0.2s',
-                              }}
-                            >
-                              {isSaving ? '保存中…' : isSaved ? '✓ 保存済' : '保存'}
-                            </button>
+                          {/* # */}
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                            <label style={{ fontSize: 10, color: '#62627A' }}>#</label>
+                            <select name="race_seq" defaultValue={r.race_seq} style={{ ...inputStyle, width: 56 }}>
+                              {SEQ_OPTIONS.map((n) => <option key={n} value={n}>{n}</option>)}
+                            </select>
+                          </div>
+                          {/* レース名 */}
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                            <label style={{ fontSize: 10, color: '#62627A' }}>レース名</label>
+                            <input name="race_name" type="text" placeholder="桜花賞" defaultValue={r.race_name ?? ''} style={{ ...inputStyle, width: 130 }} />
+                          </div>
+                          {/* 上がり3F */}
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                            <label style={{ fontSize: 10, color: '#62627A' }}>上がり3F</label>
+                            <input name="last3f" type="number" step="0.1" placeholder="33.5" defaultValue={r.last3f ?? ''} style={{ ...inputStyle, width: 72 }} />
+                          </div>
+                          {/* 4角順位 */}
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                            <label style={{ fontSize: 10, color: '#62627A' }}>4角順位</label>
+                            <select name="corner_pos" defaultValue={r.corner_pos ?? ''} style={{ ...inputStyle, width: 68 }}>
+                              <option value="">—</option>
+                              {CORNER_OPTIONS.map((n) => <option key={n} value={n}>{n}</option>)}
+                            </select>
+                          </div>
+                          {/* 着順 */}
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                            <label style={{ fontSize: 10, color: '#62627A' }}>着順</label>
+                            <select name="finish_pos" defaultValue={r.finish_pos ?? ''} style={{ ...inputStyle, width: 68 }}>
+                              <option value="">—</option>
+                              {FINISH_OPTIONS.map((n) => <option key={n} value={n}>{n}着</option>)}
+                            </select>
+                          </div>
+                          {/* 頭数 */}
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                            <label style={{ fontSize: 10, color: '#62627A' }}>頭数</label>
+                            <select name="field_size" defaultValue={r.field_size ?? ''} style={{ ...inputStyle, width: 68 }}>
+                              <option value="">—</option>
+                              {FIELD_OPTIONS.map((n) => <option key={n} value={n}>{n}頭</option>)}
+                            </select>
+                          </div>
+                          <div style={{ display: 'flex', gap: 6, alignItems: 'flex-end' }}>
+                            <SubmitButton label="保存" loadingLabel="保存中…" />
                             <button
                               type="button"
                               onClick={() => setEditingId(null)}
-                              style={{ background: 'rgba(255,255,255,0.08)', color: '#9898B0', border: 'none', borderRadius: 6, padding: '6px 10px', fontSize: 12, cursor: 'pointer' }}
+                              style={{ background: 'rgba(255,255,255,0.08)', color: '#9898B0', border: 'none', borderRadius: 8, padding: '9px 10px', fontSize: 12, cursor: 'pointer' }}
                             >
                               ×
                             </button>
@@ -164,25 +160,49 @@ export default function FormRecordManager({
           追加・更新（同じ走目は上書き）
         </p>
         <form action={upsertAction} style={{ display: 'flex', gap: 8, alignItems: 'flex-end', flexWrap: 'wrap' }}>
-          {FIELDS.map(({ name, label, type, placeholder, width, step }) => (
-            <div key={name} style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-              <label style={{ fontSize: 11, color: '#62627A' }}>{label}</label>
-              <input
-                name={name}
-                type={type}
-                step={step}
-                placeholder={placeholder}
-                required={name === 'race_seq'}
-                style={{ ...inputStyle, width }}
-              />
-            </div>
-          ))}
-          <button
-            type="submit"
-            style={{ background: '#14B8A6', color: '#fff', border: 'none', borderRadius: 8, padding: '8px 16px', fontSize: 13, fontWeight: 600, cursor: 'pointer', alignSelf: 'flex-end' }}
-          >
-            保存
-          </button>
+          {/* # */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+            <label style={{ fontSize: 11, color: '#62627A' }}>#</label>
+            <select name="race_seq" required style={{ ...inputStyle, width: 56 }}>
+              <option value="">—</option>
+              {SEQ_OPTIONS.map((n) => <option key={n} value={n}>{n}</option>)}
+            </select>
+          </div>
+          {/* レース名 */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+            <label style={{ fontSize: 11, color: '#62627A' }}>レース名</label>
+            <input name="race_name" type="text" placeholder="桜花賞" style={{ ...inputStyle, width: 130 }} />
+          </div>
+          {/* 上がり3F */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+            <label style={{ fontSize: 11, color: '#62627A' }}>上がり3F</label>
+            <input name="last3f" type="number" step="0.1" placeholder="33.5" style={{ ...inputStyle, width: 72 }} />
+          </div>
+          {/* 4角順位 */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+            <label style={{ fontSize: 11, color: '#62627A' }}>4角順位</label>
+            <select name="corner_pos" style={{ ...inputStyle, width: 68 }}>
+              <option value="">—</option>
+              {CORNER_OPTIONS.map((n) => <option key={n} value={n}>{n}</option>)}
+            </select>
+          </div>
+          {/* 着順 */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+            <label style={{ fontSize: 11, color: '#62627A' }}>着順</label>
+            <select name="finish_pos" style={{ ...inputStyle, width: 68 }}>
+              <option value="">—</option>
+              {FINISH_OPTIONS.map((n) => <option key={n} value={n}>{n}着</option>)}
+            </select>
+          </div>
+          {/* 頭数 */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+            <label style={{ fontSize: 11, color: '#62627A' }}>頭数</label>
+            <select name="field_size" style={{ ...inputStyle, width: 68 }}>
+              <option value="">—</option>
+              {FIELD_OPTIONS.map((n) => <option key={n} value={n}>{n}頭</option>)}
+            </select>
+          </div>
+          <SubmitButton label="保存" loadingLabel="保存中…" />
         </form>
       </div>
     </div>
