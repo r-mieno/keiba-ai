@@ -38,9 +38,11 @@ export default function HorseList({ horses }: { horses: Horse[] }) {
   const [query, setQuery] = useState('')
   const [raceQuery, setRaceQuery] = useState('')
 
+  const allRaceNames = [...new Set(horses.flatMap((h) => h.raceNames))].sort()
+
   const filtered = horses.filter((h) => {
     const matchName = !query || h.name.includes(query) || (h.sire_name ?? '').includes(query)
-    const matchRace = !raceQuery || h.raceNames.some((r) => r.includes(raceQuery))
+    const matchRace = !raceQuery || h.raceNames.includes(raceQuery)
     return matchName && matchRace
   })
 
@@ -54,13 +56,16 @@ export default function HorseList({ horses }: { horses: Horse[] }) {
           onChange={(e) => setQuery(e.target.value)}
           style={searchInputStyle}
         />
-        <input
-          type="text"
-          placeholder="レース名で絞り込み..."
+        <select
           value={raceQuery}
           onChange={(e) => setRaceQuery(e.target.value)}
-          style={searchInputStyle}
-        />
+          style={{ ...searchInputStyle, width: 220, cursor: 'pointer' }}
+        >
+          <option value="">すべてのレース</option>
+          {allRaceNames.map((r) => (
+            <option key={r} value={r}>{r}</option>
+          ))}
+        </select>
       </div>
 
       <div style={{ background: '#13141F', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 12, overflow: 'hidden' }}>
