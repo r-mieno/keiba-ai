@@ -92,6 +92,19 @@ const SIRE_TO_LINE: Record<string, string> = {
   // ミスプロ系追加
   'Swept Overboard': 'mrprospector', 'スウェプトオーヴァーボード': 'mrprospector',
   'Thewayyouare': 'mrprospector', 'ザウェイユーアー': 'mrprospector',
+  // サンデー系追加
+  'アドマイヤマーズ': 'sunday',
+  // ミスプロ系追加
+  'リオンディーズ': 'mrprospector',
+  'サザンイメージ': 'mrprospector', 'Southern Image': 'mrprospector',
+  'ティンバーカントリー': 'mrprospector', 'Timber Country': 'mrprospector',
+  // ノーザンダンサー系追加
+  'ハイシャパラル': 'northerndancer', 'High Chaparral': 'northerndancer',
+  // ロベルト系追加
+  'スリーピーカン': 'roberto', 'Sri Pekan': 'roberto',
+  // ナスルーラ系追加
+  'サクラバクシンオー': 'nasrullah',
+  'コングラッツ': 'nasrullah', 'Congrats': 'nasrullah',
   // その他
   'Kendargent': 'other', 'ケンダルジェント': 'other',
   'Dark Angel': 'other',
