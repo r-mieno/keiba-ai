@@ -2434,9 +2434,9 @@ function getDerivedPaceFit(
   if (ft === null) return 0.50  // データなし → ニュートラル
 
   if (pace === 'fast') {
-    return 0.34 + ft * 0.32
+    return 0.38 + ft * 0.24
   } else if (pace === 'slow') {
-    return 0.34 + (1 - ft) * 0.32
+    return 0.38 + (1 - ft) * 0.24
   }
   return 0.50  // balanced
 }
@@ -2610,17 +2610,17 @@ function computeFormationV10(
     const recentFinishScore = getRecentFinishScore(id, horseRunForms)
     const postPositionAdj = getPostPositionAdj(venue, distanceM, entry?.horse_number ?? null)
 
-    // v10 重み: 脚質(derived)20%, 騎手13%, place3Rate20%, 近走17%, 上がり10%, 安定10%
+    // v10 重み: 脚質(derived)12%, 騎手13%, place3Rate24%, 近走21%, 上がり10%, 安定10%
     // recentFinishAdj: horse_form_records着順から±0.045の加算補正
     const agePenalty = getAgePenalty(id)
     const recentFinishAdj = (recentFinishScore - 0.50) * 0.30
     const intervalPenalty = getIntervalPenalty(entry?.days_since_last_race ?? null)
     const debutPenalty = getDebutPenalty(entry?.is_venue_debut ?? null, entry?.is_distance_debut ?? null)
     const axisScore =
-      paceFit * 0.20
+      paceFit * 0.12
       + jockeyScore * 0.13
-      + horsePlace3Rate * 0.20
-      + recentFormScore * 0.17
+      + horsePlace3Rate * 0.24
+      + recentFormScore * 0.21
       + closingScore * 0.10
       + stabilityComp * 0.10
       + postPositionAdj
@@ -2655,10 +2655,10 @@ function computeFormationV10(
   const axisV10 = axisId ? [axisId] : formation.axis_horses
   const candidatePool = entries.map((e) => e.horse_id).filter((id) => id !== axisId)
 
-  // ヒモスコアも v10 の重みで計算（データ駆動型脚質20%・騎手20%・個の力30%）
+  // ヒモスコアも v10 の重みで計算（データ駆動型脚質12%・騎手13%・個の力強化）
   const Wh: Record<string, number> = raceType === '3歳戦'
-    ? { pace: 0.20, jockey: 0.13, p3r: 0.26, closing: 0.12, stability: 0.06, form: 0.17 }
-    : { pace: 0.20, jockey: 0.13, p3r: 0.30, closing: 0.15, stability: 0.05, form: 0.17 }
+    ? { pace: 0.12, jockey: 0.13, p3r: 0.30, closing: 0.12, stability: 0.06, form: 0.21 }
+    : { pace: 0.12, jockey: 0.13, p3r: 0.34, closing: 0.15, stability: 0.05, form: 0.21 }
 
   const scored = candidatePool.map((id) => {
     const paceFit = getDerivedPaceFit(id, horseRunForms, pace)
